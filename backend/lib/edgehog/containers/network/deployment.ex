@@ -22,34 +22,80 @@ defmodule Edgehog.Containers.Network.Deployment do
   @moduledoc false
   use Edgehog.MultitenantResource,
     domain: Edgehog.Containers,
-    extensions: [AshGraphql.Resource]
+    extensions: [AshGraphql.Resource, AshStateMachine]
+
+  alias Edgehog.Containers.Network
+  alias Edgehog.Containers.Network.Changes
+  alias Edgehog.Devices.Device
+
+  state_machine do
+    initial_states([:created, :sent])
+    default_initial_state(:created)
+
+    transitions do
+      transition(:available, from: [:sent, :unavailable], to: :available)
+      transition(:unavailable, from: [:sent, :available], to: :unavailable)
+      transition(:errored, from: [:*], to: :error)
+    end
+  end
 
   graphql do
     type :network_deployment
   end
 
   actions do
-    defaults [:read, :destroy, create: [:created], update: [:created]]
+    defaults [:read, :destroy]
+
+    create :deploy do
+      description """
+      Deploys an image on a device, the status according to device triggers.
+      """
+
+      accept [:network_id]
+
+      argument :device_id, :id do
+        allow_nil? false
+      end
+
+      change transition_state(:created)
+      change manage_relationship(:device_id, :device, type: :append)
+      change Changes.DeployNetworkOnDevice
+      change transition_state(:sent)
+    end
+
+    update :available do
+      change transition_state(:available)
+    end
+
+    update :unavailable do
+      change transition_state(:unavailable)
+    end
+
+    update :errored do
+      argument :message, :string do
+        allow_nil? false
+      end
+
+      change set_attribute(:last_message, arg(:message))
+      change transition_state(:error)
+    end
   end
 
   attributes do
     uuid_primary_key :id
 
-    attribute :created, :boolean do
-      allow_nil? false
-      public? true
-    end
+    attribute :last_message, :string
 
     timestamps()
   end
 
   relationships do
-    belongs_to :container, Edgehog.Containers.Network do
+    belongs_to :network, Network do
       attribute_type :uuid
       public? true
     end
 
-    belongs_to :device, Edgehog.Devices.Device
+    belongs_to :device, Device
   end
 
   identities do
@@ -57,6 +103,11 @@ defmodule Edgehog.Containers.Network.Deployment do
   end
 
   postgres do
-    table "application_network_deployments"
+    table "network_deployments"
+
+    references do
+      reference :network, on_delete: :delete
+      reference :device, on_delete: :delete
+    end
   end
 end
