@@ -73,7 +73,7 @@ defmodule Edgehog.Tenants.Reconciler do
       |> Ash.Query.load(:realm_management_client)
 
     Tenant
-    |> Ash.read!(load: [realm: global_realm_query])
+    |> Ash.read!(load: [realms: global_realm_query])
     |> Enum.each(&start_reconciliation_task(&1, tenant_to_trigger_url_fun))
 
     {:noreply, state}
@@ -86,7 +86,7 @@ defmodule Edgehog.Tenants.Reconciler do
     } = state
 
     tenant
-    |> Ash.load!([realm: [:realm_management_client]], tenant: tenant)
+    |> Ash.load!([realms: [:realm_management_client]], tenant: tenant)
     |> start_reconciliation_task(tenant_to_trigger_url_fun)
 
     {:noreply, state}
@@ -94,14 +94,20 @@ defmodule Edgehog.Tenants.Reconciler do
 
   defp start_reconciliation_task(%Tenant{} = tenant, tenant_to_trigger_url_fun) do
     Task.Supervisor.start_child(TaskSupervisor, fn ->
-      rm_client = tenant.realm.realm_management_client
+      realms = tenant.realms
+      rm_clients = Enum.map(realms, & &1.realm_management_client)
 
-      Enum.each(Core.list_required_interfaces(), &Core.reconcile_interface!(rm_client, &1))
+      Enum.each(rm_clients, fn rm_client ->
+        Enum.each(Core.list_required_interfaces(), &Core.reconcile_interface!(rm_client, &1))
+      end)
+
       trigger_url = tenant_to_trigger_url_fun.(tenant)
 
-      trigger_url
-      |> Core.list_required_triggers()
-      |> Enum.each(&Core.reconcile_trigger!(rm_client, &1))
+      Enum.each(rm_clients, fn rm_client ->
+        trigger_url
+        |> Core.list_required_triggers()
+        |> Enum.each(&Core.reconcile_trigger!(rm_client, &1))
+      end)
     end)
   end
 

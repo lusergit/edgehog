@@ -31,6 +31,7 @@ defmodule Edgehog.Astarte do
       define :fetch_realm_by_name, action: :read, get_by: :name, not_found_error?: true
       define :create_realm, action: :create
       define :destroy_realm, action: :destroy
+      define :list_realms, action: :read
     end
   end
 end

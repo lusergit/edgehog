@@ -148,10 +148,9 @@ defmodule Edgehog.Tenants.Tenant do
   end
 
   relationships do
-    has_one :realm, Edgehog.Astarte.Realm do
+    has_many :realms, Edgehog.Astarte.Realm do
       public? true
       source_attribute :tenant_id
-      allow_nil? false
     end
   end
 

@@ -180,11 +180,13 @@ defmodule Edgehog.TenantsTest do
                default_locale: ^tenant_default_locale
              } = tenant
 
-      tenant = Ash.load!(tenant, [realm: [:cluster]], tenant: tenant)
+      tenant = Ash.load!(tenant, [realms: [:cluster]], tenant: tenant)
 
-      assert tenant.realm.cluster.base_api_url == attrs.astarte_config.base_api_url
-      assert tenant.realm.name == attrs.astarte_config.realm_name
-      assert tenant.realm.private_key == attrs.astarte_config.realm_private_key
+      [realm] = tenant.realms
+
+      assert realm.cluster.base_api_url == attrs.astarte_config.base_api_url
+      assert realm.name == attrs.astarte_config.realm_name
+      assert realm.private_key == attrs.astarte_config.realm_private_key
     end
 
     test "without default locale provisions 'en-US' as default one" do

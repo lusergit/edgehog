@@ -33,7 +33,7 @@ defmodule Edgehog.Tenants.Tenant.Changes.ProvisionAstarteResources do
     with {:ok, astarte_config} <- Ash.Changeset.fetch_argument(changeset, :astarte_config),
          {:ok, cluster} <- create_cluster(astarte_config),
          {:ok, realm} <- create_realm(tenant, cluster, astarte_config) do
-      {:ok, %{tenant | realm: realm}}
+      {:ok, %{tenant | realms: [realm]}}
     end
   end
 

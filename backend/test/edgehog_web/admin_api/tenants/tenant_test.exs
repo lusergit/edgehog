@@ -83,14 +83,16 @@ defmodule EdgehogWeb.AdminAPI.Tenants.TenantTest do
                default_locale: ^tenant_default_locale
              } = tenant
 
-      tenant = Ash.load!(tenant, [realm: [:cluster]], tenant: tenant)
+      tenant = Ash.load!(tenant, [realms: [:cluster]], tenant: tenant)
+
+      [realm] = tenant.realms
 
       assert %Astarte.Realm{
                name: ^realm_name,
                private_key: ^realm_private_key
-             } = tenant.realm
+             } = realm
 
-      assert tenant.realm.cluster.base_api_url == cluster_base_api_url
+      assert realm.cluster.base_api_url == cluster_base_api_url
     end
 
     test "without default locale assigns 'en-US' as default one", %{conn: conn, path: path} do

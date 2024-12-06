@@ -84,6 +84,23 @@ defmodule Edgehog.Astarte.RealmTest do
 
       assert {:ok, %Realm{} = _realm} = create_realm(name: realm.name)
     end
+
+    test "multiple realms per tenant" do
+      tenant = tenant_fixture()
+      cluster = cluster_fixture()
+
+      assert {:ok, %Realm{} = realm1} =
+               create_realm(cluster_id: cluster.id, name: "realm1", tenant: tenant)
+
+      assert {:ok, %Realm{} = realm2} =
+               create_realm(cluster_id: cluster.id, name: "realm2", tenant: tenant)
+
+      realms = Enum.sort_by([realm1, realm2], & &1.id)
+      tenant = Ash.load!(tenant, :realms, tenant: tenant)
+      tenant_realms = Enum.sort_by(tenant.realms, & &1.id)
+
+      assert Enum.map(realms, & &1.id) == Enum.map(tenant_realms, & &1.id)
+    end
   end
 
   describe "fetch_by_name/2" do
