@@ -25,6 +25,7 @@ defmodule Edgehog.Devices.Device.ManualRelationships.DeviceGroups do
   alias Edgehog.Devices.Device
 
   require Ash.Query
+  require Ecto.Query
 
   @impl Ash.Resource.ManualRelationship
   def load(devices, _opts, %{query: group_query}) do
@@ -46,5 +47,11 @@ defmodule Edgehog.Devices.Device.ManualRelationships.DeviceGroups do
       |> Map.take(device_ids)
 
     {:ok, device_id_to_groups}
+  end
+
+  def ash_postgres_subquery(_opts, current_binding, as_binding, destination_query) do
+    Ecto.Query.from(_ in destination_query,
+      where: parent_as(^current_binding).id == as(^as_binding).device_id
+    )
   end
 end

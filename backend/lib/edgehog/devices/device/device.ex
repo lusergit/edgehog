@@ -54,7 +54,7 @@ defmodule Edgehog.Devices.Device do
     # TODO: add :device_groups as a relay-paginated relationship. Since it's a
     # manual relationship, it needs to implement callbacks that define
     # datalayer subqueries so Ash can compose and support the functionality.
-    paginate_relationship_with ota_operations: :relay, tags: :relay
+    paginate_relationship_with ota_operations: :relay, tags: :relay, device_groups: :relay
   end
 
   actions do

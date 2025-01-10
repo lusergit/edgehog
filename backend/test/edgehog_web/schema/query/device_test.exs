@@ -609,7 +609,11 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
       query ($id: ID!) {
         device(id: $id) {
           deviceGroups {
-            name
+            edges {
+              node {
+                name
+              }
+            }
           }
         }
       }
