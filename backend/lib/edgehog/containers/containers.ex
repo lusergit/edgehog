@@ -35,6 +35,7 @@ defmodule Edgehog.Containers do
   graphql do
     root_level_errors? true
 
+    if FunWithFlags.enabled?(:containers) do
     queries do
       list Application, :applications, :read do
         description "Returns all the available applications."
@@ -85,6 +86,7 @@ defmodule Edgehog.Containers do
       update Deployment, :upgrade_deployment, :upgrade_release do
         relay_id_translations input: [target: :release]
       end
+    end
     end
   end
 

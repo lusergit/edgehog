@@ -60,7 +60,9 @@ defmodule Edgehog.Application do
       # Start the Tenant Reconciler Supervisor
       {Edgehog.Tenants.Reconciler.Supervisor, tenant_to_trigger_url_fun: tenant_to_trigger_url_fun},
       # Start the Endpoint (http/https)
-      Endpoint
+      Endpoint,
+      # Start the feature flag supervisor
+      FunWithFlags.Supervisor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

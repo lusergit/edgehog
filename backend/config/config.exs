@@ -118,6 +118,16 @@ config :edgehog,
 config :ex_aws,
   json_codec: Jason
 
+# Configure fun_with_flags
+config :fun_with_flags, :cache,
+  enabled: false
+
+config :fun_with_flags, :cache_bust_notifications, enabled: false
+
+config :fun_with_flags, :persistence,
+  adapter: FunWithFlags.Store.Persistent.Ecto,
+  repo: Edgehog.Repo
+
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",

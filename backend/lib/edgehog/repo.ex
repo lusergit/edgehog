@@ -62,4 +62,13 @@ defmodule Edgehog.Repo do
       opts
     )
   end
+
+  @impl true
+  def prepare_query(_operation, query, opts) do
+    if fwf_id = opts[:fun_with_flags] do
+      {Ecto.Query.where(query, org_id: ^fwf_id), opts}
+    else
+      {query, opts}
+    end
+  end
 end
