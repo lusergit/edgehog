@@ -36,6 +36,7 @@ defmodule Edgehog.ContainersFixtures do
   alias Edgehog.Containers.Image
   alias Edgehog.Containers.Network
   alias Edgehog.Containers.Release
+  alias Edgehog.Containers.Volume
 
   @doc """
   Generate a unique application name.
@@ -217,6 +218,43 @@ defmodule Edgehog.ContainersFixtures do
     Ash.create!(Deployment, params, tenant: tenant)
   end
 
+  @doc """
+  Generates a %Volume.Deployment{}.
+  """
+  def volume_deployment_fixture(opts \\ []) do
+    {tenant, opts} = Keyword.pop!(opts, :tenant)
+
+    {realm_id, opts} =
+      case opts[:device_id] do
+        nil ->
+          Keyword.pop_lazy(opts, :realm_id, fn ->
+            AstarteFixtures.realm_fixture(tenant: tenant).id
+          end)
+
+        _ ->
+          {nil, Keyword.delete(opts, :realm_id)}
+      end
+
+    {device_id, opts} =
+      Keyword.pop_lazy(opts, :device_id, fn ->
+        Edgehog.DevicesFixtures.device_fixture(realm_id: realm_id, tenant: tenant).id
+      end)
+
+    {volume_id, opts} =
+      Keyword.pop_lazy(opts, :volume_id, fn -> release_fixture(tenant: tenant).id end)
+
+    params =
+      Enum.into(opts, %{
+        device_id: device_id,
+        volume_id: volume_id
+      })
+
+    Ash.create!(Volume.Deployment, params, tenant: tenant)
+  end
+
+  @doc """
+  Generates a %Network.Deployment{}.
+  """
   def network_deployment_fixture(opts \\ []) do
     {tenant, opts} = Keyword.pop!(opts, :tenant)
 
@@ -237,7 +275,7 @@ defmodule Edgehog.ContainersFixtures do
       end)
 
     {network_id, opts} =
-      Keyword.pop_lazy(opts, :network_id, fn -> network_fixture(tenant: tenant).id end)
+      Keyword.pop_lazy(opts, :network_id, fn -> release_fixture(tenant: tenant).id end)
 
     params =
       Enum.into(opts, %{
