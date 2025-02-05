@@ -593,6 +593,56 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
       assert deployment.status == :stopped
     end
 
+    test "AvailableVolumes triggers update deployment status", context do
+      %{conn: conn, realm: realm, device: device, tenant: tenant} = context
+
+      release =
+        [containers: 1, container_params: [volumes: 1], tenant: tenant]
+        |> release_fixture()
+        |> Ash.load!(containers: [:image, :networks, :volumes])
+
+      [container] = release.containers
+      [volume] = container.volumes
+
+      deployment =
+        deployment_fixture(
+          tenant: tenant,
+          device_id: device.id,
+          release_id: release.id,
+          status: :sent
+        )
+
+      volume_deployment_fixture(
+        volume_id: volume.id,
+        device_id: device.id,
+        state: :sent,
+        tenant: tenant
+      )
+
+      deployment_event = %{
+        device_id: device.device_id,
+        event: %{
+          type: "incoming_data",
+          interface: "io.edgehog.devicemanager.apps.AvailableVolumes",
+          path: "/" <> volume.id <> "/created",
+          value: true
+        },
+        timestamp: DateTime.to_iso8601(DateTime.utc_now())
+      }
+
+      set_resource_expectations([deployment])
+
+      path = Routes.astarte_trigger_path(conn, :process_event, tenant.slug)
+
+      conn
+      |> put_req_header("astarte-realm", realm.name)
+      |> post(path, deployment_event)
+      |> response(200)
+
+      deployment = Ash.get!(Deployment, deployment.id, tenant: tenant)
+      assert deployment.status == :stopped
+    end
+
     test "AvailableContainers triggers update deployment status", context do
       %{conn: conn, realm: realm, device: device, tenant: tenant} = context
 

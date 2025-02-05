@@ -26,7 +26,7 @@ defmodule Edgehog.Containers.Deployment.Changes.CheckContainers do
   def change(changeset, _opts, _context) do
     deployment = changeset.data
 
-    with {:ok, :created_networks} <- Ash.Changeset.fetch_argument_or_change(changeset, :status),
+    with {:ok, :created_volumes} <- Ash.Changeset.fetch_argument_or_change(changeset, :status),
          {:ok, deployment} <-
            Ash.load(deployment, device: :available_containers, release: [:containers]) do
       available_container_ids = Enum.map(deployment.device.available_containers, & &1.id)
