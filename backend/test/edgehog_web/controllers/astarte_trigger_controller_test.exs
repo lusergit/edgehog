@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2021-2024 SECO Mind Srl
+# Copyright 2021 - 2025 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -560,6 +560,7 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
         |> Ash.load!(containers: [:image, :networks])
 
       [container] = release.containers
+      image = container.image
 
       deployment =
         deployment_fixture(
@@ -568,6 +569,14 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
           release_id: release.id,
           status: :sent
         )
+
+      image_deployment_fixture(
+        image_id: image.id,
+        realm_id: realm.id,
+        device_id: device.id,
+        state: :sent,
+        tenant: tenant
+      )
 
       deployment_event = %{
         device_id: device.device_id,
@@ -602,12 +611,21 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
         |> Ash.load!(containers: [:image, :networks])
 
       [container] = release.containers
+      image = container.image
 
       deployment =
         [tenant: tenant, device_id: device.id, release_id: release.id]
         |> deployment_fixture()
         |> Ash.Changeset.for_update(:set_status, %{status: :sent}, tenant: tenant)
         |> Ash.update!()
+
+      image_deployment_fixture(
+        image_id: image.id,
+        realm_id: realm.id,
+        device_id: device.id,
+        state: :unpulled,
+        tenant: tenant
+      )
 
       deployment_event = %{
         device_id: device.device_id,
@@ -639,11 +657,22 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
       release =
         release_fixture(containers: 1, tenant: tenant)
 
+      [container] = release.containers
+      image = Ash.load!(container, :image, tenant: tenant).image
+
       deployment =
         [tenant: tenant, device_id: device.id, release_id: release.id]
         |> deployment_fixture()
         |> Ash.Changeset.for_update(:set_status, %{status: :sent}, tenant: tenant)
         |> Ash.update!()
+
+      image_deployment_fixture(
+        image_id: image.id,
+        realm_id: realm.id,
+        device_id: device.id,
+        state: :unpulled,
+        tenant: tenant
+      )
 
       deployment_event = %{
         device_id: device.device_id,

@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2024 - 2025 SECO Mind Srl
+# Copyright 2025 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,17 +18,24 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-defmodule Edgehog.Containers.Deployment.Changes.CreateDeploymentOnDevice do
+defmodule Edgehog.Containers.Image.Changes.DeployImageOnDevice do
   @moduledoc false
   use Ash.Resource.Change
 
   alias Edgehog.Containers
+  alias Edgehog.Devices
 
   @impl Ash.Resource.Change
-  def change(changeset, _opts, _context) do
-    Ash.Changeset.after_action(changeset, fn _changeset, deployment ->
-      with :ok <- Containers.send_deploy_request(deployment) do
-        {:ok, deployment}
+  @spec change(Ash.Changeset.t(), any(), %{:tenant => any(), optional(any()) => any()}) ::
+          Ash.Changeset.t()
+  def change(changeset, _opts, context) do
+    %{tenant: tenant} = context
+    image = Ash.Changeset.get_argument(changeset, :image)
+    device = Ash.Changeset.get_argument(changeset, :device)
+
+    Ash.Changeset.after_action(changeset, fn _changeset, image_deployment ->
+      with {:ok, _device} <- Devices.send_create_image_request(device, image, tenant: tenant) do
+        Containers.mark_image_deployment_as_sent(image_deployment)
       end
     end)
   end

@@ -27,8 +27,6 @@ defmodule Edgehog.ContainersFixtures do
   alias Edgehog.Astarte.Device.AvailableContainersMock
   alias Edgehog.Astarte.Device.AvailableDeployments.DeploymentStatus
   alias Edgehog.Astarte.Device.AvailableDeploymentsMock
-  alias Edgehog.Astarte.Device.AvailableImages.ImageStatus
-  alias Edgehog.Astarte.Device.AvailableImagesMock
   alias Edgehog.Astarte.Device.AvailableNetworks.NetworkStatus
   alias Edgehog.Astarte.Device.AvailableNetworksMock
   alias Edgehog.AstarteFixtures
@@ -219,6 +217,40 @@ defmodule Edgehog.ContainersFixtures do
     Ash.create!(Deployment, params, tenant: tenant)
   end
 
+  @doc """
+  Generates an %Image.Deployment{}
+  """
+  def image_deployment_fixture(opts \\ []) do
+    {tenant, opts} = Keyword.pop!(opts, :tenant)
+
+    {realm_id, opts} =
+      case opts[:device_id] do
+        nil ->
+          Keyword.pop_lazy(opts, :realm_id, fn ->
+            AstarteFixtures.realm_fixture(tenant: tenant).id
+          end)
+
+        _ ->
+          {nil, Keyword.delete(opts, :realm_id)}
+      end
+
+    {device_id, opts} =
+      Keyword.pop_lazy(opts, :device_id, fn ->
+        Edgehog.DevicesFixtures.device_fixture(realm_id: realm_id, tenant: tenant).id
+      end)
+
+    {image_id, opts} =
+      Keyword.pop_lazy(opts, :image_id, fn -> image_fixture(tenant: tenant).id end)
+
+    params =
+      Enum.into(opts, %{
+        device_id: device_id,
+        image_id: image_id
+      })
+
+    Ash.create!(Image.Deployment, params, tenant: tenant)
+  end
+
   def set_resource_expectations(deployments, new_deployments \\ 1) do
     deployments =
       Enum.map(deployments, &Ash.load!(&1, release: [containers: [:image, :networks]]))
@@ -231,11 +263,6 @@ defmodule Edgehog.ContainersFixtures do
 
     available_containers = Enum.map(containers, &%ContainerStatus{id: &1.id, status: "Created"})
 
-    available_images =
-      containers
-      |> Enum.map(&%ImageStatus{id: &1.image_id, pulled: false})
-      |> Enum.uniq()
-
     available_networks =
       containers
       |> Enum.flat_map(& &1.networks)
@@ -244,8 +271,6 @@ defmodule Edgehog.ContainersFixtures do
 
     available_deployments =
       Enum.map(deployments, &%DeploymentStatus{id: &1.id, status: :stopped})
-
-    Mox.expect(AvailableImagesMock, :get, new_deployments, fn _, _ -> {:ok, available_images} end)
 
     Mox.expect(AvailableNetworksMock, :get, new_deployments, fn _, _ ->
       {:ok, available_networks}

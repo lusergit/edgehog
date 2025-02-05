@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2024 SECO Mind Srl
+# Copyright 2024 - 2025 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,22 +22,26 @@ defmodule Edgehog.Containers.Deployment.Changes.CheckImages do
   @moduledoc false
   use Ash.Resource.Change
 
+  alias Edgehog.Containers
+
   @impl Ash.Resource.Change
-  def change(changeset, _opts, _context) do
+  def change(changeset, _opts, context) do
     deployment = changeset.data
+    %{tenant: tenant} = context
 
     with :sent <- deployment.status,
          {:ok, deployment} <-
-           Ash.load(deployment, device: :available_images, release: [containers: [:image]]) do
-      available_images_ids =
-        Enum.map(deployment.device.available_images, & &1.id)
+           Ash.load(deployment, device: [], release: [containers: [:image]]) do
+      device = deployment.device
 
-      missing_images =
+      images_ready? =
         deployment.release.containers
-        |> Enum.map(& &1.image.id)
-        |> Enum.reject(&(&1 in available_images_ids))
+        |> Enum.map(& &1.image)
+        |> Enum.uniq_by(& &1.id)
+        |> Enum.map(&Containers.fetch_image_deployment!(&1.id, device.id, tenant: tenant, load: [:ready?]))
+        |> Enum.all?(& &1.ready?)
 
-      if missing_images == [] do
+      if images_ready? do
         Ash.Changeset.change_attribute(changeset, :status, :created_images)
       else
         changeset
