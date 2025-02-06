@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2021-2024 SECO Mind Srl
+# Copyright 2021 - 2025 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -561,6 +561,13 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
 
       [container] = release.containers
 
+      container_deployment_fixture(
+        container_id: container.id,
+        device_id: device.id,
+        tenant: tenant,
+        state: :received
+      )
+
       deployment =
         deployment_fixture(
           tenant: tenant,
@@ -603,6 +610,13 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
 
       [container] = release.containers
 
+      container_deployment_fixture(
+        container_id: container.id,
+        device_id: device.id,
+        tenant: tenant,
+        state: :sent
+      )
+
       deployment =
         [tenant: tenant, device_id: device.id, release_id: release.id]
         |> deployment_fixture()
@@ -637,13 +651,24 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
       %{conn: conn, realm: realm, device: device, tenant: tenant} = context
 
       release =
-        release_fixture(containers: 1, tenant: tenant)
+        [containers: 1, tenant: tenant]
+        |> release_fixture()
+        |> Ash.load!(:containers, tenant: tenant)
+
+      [container] = release.containers
 
       deployment =
         [tenant: tenant, device_id: device.id, release_id: release.id]
         |> deployment_fixture()
         |> Ash.Changeset.for_update(:set_status, %{status: :sent}, tenant: tenant)
         |> Ash.update!()
+
+      container_deployment_fixture(
+        container_id: container.id,
+        device_id: device.id,
+        tenant: tenant,
+        state: :device_created
+      )
 
       deployment_event = %{
         device_id: device.device_id,
