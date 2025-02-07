@@ -42,15 +42,6 @@ defmodule Edgehog.Triggers.Handler.ManualActions.HandleTrigger do
   @ota_response "io.edgehog.devicemanager.OTAResponse"
   @system_info "io.edgehog.devicemanager.SystemInfo"
 
-  @initial_statuses [
-    :created,
-    :sent,
-    :created_images,
-    :created_networks,
-    :created_containers,
-    :created_deployment
-  ]
-
   @impl Ash.Resource.Actions.Implementation
   def run(input, _opts, _context) do
     realm_name = input.arguments.realm_name
@@ -203,28 +194,24 @@ defmodule Edgehog.Triggers.Handler.ManualActions.HandleTrigger do
     "/" <> deployment_id = event.path
 
     %{
-      "status" => status,
+      "status" => state,
       "message" => message
     } = event.value
 
     with {:ok, deployment} <- Containers.fetch_deployment(deployment_id, tenant: tenant) do
-      case {deployment.status, status} do
-        {:started, "Starting"} ->
-          # Skip Starting if already Started
-          {:ok, deployment}
+      case state do
+        "Starting" ->
+          deployment
+          |> Containers.mark_deployment_as_starting!(tenant: tenant)
+          |> Containers.deployment_update_status(tenant: tenant)
 
-        {:stopped, "Stopping"} ->
-          # Skip Stopping if already Stopped
-          {:ok, deployment}
+        "Stopping" ->
+          deployment
+          |> Containers.mark_deployment_as_stopping!(tenant: tenant)
+          |> Containers.deployment_update_status(tenant: tenant)
 
-        {_, "Error"} ->
-          # Errors have precedence
-          Containers.deployment_set_status(deployment, status, message, tenant: tenant)
-
-        _ ->
-          if deployment.status in @initial_statuses,
-            do: Containers.deployment_update_status(deployment, tenant: tenant),
-            else: Containers.deployment_set_status(deployment, status, message, tenant: tenant)
+        "Error" ->
+          Containers.mark_deployment_as_errored(deployment, message, tenant: tenant)
       end
     end
   end
@@ -232,18 +219,20 @@ defmodule Edgehog.Triggers.Handler.ManualActions.HandleTrigger do
   defp handle_event(%IncomingData{interface: @available_deployments} = event, tenant, _realm_id, _device_id, _timestamp) do
     case String.split(event.path, "/") do
       ["", deployment_id, "status"] ->
-        status = event.value
+        state = event.value
 
         with {:ok, deployment} <- Containers.fetch_deployment(deployment_id, tenant: tenant) do
-          cond do
-            status == nil ->
+          case state do
+            nil ->
               Containers.delete_deployment(deployment)
 
-            deployment.status in @initial_statuses ->
+            "Started" ->
+              Containers.mark_deployment_as_started(deployment, tenant: tenant)
               Containers.deployment_update_status(deployment, tenant: tenant)
 
-            true ->
-              Containers.deployment_set_status(deployment, status, deployment.message, tenant: tenant)
+            "Stopped" ->
+              Containers.mark_deployment_as_stopped(deployment, tenant: tenant)
+              Containers.deployment_update_status(deployment, tenant: tenant)
           end
         end
 

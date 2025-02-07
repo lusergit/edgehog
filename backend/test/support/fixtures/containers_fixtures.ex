@@ -25,8 +25,6 @@ defmodule Edgehog.ContainersFixtures do
   """
   alias Edgehog.Astarte.Device.AvailableContainers.ContainerStatus
   alias Edgehog.Astarte.Device.AvailableContainersMock
-  alias Edgehog.Astarte.Device.AvailableDeployments.DeploymentStatus
-  alias Edgehog.Astarte.Device.AvailableDeploymentsMock
   alias Edgehog.Astarte.Device.AvailableImages.ImageStatus
   alias Edgehog.Astarte.Device.AvailableImagesMock
   alias Edgehog.AstarteFixtures
@@ -265,17 +263,10 @@ defmodule Edgehog.ContainersFixtures do
       |> Enum.map(&%ImageStatus{id: &1.image_id, pulled: false})
       |> Enum.uniq()
 
-    available_deployments =
-      Enum.map(deployments, &%DeploymentStatus{id: &1.id, status: :stopped})
-
     Mox.expect(AvailableImagesMock, :get, new_deployments, fn _, _ -> {:ok, available_images} end)
 
     Mox.expect(AvailableContainersMock, :get, new_deployments, fn _, _ ->
       {:ok, available_containers}
-    end)
-
-    Mox.expect(AvailableDeploymentsMock, :get, new_deployments, fn _, _ ->
-      {:ok, available_deployments}
     end)
   end
 end

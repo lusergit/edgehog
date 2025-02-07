@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2024 - 2025 SECO Mind Srl
+# Copyright 2025 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,30 +18,17 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-defmodule Edgehog.Containers.Deployment.Changes.CheckContainers do
+defmodule Edgehog.Containers.Deployment.Changes.MarkAsStarting do
   @moduledoc false
+
   use Ash.Resource.Change
 
   @impl Ash.Resource.Change
   def change(changeset, _opts, _context) do
     deployment = changeset.data
 
-    with {:ok, :created_networks} <-
-           Ash.Changeset.fetch_argument_or_change(changeset, :resources_state),
-         {:ok, deployment} <-
-           Ash.load(deployment, device: :available_containers, release: [:containers]) do
-      available_container_ids = Enum.map(deployment.device.available_containers, & &1.id)
-
-      missing_containers =
-        Enum.reject(deployment.release.containers, &(&1.id in available_container_ids))
-
-      if missing_containers == [] do
-        Ash.Changeset.change_attribute(changeset, :resources_state, :created_containers)
-      else
-        changeset
-      end
-    else
-      _ -> changeset
-    end
+    if deployment.state == :started,
+      do: changeset,
+      else: Ash.Changeset.force_change_attribute(changeset, :state, :starting)
   end
 end

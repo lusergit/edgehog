@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2024 SECO Mind Srl
+# Copyright 2024 - 2025 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,7 +83,11 @@ defmodule EdgehogWeb.Schema.Mutation.SendDeploymentUpgradeTest do
 
       {:ok, %{id: deployment_id}} = AshGraphql.Resource.decode_relay_id(result["id"])
 
-      deployment = Ash.get!(Deployment, deployment_id, tenant: tenant)
+      deployment =
+        Deployment
+        |> Ash.get!(deployment_id, tenant: tenant)
+        |> Containers.mark_deployment_as_stopped!(tenant: tenant)
+
       set_resource_expectations([deployment_0_0_1, deployment])
 
       Containers.deployment_update_status!(deployment)
