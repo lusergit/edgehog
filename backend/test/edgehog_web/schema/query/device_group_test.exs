@@ -72,7 +72,11 @@ defmodule EdgehogWeb.Schema.Query.DeviceGroupTest do
       query ($id: ID!) {
         deviceGroup(id: $id) {
           devices {
-            id
+            edges {
+              node {
+                id
+              }
+            }
           }
         }
       }

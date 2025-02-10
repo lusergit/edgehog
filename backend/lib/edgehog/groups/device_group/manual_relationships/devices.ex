@@ -21,6 +21,7 @@
 defmodule Edgehog.Groups.DeviceGroup.ManualRelationships.Devices do
   @moduledoc false
   use Ash.Resource.ManualRelationship
+  use AshPostgres.ManualRelationship
 
   alias Ash.Resource.ManualRelationship
   alias Edgehog.Selector
@@ -47,5 +48,11 @@ defmodule Edgehog.Groups.DeviceGroup.ManualRelationships.Devices do
       end)
 
     {:ok, group_id_to_devices}
+  end
+
+  @impl AshPostgres.ManualRelationship
+  def ash_postgres_subquery(_opts, current_binding, as_binding, destination_query) do
+    dbg(destination_query)
+    # Ecto.Query.from(_ in destination_query)
   end
 end

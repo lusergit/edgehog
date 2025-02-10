@@ -79,7 +79,11 @@ defmodule EdgehogWeb.Schema.Mutation.CreateDeviceGroupTest do
           handle
           selector
           devices {
-            id
+            edges {
+              node {
+                id
+              }
+            }
           }
         }
       }
