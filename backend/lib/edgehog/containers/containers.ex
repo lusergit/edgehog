@@ -150,7 +150,9 @@ defmodule Edgehog.Containers do
         args: [:container_id]
     end
 
-    resource Edgehog.Containers.Network
+    resource Edgehog.Containers.Network do
+      define :fetch_network, action: :read, get_by: [:id]
+    end
 
     resource Edgehog.Containers.Network.Deployment do
       define :deploy_network, action: :deploy, args: [:network, :device]
@@ -161,7 +163,9 @@ defmodule Edgehog.Containers do
       define :mark_network_deployment_as_errored, action: :mark_as_errored, args: [:message]
     end
 
-    resource Edgehog.Containers.Volume
+    resource Edgehog.Containers.Volume do
+      define :fetch_volume, action: :read, get_by: [:id]
+    end
 
     resource Edgehog.Containers.Volume.Deployment do
       define :deploy_volume, action: :deploy, args: [:volume, :device]
