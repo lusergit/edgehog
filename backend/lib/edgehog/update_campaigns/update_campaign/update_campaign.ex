@@ -172,7 +172,7 @@ defmodule Edgehog.UpdateCampaigns.UpdateCampaign do
       allow_nil? false
     end
 
-    belongs_to :update_channel, Edgehog.UpdateCampaigns.UpdateChannel do
+    belongs_to :update_channel, Edgehog.Campaigns.Channel do
       description "The update channel targeted by the update campaign."
       public? true
       attribute_public? false

@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2023-2025 SECO Mind Srl
+# Copyright 2025 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,29 +18,29 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-defmodule Edgehog.UpdateCampaigns.UpdateChannel do
+defmodule Edgehog.Campaigns.Channel do
   @moduledoc false
   use Edgehog.MultitenantResource,
-    domain: Edgehog.UpdateCampaigns,
+    domain: Edgehog.Campaigns,
     extensions: [
       AshGraphql.Resource
     ]
 
-  alias Edgehog.UpdateCampaigns.UpdateChannel.Calculations
-  alias Edgehog.UpdateCampaigns.UpdateChannel.Changes
-  alias Edgehog.UpdateCampaigns.UpdateChannel.ErrorHandler
+  alias Edgehog.Campaigns.Channel.Calculations
+  alias Edgehog.Campaigns.Channel.Changes
+  alias Edgehog.Campaigns.Channel.ErrorHandler
 
   resource do
     description """
-    Represents an UpdateChannel.
+    Represents an Channel.
 
-    An UpdateChannel represents a set of device groups that can be targeted in \
-    an UpdateCampaign.
+    An Channel represents a set of device groups that can be targeted in \
+    an Campaign.
     """
   end
 
   graphql do
-    type :update_channel
+    type :channel
 
     error_handler {ErrorHandler, :handle_error, []}
 
@@ -68,7 +68,7 @@ defmodule Edgehog.UpdateCampaigns.UpdateChannel do
     end
 
     update :update do
-      description "Updates an update channel."
+      description "s an update channel."
       primary? true
 
       accept [:name, :handle]
@@ -154,7 +154,7 @@ defmodule Edgehog.UpdateCampaigns.UpdateChannel do
     # This is needed to ensure foreign key references are applied when deleting
     # base images so we can render a nice looking error instead of crashing, see
     # https://github.com/ash-project/ash_postgres/blob/0ccb35a713b9097c4aac6fde996dbb4d1c00cccb/lib/data_layer.ex#L2370
-    has_many :update_campaigns, Edgehog.UpdateCampaigns.UpdateCampaign
+    has_many :update_campaigns, Edgehog.Campaigns.Campaign
   end
 
   calculations do
@@ -186,7 +186,7 @@ defmodule Edgehog.UpdateCampaigns.UpdateChannel do
   end
 
   postgres do
-    table "update_channels"
+    table "channels"
     repo Edgehog.Repo
   end
 end

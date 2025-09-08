@@ -18,7 +18,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-defmodule Edgehog.Groups.DeviceGroup.Validations.UpdateChannelAbsent do
+defmodule Edgehog.Groups.DeviceGroup.Validations.ChannelAbsent do
   @moduledoc false
   use Ash.Resource.Validation
 
@@ -29,8 +29,8 @@ defmodule Edgehog.Groups.DeviceGroup.Validations.UpdateChannelAbsent do
     if device_group.update_channel_id do
       {:error,
        field: :update_channel_id,
-       message: "The update channel is already set for the device group \"#{device_group.name}\"",
-       short_message: "Update channel already set"}
+       message: "The Channel is already set for the device group \"#{device_group.name}\"",
+       short_message: "Channel already set"}
     else
       :ok
     end
