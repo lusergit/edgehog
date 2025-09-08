@@ -32,14 +32,14 @@ defmodule Edgehog.UpdateCampaignsFixtures do
   require Ash.Query
 
   @doc """
-  Generate a unique update_channel handle.
+  Generate a unique channel handle.
   """
-  def unique_update_channel_handle, do: "some-handle#{System.unique_integer([:positive])}"
+  def unique_channel_handle, do: "some-handle#{System.unique_integer([:positive])}"
 
   @doc """
-  Generate a unique update_channel name.
+  Generate a unique channel name.
   """
-  def unique_update_channel_name, do: "some name#{System.unique_integer([:positive])}"
+  def unique_channel_name, do: "some name#{System.unique_integer([:positive])}"
 
   @doc """
   Generate a unique update_campaign name.
@@ -47,9 +47,9 @@ defmodule Edgehog.UpdateCampaignsFixtures do
   def unique_update_campaign_name, do: "some name#{System.unique_integer([:positive])}"
 
   @doc """
-  Generate a update_channel.
+  Generate a channel.
   """
-  def update_channel_fixture(opts \\ []) do
+  def channel_fixture(opts \\ []) do
     {tenant, opts} = Keyword.pop!(opts, :tenant)
 
     {target_group_ids, opts} =
@@ -60,12 +60,12 @@ defmodule Edgehog.UpdateCampaignsFixtures do
 
     params =
       Enum.into(opts, %{
-        handle: unique_update_channel_handle(),
-        name: unique_update_channel_name(),
+        handle: unique_channel_handle(),
+        name: unique_channel_name(),
         target_group_ids: target_group_ids
       })
 
-    Edgehog.UpdateCampaigns.UpdateChannel
+    Edgehog.Campaigns.Channel
     |> Ash.Changeset.for_create(:create, params, tenant: tenant)
     |> Ash.create!()
   end
@@ -73,9 +73,9 @@ defmodule Edgehog.UpdateCampaignsFixtures do
   def update_campaign_fixture(opts \\ []) do
     {tenant, opts} = Keyword.pop!(opts, :tenant)
 
-    {update_channel_id, opts} =
-      Keyword.pop_lazy(opts, :update_channel_id, fn ->
-        [tenant: tenant] |> update_channel_fixture() |> Map.fetch!(:id)
+    {channel_id, opts} =
+      Keyword.pop_lazy(opts, :channel_id, fn ->
+        [tenant: tenant] |> channel_fixture() |> Map.fetch!(:id)
       end)
 
     {base_image_id, opts} =
@@ -97,7 +97,7 @@ defmodule Edgehog.UpdateCampaignsFixtures do
         name: unique_update_campaign_name(),
         rollout_mechanism: rollout_mechanism_opts,
         base_image_id: base_image_id,
-        update_channel_id: update_channel_id
+        channel_id: channel_id
       })
 
     Edgehog.UpdateCampaigns.UpdateCampaign
@@ -119,7 +119,7 @@ defmodule Edgehog.UpdateCampaignsFixtures do
     tag = "foo"
     group = GroupsFixtures.device_group_fixture(selector: ~s<"#{tag}" in tags>, tenant: tenant)
 
-    update_channel = update_channel_fixture(target_group_ids: [group.id], tenant: tenant)
+    channel = channel_fixture(target_group_ids: [group.id], tenant: tenant)
 
     for _ <- 1..target_count do
       # Create devices as online by default
@@ -132,7 +132,7 @@ defmodule Edgehog.UpdateCampaignsFixtures do
     opts
     |> Keyword.merge(
       base_image_id: base_image_id,
-      update_channel_id: update_channel.id,
+      channel_id: channel.id,
       tenant: tenant
     )
     |> update_campaign_fixture()
@@ -158,10 +158,10 @@ defmodule Edgehog.UpdateCampaignsFixtures do
         |> Map.fetch!(:id)
       end)
 
-    {update_channel_id, opts} =
-      Keyword.pop_lazy(opts, :update_channel_id, fn ->
+    {channel_id, opts} =
+      Keyword.pop_lazy(opts, :channel_id, fn ->
         [target_group_ids: [group_id], tenant: tenant]
-        |> update_channel_fixture()
+        |> channel_fixture()
         |> Map.fetch!(:id)
       end)
 
@@ -174,7 +174,7 @@ defmodule Edgehog.UpdateCampaignsFixtures do
     update_campaign =
       update_campaign_fixture(
         base_image_id: base_image_id,
-        update_channel_id: update_channel_id,
+        channel_id: channel_id,
         tenant: tenant
       )
 

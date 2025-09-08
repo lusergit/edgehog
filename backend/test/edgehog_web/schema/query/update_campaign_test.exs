@@ -31,7 +31,7 @@ defmodule EdgehogWeb.Schema.Query.UpdateCampaignTest do
   describe "updateCampaign query" do
     setup %{tenant: tenant} do
       target_group = device_group_fixture(selector: ~s<"foobar" in tags>, tenant: tenant)
-      update_channel = update_channel_fixture(target_group_ids: [target_group.id], tenant: tenant)
+      channel = channel_fixture(target_group_ids: [target_group.id], tenant: tenant)
       base_image = base_image_fixture(tenant: tenant)
 
       device =
@@ -40,7 +40,7 @@ defmodule EdgehogWeb.Schema.Query.UpdateCampaignTest do
         |> add_tags(["foobar"])
 
       context = %{
-        update_channel: update_channel,
+        channel: channel,
         base_image: base_image,
         device: device
       }
@@ -50,7 +50,7 @@ defmodule EdgehogWeb.Schema.Query.UpdateCampaignTest do
 
     test "returns update campaign if present", ctx do
       %{
-        update_channel: update_channel,
+        channel: channel,
         base_image: base_image,
         device: device,
         tenant: tenant
@@ -59,7 +59,7 @@ defmodule EdgehogWeb.Schema.Query.UpdateCampaignTest do
       update_campaign =
         update_campaign_fixture(
           base_image_id: base_image.id,
-          update_channel_id: update_channel.id,
+          channel_id: channel.id,
           tenant: tenant
         )
 
@@ -73,8 +73,8 @@ defmodule EdgehogWeb.Schema.Query.UpdateCampaignTest do
       assert update_campaign_data["outcome"] == nil
       assert update_campaign_data["baseImage"]["version"] == base_image.version
       assert update_campaign_data["baseImage"]["url"] == base_image.url
-      assert update_campaign_data["updateChannel"]["name"] == update_channel.name
-      assert update_campaign_data["updateChannel"]["handle"] == update_channel.handle
+      assert update_campaign_data["channel"]["name"] == channel.name
+      assert update_campaign_data["channel"]["handle"] == channel.handle
       assert response_rollout_mechanism = update_campaign_data["rolloutMechanism"]
 
       assert response_rollout_mechanism["maxFailurePercentage"] ==
@@ -263,7 +263,7 @@ defmodule EdgehogWeb.Schema.Query.UpdateCampaignTest do
           version
           url
         }
-        updateChannel {
+        channel {
           name
           handle
         }
