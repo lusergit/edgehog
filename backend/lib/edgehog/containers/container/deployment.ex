@@ -67,6 +67,7 @@ defmodule Edgehog.Containers.Container.Deployment do
       change set_attribute(:state, :created)
       change manage_relationship(:container, type: :append)
       change manage_relationship(:device, type: :append)
+      change Changes.Relate
       change Changes.DeployContainerOnDevice
     end
 
@@ -124,7 +125,7 @@ defmodule Edgehog.Containers.Container.Deployment do
       public? true
     end
 
-    many_to_many :deployment, Edgehog.Containers.Deployment do
+    many_to_many :deployments, Edgehog.Containers.Deployment do
       through Edgehog.Containers.DeploymentContainerDeployment
     end
 

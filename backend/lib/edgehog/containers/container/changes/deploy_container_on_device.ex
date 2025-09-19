@@ -29,22 +29,20 @@ defmodule Edgehog.Containers.Container.Changes.DeployContainerOnDevice do
 
   @impl Ash.Resource.Change
   def change(changeset, _opts, %{tenant: tenant}) do
-    device = Ash.Changeset.get_argument(changeset, :device)
-    container = Ash.Changeset.get_argument(changeset, :container)
-    deployment = Ash.Changeset.get_argument(changeset, :deployment)
+    deployment = changeset.data |> Ash.load!([:device, :container], tenant: tenant)
+    device = deployment.device
+    container = deployment.container
 
-    Ash.Changeset.after_transaction(changeset, fn _changeset, {:ok, container_deployment} ->
+    Ash.Changeset.after_action(changeset, fn changeset, deployment ->
       case Devices.send_create_container_request(device, container, deployment) do
-        {:ok, _device} ->
-          Containers.mark_container_deployment_as_sent(container_deployment)
-
-        # TODO: instead of destroying the container deployment, we should retry
-        # sending the request after a delay.
+        {:ok, _device} -> Ash.Changeset.for_update(changeset, :mark_as_sent, tenant: tenant)
         {:error, reason} ->
           Logger.warning("Failed to send container deployment request: #{inspect(reason)}")
-          :ok = Containers.destroy_container_deployment(container_deployment, tenant: tenant)
-          {:error, reason}
+          Ash.Changeset.add_error(changeset, send_error(reason))
       end
     end)
   end
+
+  # TODO: provvisory, make something that makes sense here
+  defp send_error(reason), do: %Edgehog.Error.AstarteAPIError{status: 500, response: reason}
 end

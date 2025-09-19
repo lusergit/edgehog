@@ -25,6 +25,7 @@ defmodule Edgehog.Containers do
 
   alias Edgehog.Containers.Application
   alias Edgehog.Containers.Deployment
+  alias Edgehog.Containers.DeploymentContainerDeployment
   alias Edgehog.Containers.DeploymentReadyAction
   alias Edgehog.Containers.DeploymentReadyAction.Upgrade
   alias Edgehog.Containers.ImageCredentials
@@ -301,7 +302,7 @@ defmodule Edgehog.Containers do
 
     resource Edgehog.Containers.ContainerDeploymentDeviceMappingDeployment
 
-    resource Edgehog.Containers.DeploymentContainerDeployment
+    resource DeploymentContainerDeployment
 
     resource DeploymentReadyAction
     resource Upgrade
@@ -323,5 +324,6 @@ defmodule Edgehog.Containers do
     end
 
     resource Upgrade
+    resource DeploymentContainerDeployment
   end
 end

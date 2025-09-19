@@ -28,6 +28,7 @@ defmodule Edgehog.Containers.Deployment do
   alias Edgehog.Containers.Deployment.Changes
   alias Edgehog.Containers.Deployment.Types.DeploymentState
   alias Edgehog.Containers.Deployment.Types.ResourcesState
+  alias Edgehog.Containers.Deployment.Validations
   alias Edgehog.Containers.ManualActions
   alias Edgehog.Containers.Release
   alias Edgehog.Containers.Validations.IsUpgrade
@@ -56,9 +57,10 @@ defmodule Edgehog.Containers.Deployment do
         allow_nil? false
       end
 
-      change manage_relationship(:device_id, :device, type: :append)
+      validate Validations.DeviceIsCompatible
 
-      change Changes.CreateDeploymentOnDevice
+      change manage_relationship(:device_id, :device, type: :append)
+      change Changes.Relate
       change {PublishNotification, event_type: :deployment_created}
     end
 
