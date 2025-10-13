@@ -24,6 +24,13 @@ import Form from "react-bootstrap/Form";
 import InputGroup from "react-bootstrap/InputGroup";
 
 import Icon from "components/Icon";
+import { IconArrowRight, IconSearch } from "@tabler/icons-react";
+import {
+  ActionIcon,
+  TextInput,
+  TextInputProps,
+  useMantineTheme,
+} from "@mantine/core";
 
 interface Props {
   className?: string;
@@ -31,6 +38,7 @@ interface Props {
 }
 
 const SearchBox = ({ className = "", onChange }: Props) => {
+  const theme = useMantineTheme();
   const intl = useIntl();
 
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(
@@ -42,23 +50,28 @@ const SearchBox = ({ className = "", onChange }: Props) => {
   );
 
   return (
-    <Form className={`justify-content-end ${className}`}>
-      <InputGroup>
-        <Form.Control
-          className="border-end-0"
-          type="search"
-          placeholder={intl.formatMessage({
-            id: "components.SearchBox.searchPlaceholder",
-            defaultMessage: "Search",
-            description: "Placeholder for the search input of the SearchBox",
-          })}
-          onChange={handleChange}
-        />
-        <InputGroup.Text className="bg-transparent">
-          <Icon icon="search" />
-        </InputGroup.Text>
-      </InputGroup>
-    </Form>
+    <TextInput
+      radius="xl"
+      size="md"
+      placeholder={intl.formatMessage({
+        id: "components.SearchBox.searchPlaceholder",
+        defaultMessage: "Search",
+        description: "Placeholder for the search input of the SearchBox",
+      })}
+      rightSectionWidth={42}
+      leftSection={<IconSearch size={18} stroke={1.5} />}
+      rightSection={
+        <ActionIcon
+          size={32}
+          radius="xl"
+          color={theme.primaryColor}
+          variant="filled"
+        >
+          <IconArrowRight size={18} stroke={1.5} />
+        </ActionIcon>
+      }
+      onChange={handleChange}
+    />
   );
 };
 
