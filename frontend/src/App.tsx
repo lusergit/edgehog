@@ -68,6 +68,8 @@ import DeploymentsPage from "pages/Deployments";
 import DeploymentCampaignsPage from "pages/DeploymentCampaigns";
 import DeploymentCampaign from "pages/DeploymentCampaign";
 import DeploymentCampaignCreate from "pages/DeploymentCampaignCreate";
+import "@mantine/core/styles.css";
+import { MantineProvider } from "@mantine/core";
 
 import { bugs, repository, version } from "../package.json";
 
@@ -136,30 +138,34 @@ function App() {
   const RouterElement = useRoutes(routes);
 
   return (
-    <div data-testid="app" className="d-flex vh-100 flex-column">
-      {auth.isAuthenticated && (
-        <header className="flex-grow-0">
-          <Topbar />
-        </header>
-      )}
-      <main className="vh-100 flex-grow-1 d-flex  overflow-hidden">
+    <MantineProvider>
+      <div data-testid="app" className="d-flex vh-100 flex-column">
         {auth.isAuthenticated && (
-          <aside className="flex-grow-0 flex-shrink-0 overflow-auto">
-            <Sidebar />
-          </aside>
+          <header className="flex-grow-0">
+            <Topbar />
+          </header>
         )}
-        <section className="flex-grow-1 overflow-auto">{RouterElement}</section>
-      </main>
-      {auth.isAuthenticated && (
-        <Footer
-          appName={"Edgehog Device Manager"}
-          appVersion={version}
-          homepageUrl={repository.url}
-          repoUrl={repository.url}
-          issueTrackerUrl={bugs.url}
-        />
-      )}
-    </div>
+        <main className="vh-100 flex-grow-1 d-flex  overflow-hidden">
+          {auth.isAuthenticated && (
+            <aside className="flex-grow-0 flex-shrink-0 overflow-auto">
+              <Sidebar />
+            </aside>
+          )}
+          <section className="flex-grow-1 overflow-auto">
+            {RouterElement}
+          </section>
+        </main>
+        {auth.isAuthenticated && (
+          <Footer
+            appName={"Edgehog Device Manager"}
+            appVersion={version}
+            homepageUrl={repository.url}
+            repoUrl={repository.url}
+            issueTrackerUrl={bugs.url}
+          />
+        )}
+      </div>
+    </MantineProvider>
   );
 }
 
