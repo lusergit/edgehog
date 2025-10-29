@@ -91,6 +91,7 @@ defmodule Edgehog.Devices.Device do
       argument :timestamp, :datetime, allow_nil?: false
 
       change Changes.InitializeFromDeviceStatus
+      change Changes.SetupReconciler
 
       # Only if created
       change set_attribute(:device_id, arg(:device_id))
