@@ -1,0 +1,27 @@
+{
+  "bump-minor-pre-major": true,
+  // TODO: remove once the flow is enstablished and PRs can be opened autonomously by the bot
+  "draft": true,
+  "packages": {
+    "backend": {
+      "package-name": "edgehog-backend",
+      "release-type": "elixir",
+      "group": "global-release",
+      "component": "backend"
+    },
+    "frontend": {
+      "package-name": "edgehog-frontend",
+      "release-type": "node",
+      "group": "global-release",
+      "component": "frontend"
+    }
+  },
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "global-release",
+      "components": ["backend", "frontend"]
+    }
+  ],
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}
