@@ -1,25 +1,24 @@
 {
   "bump-minor-pre-major": true,
-  // TODO: remove once the flow is enstablished and PRs can be opened autonomously by the bot
-  "draft": true,
   "packages": {
     "backend": {
-      "package-name": "edgehog-backend",
+      "package-name": "backend",
       "release-type": "elixir",
-      "group": "global-release",
-      "component": "backend"
+      "component": "backend",
+      "include-component-in-tag": false
     },
     "frontend": {
-      "package-name": "edgehog-frontend",
+      "package-name": "frontend",
       "release-type": "node",
-      "group": "global-release",
-      "component": "frontend"
+      "component": "frontend",
+      "include-component-in-tag": false
     }
   },
   "plugins": [
     {
       "type": "linked-versions",
-      "groupName": "global-release",
+      "groupName": "edgehog",
+      "tagName": "v${version}",
       "components": ["backend", "frontend"]
     }
   ],
