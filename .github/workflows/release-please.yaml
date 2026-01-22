@@ -39,3 +39,4 @@ jobs:
           release-type: simple
           config-file: .github/release-please/config.json
           manifest-file: .github/release-please/manifest.json
+          target-branch: main-alt-tmp
