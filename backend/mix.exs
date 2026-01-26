@@ -150,7 +150,8 @@ defmodule Edgehog.MixProject do
       # Do not upgrade this dependency unless the underlying block size behavior is verified and updated.
       {:nimble_lz4, "1.1.0"},
       {:grpc, "~> 0.11"},
-      {:libcluster, "~> 3.5"}
+      {:libcluster, "~> 3.5"},
+      {:horde, "~> 0.10"}
     ]
   end
 
