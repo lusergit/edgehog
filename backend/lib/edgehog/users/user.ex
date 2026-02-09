@@ -25,16 +25,54 @@ defmodule Edgehog.Users.User do
   An edgehog user is not managed internally, instead, edgehog relies on external
   services implementing OpenID Connect to authenticate and authorize users.
   """
+
   use Edgehog.MultitenantResource,
-    domain: Edgehog.Users
+    domain: Edgehog.Users,
+    extensions: [AshAuthentication]
+
+  alias Users.Authentication.Config
+
+  authentication do
+    strategies do
+      oidc :keycloak do
+        client_id(Config)
+        base_url(Config)
+        redirect_uri(Config)
+        client_secret(Users.Authentication.Secrets)
+        registration_enabled?(false)
+      end
+    end
+  end
+
+  actions do
+    defaults [:read, :create, :update, :destroy]
+
+    read :sign_in_with_keycloak do
+      argument :user_info, :map, allow_nil?: false
+      argument :oauth_tokens, :map, allow_nil?: false
+      prepare AshAuthentication.Strategy.OAuth2.SignInPreparation
+
+      filter expr(email == get_path(^arg(:user_info), [:email]))
+    end
+  end
 
   attributes do
     uuid_primary_key :id
 
-    attribute :username, :string do
-      allow_nil? false
-    end
+    attribute :username, :string, allow_nil?: false, public?: true
+    attribute :email, :string
+    attribute :name, :string, public?: true
+    attribute :surname, :string, public?: true
 
     timestamps()
+  end
+
+  identities do
+    identity :tenant_users_email, [:email, :tenant_id]
+  end
+
+  postgres do
+    table "users"
+    repo Edgehog.Repo
   end
 end

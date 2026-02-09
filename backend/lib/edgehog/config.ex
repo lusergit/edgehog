@@ -96,6 +96,34 @@ defmodule Edgehog.Config do
     type: GeocodingProviders,
     default: [GoogleGeocoding]
 
+  @envdoc """
+  The OpenID Connect client id for edgehog.
+  """
+  app_env :oidc_client_id, :edgehog, :oidc_client_id,
+    os_env: "OIDC_CLIENT_ID",
+    type: :binary
+
+  @envdoc """
+  The OpenID Connect client secret for edgehog.
+  """
+  app_env :oidc_secret, :edgehog, :oidc_secret,
+    os_env: "OIDC_SECRET",
+    type: :binary
+
+  @envdoc """
+  The OpenID Connect client redirect url for edgehog.
+  """
+  app_env :oidc_redirect_uri, :edgehog, :oidc_redirect_uri,
+    os_env: "OIDC_REDIRECT_URL",
+    type: :binary
+
+  @envdoc """
+  The OpenID Connect authentication provider base url for edgehog.
+  """
+  app_env :oidc_base_url, :edgehog, :oidc_base_url,
+    os_env: "OIDC_AUTH_SERVER_URL",
+    type: :binary
+
   @doc """
   Returns true if edgehog should use an ssl connection with the database.
   """
