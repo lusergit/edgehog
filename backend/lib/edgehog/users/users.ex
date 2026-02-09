@@ -18,23 +18,16 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-defmodule Edgehog.Users.User do
+defmodule Edgehog.Users do
   @moduledoc """
-  Edgehog Users.
+  Users domain, regulating users of edgehog.
 
-  An edgehog user is not managed internally, instead, edgehog relies on external
-  services implementing OpenID Connect to authenticate and authorize users.
+  Users of edgheog are initialized and managed extenrally trough A keycloak
+  instance, providing OpenID Connect.
   """
-  use Edgehog.MultitenantResource,
-    domain: Edgehog.Users
+  use Ash.Domain
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :username, :string do
-      allow_nil? false
-    end
-
-    timestamps()
+  resources do
+    resource Edgehog.Users.User
   end
 end
