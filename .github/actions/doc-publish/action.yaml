@@ -27,13 +27,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # Upload as an artifact the generated HTML
-    - name: Upload HTML documentation
-      uses: actions/upload-artifact@v6
-      with:
-        name: docs_html
-        path: ${{ inputs.docs }}
-
     # Commit and push changes to the docs repository
     - name: Commit files
       working-directory: ${{ inputs.docs }}
