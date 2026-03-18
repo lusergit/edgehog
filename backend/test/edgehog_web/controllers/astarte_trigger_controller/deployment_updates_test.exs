@@ -907,6 +907,30 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerController.DeploymentUpdatesTest 
 
       assert {:error, _} = Ash.get(Container.Deployment, container_deployment.id, tenant: tenant)
     end
+
+    test "unknown container upserts deployment", context do
+      %{conn: conn, realm: realm, device: device, tenant: tenant} = context
+
+      container = container_fixture(tenant: tenant)
+
+      deployment_event = %{
+        device_id: device.device_id,
+        event: %{
+          type: "incoming_data",
+          interface: "io.edgehog.devicemanager.apps.AvailableContainers",
+          path: "/" <> container.id <> "/status",
+          value: nil
+        },
+        timestamp: DateTime.to_iso8601(DateTime.utc_now())
+      }
+
+      path = Routes.astarte_trigger_path(conn, :process_event, tenant.slug)
+
+      conn
+      |> put_req_header("astarte-realm", realm.name)
+      |> post(path, deployment_event)
+      |> response(200)
+    end
   end
 
   defp set_ready(%Image.Deployment{} = deployment),
