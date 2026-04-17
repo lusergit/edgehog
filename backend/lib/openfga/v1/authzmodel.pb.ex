@@ -299,6 +299,7 @@ defmodule Openfga.V1.Condition do
 end
 
 defmodule Openfga.V1.ConditionMetadata do
+
   use Protobuf,
     full_name: "openfga.v1.ConditionMetadata",
     protoc_gen_elixir_version: "0.16.0",
