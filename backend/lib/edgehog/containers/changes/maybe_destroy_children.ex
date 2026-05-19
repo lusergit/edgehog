@@ -44,7 +44,7 @@ defmodule Edgehog.Containers.Changes.MaybeDestroyChildren do
       |> compute_children(changeset.data)
 
     with {:ok, children} <- children do
-      Ash.Changeset.after_transaction(
+      Ash.Changeset.after_action(
         changeset,
         &maybe_destroy_children(&1, &2, children, tenant)
       )
@@ -62,7 +62,7 @@ defmodule Edgehog.Containers.Changes.MaybeDestroyChildren do
     end
   end
 
-  defp maybe_destroy_children(_changeset, {:ok, resource}, children, tenant) do
+  defp maybe_destroy_children(_changeset, resource, children, tenant) do
     Enum.each(children, fn child ->
       child
       |> Ash.Changeset.for_destroy(:destroy_if_dangling, %{})
@@ -71,6 +71,4 @@ defmodule Edgehog.Containers.Changes.MaybeDestroyChildren do
 
     {:ok, resource}
   end
-
-  defp maybe_destroy_children(_changeset, error, _children, _tenant), do: error
 end

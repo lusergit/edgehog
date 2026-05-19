@@ -28,6 +28,7 @@ defmodule Edgehog.Containers.Deployment do
   alias Edgehog.Containers.Deployment.Calculations
   alias Edgehog.Containers.Deployment.Changes
   alias Edgehog.Containers.Deployment.Types.DeploymentState
+  alias Edgehog.Containers.Deployment.Types.DeploymentContext
   alias Edgehog.Containers.Deployment.Validations
   alias Edgehog.Containers.ManualActions
   alias Edgehog.Containers.Release
@@ -131,8 +132,9 @@ defmodule Edgehog.Containers.Deployment do
       validate {Validations.NoConflictingCampaign, action_type: :deployment_start}
 
       change {Edgehog.Changes.Log, mode: :after_action, message: "Deployment start message sent."}
+      change set_attribute(:context, :start_message_sent)
 
-      manual {ManualActions.SendDeploymentCommand, command: :start}
+      change {Changes.SendCommand, command: :start}
     end
 
     update :stop do
@@ -144,8 +146,9 @@ defmodule Edgehog.Containers.Deployment do
       validate {Validations.NoConflictingCampaign, action_type: :deployment_stop}
 
       change {Edgehog.Changes.Log, mode: :after_action, message: "Deployment stop message sent."}
+      change set_attribute(:context, :stop_message_sent)
 
-      manual {ManualActions.SendDeploymentCommand, command: :stop}
+      change {Changes.SendCommand, command: :stop}
     end
 
     update :delete do
@@ -156,7 +159,12 @@ defmodule Edgehog.Containers.Deployment do
       validate Validations.IsReady
       validate {Validations.NoConflictingCampaign, action_type: :deployment_delete}
 
-      manual {ManualActions.SendDeploymentCommand, command: :delete}
+      change {Edgehog.Changes.Log,
+              mode: :after_action, message: "Deployment delete message sent."}
+
+      change set_attribute(:context, :delete_message_sent)
+
+      change {Changes.SendCommand, command: :delete}
     end
 
     update :run_ready_actions do
@@ -203,7 +211,12 @@ defmodule Edgehog.Containers.Deployment do
       validate SameApplication
       validate IsUpgrade
 
-      manual ManualActions.SendDeploymentUpgrade
+      change {Edgehog.Changes.Log,
+              mode: :after_action, message: "Deployment upgrade message sent."}
+
+      change set_attribute(:context, :upgrade_message_sent)
+
+      change Changes.SendUpgrade
     end
 
     update :mark_as_sent do
@@ -214,22 +227,39 @@ defmodule Edgehog.Containers.Deployment do
 
     update :mark_as_started do
       change set_attribute(:state, :started)
+      change set_attribute(:context, nil)
 
       change {Edgehog.Changes.Log,
-              mode: :after_transaction,
-              message_success: "Deployment started successfully.",
-              message_fail: "Deployment could not start."}
+              mode: :after_saction, message: "Deployment successfully provisioned."} do
+        where [data_one_of(:state, [:pending, :sent])]
+      end
+
+      change {Edgehog.Changes.Log,
+              mode: :after_action, message: "Deployment successfully started."} do
+        where [data_one_of(:context, [:start_message_sent])]
+      end
 
       require_atomic? false
     end
 
     update :mark_as_stopped do
       change set_attribute(:state, :stopped)
+      change set_attribute(:context, nil)
 
       change {Edgehog.Changes.Log,
-              mode: :after_transaction,
-              message_success: "Deployment stopped successfully.",
-              message_fail: "Deployment could not stop."}
+              mode: :after_action, message: "Deployment successfully provisioned."} do
+        where [data_one_of(:state, [:pending, :sent])]
+      end
+
+      change {Edgehog.Changes.Log,
+              mode: :after_action, message: "Deployment successfully stopped."} do
+        where [data_one_of(:context, [:stop_message_sent])]
+      end
+
+      change {Edgehog.Changes.Log,
+              mode: :after_action, message: "Deployment successfully upgraded."} do
+        where [data_one_of(:context, [:upgrade_message_sent])]
+      end
 
       require_atomic? false
     end
@@ -245,6 +275,36 @@ defmodule Edgehog.Containers.Deployment do
 
       argument :event, :map do
         allow_nil? false
+      end
+
+      change {Edgehog.Changes.Log,
+              mode: :after_action, message: "Deployment could not be started."} do
+        where [
+          data_one_of(:context, [:start_message_sent]),
+          {Validations.EventValue, target: "Error"}
+        ]
+      end
+
+      change {Edgehog.Changes.Log,
+              mode: :after_action, message: "Deployment could not be stopped."} do
+        where [
+          data_one_of(:context, [:stop_message_sent]),
+          {Validations.EventValue, target: "Error"}
+        ]
+      end
+
+      change {Edgehog.Changes.Log, mode: :after_action, message: "Deployment upgrade failed."} do
+        where [
+          data_one_of(:context, [:upgrade_message_sent]),
+          {Validations.EventValue, target: "Error"}
+        ]
+      end
+
+      change {Edgehog.Changes.Log, mode: :after_action, message: "Deployment provision failed."} do
+        where [
+          data_one_of(:state, [:pending, :sent]),
+          {Validations.EventValue, target: "Error"}
+        ]
       end
 
       change Changes.AppendEvent
@@ -281,6 +341,10 @@ defmodule Edgehog.Containers.Deployment do
     attribute :state, DeploymentState do
       default :pending
       public? true
+    end
+
+    attribute :context, DeploymentContext do
+      default nil
     end
 
     attribute :timed_out, :boolean do
@@ -342,11 +406,14 @@ defmodule Edgehog.Containers.Deployment do
   end
 
   changes do
+    change {Edgehog.Changes.Log, mode: :after_action, message: "Deployment provision started."},
+      on: :create
+
     change {Edgehog.Changes.Log,
             mode: :after_transaction,
-            message_success: "Deployment created successfully.",
-            message_fail: "Deployment creation failed."},
-           on: :create
+            message_success: "Deployment deleted successfully.",
+            message_fail: "Deployment deletion failed."},
+           on: :destroy
   end
 
   pub_sub do

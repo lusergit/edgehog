@@ -27,9 +27,8 @@ defmodule Edgehog.Containers.Deployment.Changes.MaybeHandleReadiness do
 
   @impl Ash.Resource.Change
   def change(changeset, _opts, _context) do
-    Ash.Changeset.after_transaction(changeset, fn _changeset, transaction_result ->
-      with {:ok, deployment} <- transaction_result,
-           {:ok, deployment} <- Ash.load(deployment, :is_ready),
+    Ash.Changeset.after_action(changeset, fn _changeset, result ->
+      with {:ok, deployment} <- Ash.load(result, :is_ready),
            do: maybe_run_ready_actions(deployment)
     end)
   end
