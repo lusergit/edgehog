@@ -1,3 +1,7 @@
+==> picosat_elixir
+make: Nothing to be done for 'all'.
+
+10:22:54.682 [debug] Copying NIF from cache and extracting to /home/luser/seco/edgehog/backend/_build/dev/lib/nimble_lz4/priv/native/libnimblelz4-v1.1.0-nif-2.15-x86_64-unknown-linux-gnu.so
 # This file is part of Edgehog.
 #
 # Copyright 2023-2026 SECO Mind Srl
@@ -18,8 +22,9 @@
 
 defmodule Edgehog.Tenants.Reconciler.Behaviour do
   @moduledoc false
-  alias Edgehog.Tenants.Tenant
 
-  @callback reconcile_tenant(tenant :: Tenant.record()) :: :ok
-  @callback reconcile(tenant :: Tenant.record()) :: :ok
+  @type tenant :: Ash.Resource.record()
+
+  @callback reconcile_tenant(tenant :: tenant()) :: :ok
+  @callback reconcile(tenant :: tenant()) :: :ok
 end
