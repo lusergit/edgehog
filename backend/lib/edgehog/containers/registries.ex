@@ -1,6 +1,7 @@
+#
 # This file is part of Edgehog.
 #
-# Copyright 2025, 2026 SECO Mind Srl
+# Copyright 2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,23 +16,27 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+#
 
-defmodule Edgehog.Containers.Image.Deployment.Changes.DeployImageOnDevice do
-  @moduledoc false
-  use Ash.Resource.Change
+defmodule Edgehog.Containers.Registries do
+  @moduledoc """
+  Container registries.
 
-  alias Edgehog.Containers.Image.Deployment.Provisioner
+  These registries act as points to collect and manage processes that handle the
+  provisioning of resources to the device.
+  """
+  use Supervisor
 
-  @impl Ash.Resource.Change
-  def change(changeset, _opts, context) do
-    %{tenant: tenant} = context
-    deployment = Ash.Changeset.get_argument(changeset, :deployment)
-    image_deployment = changeset.data
+  def start_link(args) do
+    Supervisor.start_link(__MODULE__, args, name: __MODULE__)
+  end
 
-    Ash.Changeset.after_action(changeset, fn _changeset, result ->
-      Provisioner.provision(image_deployment, deployment, tenant)
+  @impl Supervisor
+  def init(_args) do
+    children = [
+      {Registry, keys: :unique, name: Image.Deployment.Provisioner.Registry},
+    ]
 
-      {:ok, result}
-    end)
+    Supervisor.init(children, strategy: :one_for_one)
   end
 end
