@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2024 - 2025 SECO Mind Srl
+# Copyright 2024-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,13 +22,8 @@ defmodule Edgehog.Devices.Device.ManualActions.SendCreateContainer do
   @moduledoc false
   use Ash.Resource.ManualUpdate
 
+  alias Edgehog.Astarte.Device.CreateContainerRequest
   alias Edgehog.Astarte.Device.CreateContainerRequest.RequestData
-
-  @send_create_container_request_behaviour Application.compile_env(
-                                             :edgehog,
-                                             :astarte_create_container_request_module,
-                                             Edgehog.Astarte.Device.CreateContainerRequest
-                                           )
 
   @impl Ash.Resource.ManualUpdate
   def update(changeset, _opts, _context) do
@@ -86,7 +81,7 @@ defmodule Edgehog.Devices.Device.ManualActions.SendCreateContainer do
       }
 
       with :ok <-
-             @send_create_container_request_behaviour.send_create_container_request(
+             CreateContainerRequest.send_create_container_request(
                device.appengine_client,
                device.device_id,
                data

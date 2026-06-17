@@ -23,13 +23,8 @@ defmodule Edgehog.Devices.Device.ManualActions.SendCreateDeployment do
 
   use Ash.Resource.ManualUpdate
 
+  alias Edgehog.Astarte.Device.CreateDeploymentRequest
   alias Edgehog.Astarte.Device.CreateDeploymentRequest.RequestData
-
-  @send_create_deployment_request_behaviour Application.compile_env(
-                                              :edgehog,
-                                              :astarte_create_deployment_request_module,
-                                              Edgehog.Astarte.Device.CreateDeploymentRequest
-                                            )
 
   @impl Ash.Resource.ManualUpdate
   def update(changeset, _opts, _context) do
@@ -83,7 +78,7 @@ defmodule Edgehog.Devices.Device.ManualActions.SendCreateDeployment do
       containers: container_ids
     }
 
-    @send_create_deployment_request_behaviour.send_create_deployment_request(
+    CreateDeploymentRequest.send_create_deployment_request(
       device.appengine_client,
       device.device_id,
       data

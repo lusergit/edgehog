@@ -22,7 +22,7 @@ defmodule EdgehogWeb.Schema.Mutation.RequestForwarderSessionTest do
   import Edgehog.DevicesFixtures
 
   alias Edgehog.Astarte.Device.ForwarderSession
-  alias Edgehog.Astarte.Device.ForwarderSessionMock
+  alias Edgehog.Astarte.Device.ForwarderSession
 
   describe "requestForwarderSession mutation" do
     test "returns the token of a :connected session instead of a :connecting one", %{
@@ -31,7 +31,7 @@ defmodule EdgehogWeb.Schema.Mutation.RequestForwarderSessionTest do
       device = device_fixture(online: true, tenant: tenant)
       device_id = device.device_id
 
-      expect(ForwarderSessionMock, :list_sessions, fn _appengine_client, ^device_id ->
+      expect(ForwarderSession, :list_sessions, fn _appengine_client, ^device_id ->
         {:ok,
          [
            %ForwarderSession{
@@ -62,7 +62,7 @@ defmodule EdgehogWeb.Schema.Mutation.RequestForwarderSessionTest do
       device = device_fixture(online: true, tenant: tenant)
       device_id = device.device_id
 
-      expect(ForwarderSessionMock, :list_sessions, fn _appengine_client, ^device_id ->
+      expect(ForwarderSession, :list_sessions, fn _appengine_client, ^device_id ->
         {:ok,
          [
            %ForwarderSession{
@@ -91,7 +91,7 @@ defmodule EdgehogWeb.Schema.Mutation.RequestForwarderSessionTest do
       device = device_fixture(online: true, tenant: tenant)
       device_id = device.device_id
 
-      ForwarderSessionMock
+      ForwarderSession
       |> expect(:list_sessions, fn _appengine_client, ^device_id ->
         {:ok, []}
       end)
@@ -108,11 +108,8 @@ defmodule EdgehogWeb.Schema.Mutation.RequestForwarderSessionTest do
 
     test "returns error if the device is disconnected", %{tenant: tenant} do
       device = device_fixture(online: false, tenant: tenant)
-      device_id = device.id
 
-      expect(ForwarderSessionMock, :list_sessions, 0, fn _appengine_client, ^device_id ->
-        :unreachable
-      end)
+      reject(&ForwarderSession.list_sessions/2)
 
       result = run_query(device_id: AshGraphql.Resource.encode_relay_id(device), tenant: tenant)
 

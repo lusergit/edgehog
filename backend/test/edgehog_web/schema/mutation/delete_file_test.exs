@@ -24,7 +24,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeleteFileTest do
   import Edgehog.FilesFixtures
 
   alias Edgehog.Files.File
-  alias Edgehog.Files.StorageMock
+  alias Edgehog.Files.File.BucketStorage, as: Storage
 
   require Ash.Query
 
@@ -39,7 +39,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeleteFileTest do
     end
 
     test "deletes existing base image", %{tenant: tenant, id: id, file_fixture: fixture} do
-      expect(StorageMock, :delete, 3, fn file, encoding ->
+      expect(Storage, :delete, 3, fn file, encoding ->
         assert file.id == fixture.id
 
         case encoding do
@@ -72,7 +72,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeleteFileTest do
 
       id = AshGraphql.Resource.encode_relay_id(fixture)
 
-      expect(StorageMock, :delete, 3, fn file, encoding ->
+      expect(Storage, :delete, 3, fn file, encoding ->
         assert file.id == fixture.id
 
         case encoding do

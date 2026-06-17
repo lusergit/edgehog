@@ -1,6 +1,6 @@
 # This file is part of Edgehog.
 #
-# Copyright 2021 - 2025 SECO Mind Srl
+# Copyright 2021 - 2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateSystemModelTest do
 
   import Edgehog.DevicesFixtures
 
-  alias Edgehog.Assets.SystemModelPictureMock
+  alias Edgehog.Assets.SystemModelPicture
   alias Edgehog.Devices.SystemModel
 
   describe "createSystemModel mutation" do
@@ -89,7 +89,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateSystemModelTest do
     test "allows uploading a picture file", %{tenant: tenant} do
       picture_url = "https://example.com/image.jpg"
 
-      expect(SystemModelPictureMock, :upload, fn _, _ -> {:ok, picture_url} end)
+      expect(SystemModelPicture, :upload, fn _, _ -> {:ok, picture_url} end)
 
       result =
         create_system_model_mutation(
@@ -119,7 +119,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateSystemModelTest do
 
       picture_url = "https://example.com/image.jpg"
 
-      SystemModelPictureMock
+      SystemModelPicture
       |> expect(:upload, fn _, _ -> {:ok, picture_url} end)
       |> expect(:delete, fn _, ^picture_url -> :ok end)
 

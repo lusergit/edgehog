@@ -644,35 +644,35 @@ defmodule Edgehog.CampaignsFixtures do
     end
   end
 
-  # Mock Setup Helpers
+  #  Setup Helpers
 
   defp setup_operation_mocks(mechanism_type) when mechanism_type in @deployment_mechanism_types do
-    Mox.stub(
-      Edgehog.Astarte.Device.CreateDeploymentRequestMock,
+    Mimic.stub(
+      Edgehog.Astarte.Device.CreateDeploymentRequest,
       :send_create_deployment_request,
       fn _client, _device_id, _data -> :ok end
     )
   end
 
   defp setup_operation_mocks(:firmware_upgrade) do
-    Mox.stub(Edgehog.Astarte.Device.BaseImageMock, :get, fn _client, _device_id ->
+    Mimic.stub(Edgehog.Astarte.Device.BaseImage, :get, fn _client, _device_id ->
       {:ok, AstarteFixtures.base_image_info_fixture()}
     end)
 
-    Mox.stub(Edgehog.Astarte.Device.DeviceStatusMock, :get, fn _client, _device_id ->
+    Mimic.stub(Edgehog.Astarte.Device.DeviceStatus, :get, fn _client, _device_id ->
       {:ok, AstarteFixtures.device_status_fixture()}
     end)
 
-    Mox.stub(
-      Edgehog.Astarte.Device.OTARequestV1Mock,
+    Mimic.stub(
+      Edgehog.Astarte.Device.OTARequest.V1,
       :update,
       fn _client, _device_id, _uuid, _url -> :ok end
     )
   end
 
   defp setup_operation_mocks(:file_download) do
-    Mox.stub(
-      Edgehog.Astarte.Device.FileDownloadRequestMock,
+    Mimic.stub(
+      Edgehog.Astarte.Device.FileDownloadRequest,
       :request_download,
       fn _client, _device_id, _request_data -> :ok end
     )

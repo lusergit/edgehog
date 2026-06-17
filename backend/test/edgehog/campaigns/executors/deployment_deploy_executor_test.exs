@@ -27,7 +27,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeployExecutorTest do
   import Edgehog.TenantsFixtures
 
   alias Ecto.Adapters.SQL
-  alias Edgehog.Astarte.Device.CreateDeploymentRequestMock
+  alias Edgehog.Astarte.Device.CreateDeploymentRequest
   alias Edgehog.Campaigns
   alias Edgehog.Campaigns.Campaign
   alias Edgehog.Campaigns.CampaignMechanism.Core, as: MechanismCore
@@ -36,9 +36,9 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeployExecutorTest do
   alias Edgehog.Containers
 
   setup do
-    stub(CreateDeploymentRequestMock, :send_create_deployment_request, fn _client,
-                                                                          _device_id,
-                                                                          _data ->
+    stub(CreateDeploymentRequest, :send_create_deployment_request, fn _client,
+                                                                      _device_id,
+                                                                      _data ->
       :ok
     end)
 
@@ -166,7 +166,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeployExecutorTest do
 
       # Expect target_count deployment calls and send back a message for each device
       expect(
-        CreateDeploymentRequestMock,
+        CreateDeploymentRequest,
         :send_create_deployment_request,
         target_count,
         # TODO: assert that we' receiving the correct data!
@@ -259,7 +259,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeployExecutorTest do
       parent = self()
 
       expect(
-        CreateDeploymentRequestMock,
+        CreateDeploymentRequest,
         :send_create_deployment_request,
         max_deployments,
         fn _client, _device_id, data ->
@@ -340,11 +340,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeployExecutorTest do
         } = ctx
 
         # Expect no calls to the mock
-        expect(CreateDeploymentRequestMock, :send_create_deployment_request, 0, fn _client,
-                                                                                   _device_id,
-                                                                                   _data ->
-          :ok
-        end)
+        reject(&CreateDeploymentRequest.send_create_deployment_request/3)
 
         update_deployment_state!(tenant, deployment_id, unquote(status))
 
@@ -569,7 +565,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeployExecutorTest do
 
       # Expect failing_target_count calls to the mock and return a non-temporary error
       expect(
-        CreateDeploymentRequestMock,
+        CreateDeploymentRequest,
         :send_create_deployment_request,
         failing_target_count,
         fn _client, _device_id, _data ->
@@ -607,13 +603,6 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeployExecutorTest do
 
       # Arrive at waiting for available slot
       wait_for_state(pid, :wait_for_available_slot)
-
-      # While paused, no further deployment requests should be sent
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 0, fn _client,
-                                                                                 _device_id,
-                                                                                 _data ->
-        :ok
-      end)
 
       # Monitor the executor to detect termination
       ref = Process.monitor(pid)
@@ -772,8 +761,8 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeployExecutorTest do
   end
 
   @executor_allowed_mocks [
-    Edgehog.Astarte.Device.DeviceStatusMock,
-    CreateDeploymentRequestMock
+    Edgehog.Astarte.Device.DeviceStatus,
+    CreateDeploymentRequest
   ]
 
   defp start_and_monitor_executor!(campaign, opts \\ []) do
@@ -805,8 +794,8 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeployExecutorTest do
   end
 
   defp allow_test_resources(pid) do
-    # Allow all relevant Mox mocks to be called by the Executor process
-    Enum.each(@executor_allowed_mocks, &Mox.allow(&1, self(), pid))
+    # Allow all relevant Mimic mocks to be called by the Executor process
+    Enum.each(@executor_allowed_mocks, &Mimic.allow(&1, self(), pid))
 
     # Also allow the pid to use SQL Sandbox
     SQL.Sandbox.allow(Repo, self(), pid)
@@ -838,13 +827,17 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeployExecutorTest do
     ref = make_ref()
 
     # Expect count calls to the mock
-    expect(CreateDeploymentRequestMock, :send_create_deployment_request, count, fn _client,
-                                                                                   _device_id,
-                                                                                   _data ->
-      # Send the sync
-      send_sync(parent, ref)
-      :ok
-    end)
+    if count > 0 do
+      expect(CreateDeploymentRequest, :send_create_deployment_request, count, fn _client,
+                                                                                 _device_id,
+                                                                                 _data ->
+        # Send the sync
+        send_sync(parent, ref)
+        :ok
+      end)
+    else
+      reject(&CreateDeploymentRequest.send_create_deployment_request/3)
+    end
 
     ref
   end

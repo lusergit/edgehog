@@ -23,10 +23,9 @@ defmodule Edgehog.Devices.Reconciler.CoreTest do
 
   import Edgehog.AstarteFixtures
   import Edgehog.TenantsFixtures
-  import Mox
 
-  alias Edgehog.Astarte.Device.AvailableDevicesMock
-  alias Edgehog.Astarte.Device.DeviceStatusMock
+  alias Edgehog.Astarte.Device.AvailableDevices
+  alias Edgehog.Astarte.Device.DeviceStatus
   alias Edgehog.AstarteFixtures
   alias Edgehog.Devices.Device
   alias Edgehog.Devices.Reconciler.Core
@@ -43,18 +42,18 @@ defmodule Edgehog.Devices.Reconciler.CoreTest do
     test "reconciles a non existent device", %{tenant: tenant} do
       device_id = AstarteFixtures.random_device_id()
 
-      stub(DeviceStatusMock, :get, fn _client, _device_id ->
+      stub(DeviceStatus, :get, fn _client, _device_id ->
         {:ok, device_status_fixture(%{online: true})}
       end)
 
-      expect(AvailableDevicesMock, :get_device_list, fn _client ->
+      expect(AvailableDevices, :get_device_list, fn _client ->
         Stream.unfold([device_id], fn
           [] -> nil
           [h | t] -> {[h], t}
         end)
       end)
 
-      expect(AvailableDevicesMock, :get_device_status, fn _client, ^device_id ->
+      expect(AvailableDevices, :get_device_status, fn _client, ^device_id ->
         {:ok,
          %{
            "id" => device_id,
@@ -75,18 +74,18 @@ defmodule Edgehog.Devices.Reconciler.CoreTest do
       device = Edgehog.DevicesFixtures.device_fixture(tenant: tenant, name: device_name)
       device_id = device.device_id
 
-      stub(DeviceStatusMock, :get, fn _client, _device_id ->
+      stub(DeviceStatus, :get, fn _client, _device_id ->
         {:ok, device_status_fixture(%{online: true})}
       end)
 
-      expect(AvailableDevicesMock, :get_device_list, fn _client ->
+      expect(AvailableDevices, :get_device_list, fn _client ->
         Stream.unfold([device_id], fn
           [] -> nil
           [h | t] -> {[h], t}
         end)
       end)
 
-      expect(AvailableDevicesMock, :get_device_status, fn _client, ^device_id ->
+      expect(AvailableDevices, :get_device_status, fn _client, ^device_id ->
         {:ok,
          %{
            "id" => device.device_id,

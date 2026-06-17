@@ -24,7 +24,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeleteBaseImageTest do
   import Edgehog.BaseImagesFixtures
 
   alias Edgehog.BaseImages.BaseImage
-  alias Edgehog.BaseImages.StorageMock
+  alias Edgehog.BaseImages.BucketStorage, as: Storage
   alias Edgehog.CampaignsFixtures
 
   require Ash.Query
@@ -40,7 +40,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeleteBaseImageTest do
     end
 
     test "deletes existing base image", %{tenant: tenant, id: id, base_image: fixture} do
-      expect(StorageMock, :delete, fn _ -> :ok end)
+      expect(Storage, :delete, fn _ -> :ok end)
 
       base_image =
         [tenant: tenant, id: id]
@@ -62,7 +62,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeleteBaseImageTest do
 
       id = AshGraphql.Resource.encode_relay_id(fixture)
 
-      expect(StorageMock, :delete, fn _ -> {:error, :cannot_delete} end)
+      expect(Storage, :delete, fn _ -> {:error, :cannot_delete} end)
 
       %{"id" => ^id} =
         [tenant: tenant, id: id]
@@ -115,7 +115,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeleteBaseImageTest do
         mechanism_type: :firmware_upgrade
       )
 
-      expect(StorageMock, :delete, fn _ -> :ok end)
+      expect(Storage, :delete, fn _ -> :ok end)
 
       base_image =
         [tenant: tenant, id: id]

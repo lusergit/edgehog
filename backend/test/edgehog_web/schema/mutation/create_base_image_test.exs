@@ -21,11 +21,11 @@ defmodule EdgehogWeb.Schema.Mutation.CreateBaseImageTest do
 
   import Edgehog.BaseImagesFixtures
 
-  alias Edgehog.BaseImages.StorageMock
+  alias Edgehog.BaseImages.BucketStorage, as: Storage
 
   describe "createBaseImage mutation" do
     setup do
-      StorageMock
+      Storage
       |> stub(:store, fn _, _, _, _ -> {:ok, "https://example.com/ota.bin"} end)
       |> stub(:delete, fn _ -> :ok end)
 
@@ -39,10 +39,10 @@ defmodule EdgehogWeb.Schema.Mutation.CreateBaseImageTest do
 
       file_url = "https://example.com/ota.bin"
 
-      expect(StorageMock, :store, fn tenant_id,
-                                     base_image_collection_id,
-                                     ^base_image_version,
-                                     _upload ->
+      expect(Storage, :store, fn tenant_id,
+                                 base_image_collection_id,
+                                 ^base_image_version,
+                                 _upload ->
         assert tenant_id == tenant.tenant_id
         # This is the DB id
         assert base_image_collection_id == base_image_collection.id
@@ -201,14 +201,14 @@ defmodule EdgehogWeb.Schema.Mutation.CreateBaseImageTest do
     end
 
     test "doesn't upload the base image to the storage with invalid data", %{tenant: tenant} do
-      expect(StorageMock, :store, 0, fn _, _, _, _ -> {:error, :unreachable} end)
+      reject(Storage, :store, 4)
       result = create_base_image_mutation(tenant: tenant, version: "invalid")
 
       assert %{message: "is not a valid version"} = extract_error!(result)
     end
 
     test "returns error if the upload to the storage fails", %{tenant: tenant} do
-      expect(StorageMock, :store, fn _, _, _, _ -> {:error, :bucket_is_full} end)
+      expect(Storage, :store, fn _, _, _, _ -> {:error, :bucket_is_full} end)
       result = create_base_image_mutation(tenant: tenant)
 
       assert %{
@@ -218,7 +218,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateBaseImageTest do
     end
 
     test "attempts to delete the uploaded file when the mutation fails", %{tenant: tenant} do
-      expect(StorageMock, :delete, fn _ -> :ok end)
+      expect(Storage, :delete, fn _ -> :ok end)
 
       # Simulate a mutation that fail because of unique constraints on :version
       # so that data validation succeeds but the database transaction fails.

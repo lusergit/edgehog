@@ -25,11 +25,10 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentStopCoreTest do
   import Edgehog.CampaignsFixtures
   import Edgehog.ContainersFixtures
   import Edgehog.TenantsFixtures
-  import Mox
 
   alias Ash.Error.Invalid
   alias Astarte.Client.APIError
-  alias Edgehog.Astarte.Device.DeploymentCommandMock
+  alias Edgehog.Astarte.Device.DeploymentCommand
   alias Edgehog.Campaigns
   alias Edgehog.Campaigns.Campaign
   alias Edgehog.Campaigns.CampaignMechanism.Core, as: MechanismCore
@@ -37,8 +36,6 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentStopCoreTest do
   alias Edgehog.Campaigns.CampaignTarget
   alias Edgehog.Containers
   alias Phoenix.Socket.Broadcast
-
-  setup :verify_on_exit!
 
   setup do
     %{tenant: tenant_fixture()}
@@ -172,7 +169,7 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentStopCoreTest do
       {:ok, _deployment} =
         Containers.mark_deployment_as_started(deployment, tenant: tenant.tenant_id)
 
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _client, _device_id, _data ->
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _client, _device_id, _data ->
         :ok
       end)
 
@@ -215,14 +212,14 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentStopCoreTest do
         Containers.mark_deployment_as_started(deployment, tenant: tenant.tenant_id)
 
       # First do the operation to link the deployment to the target
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _client, _device_id, _data ->
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _client, _device_id, _data ->
         :ok
       end)
 
       {:ok, target} = MechanismCore.do_operation(mechanism, target)
       target = Ash.load!(target, [:deployment], tenant: tenant.tenant_id)
 
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _client, _device_id, _data ->
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _client, _device_id, _data ->
         :ok
       end)
 
@@ -282,7 +279,7 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentStopCoreTest do
       {:ok, _deployment} =
         Containers.mark_deployment_as_started(deployment, tenant: tenant.tenant_id)
 
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _client, _device_id, _data ->
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _client, _device_id, _data ->
         :ok
       end)
 

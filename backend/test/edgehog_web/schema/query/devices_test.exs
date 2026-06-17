@@ -140,7 +140,7 @@ defmodule EdgehogWeb.Schema.Query.DevicesTest do
     test "Base Image info", ctx do
       %{tenant: tenant, device_id_1: device_id_1, device_id_2: device_id_2} = ctx
 
-      expect(Edgehog.Astarte.Device.BaseImageMock, :get, 2, fn
+      expect(Edgehog.Astarte.Device.BaseImage, :get, 2, fn
         _client, ^device_id_1 ->
           {:ok, base_image_info_fixture(name: "foo", version: "1.0.0")}
 
@@ -184,7 +184,7 @@ defmodule EdgehogWeb.Schema.Query.DevicesTest do
     test "Battery Status", ctx do
       %{tenant: tenant, device_id_1: device_id_1, device_id_2: device_id_2} = ctx
 
-      expect(Edgehog.Astarte.Device.BatteryStatusMock, :get, 2, fn
+      expect(Edgehog.Astarte.Device.BatteryStatus, :get, 2, fn
         _client, ^device_id_1 ->
           {:ok, battery_status_fixture(level_percentage: 29.0, status: "Charging")}
 
@@ -228,7 +228,7 @@ defmodule EdgehogWeb.Schema.Query.DevicesTest do
     test "Cellular Connection", ctx do
       %{tenant: tenant, device_id_1: device_id_1, device_id_2: device_id_2} = ctx
 
-      Edgehog.Astarte.Device.CellularConnectionMock
+      Edgehog.Astarte.Device.CellularConnection
       |> expect(:get_modem_properties, 2, fn
         _client, ^device_id_1 ->
           {:ok, modem_properties_fixture(slot: "1", imei: "1234")}
@@ -285,7 +285,7 @@ defmodule EdgehogWeb.Schema.Query.DevicesTest do
     test "Hardware Info", ctx do
       %{tenant: tenant, device_id_1: device_id_1, device_id_2: device_id_2} = ctx
 
-      expect(Edgehog.Astarte.Device.HardwareInfoMock, :get, 2, fn
+      expect(Edgehog.Astarte.Device.HardwareInfo, :get, 2, fn
         _client, ^device_id_1 ->
           {:ok, hardware_info_fixture(cpu_architecture: "arm", cpu_model: "ARMv7")}
 
@@ -329,7 +329,7 @@ defmodule EdgehogWeb.Schema.Query.DevicesTest do
     test "Network Interfaces", ctx do
       %{tenant: tenant, device_id_1: device_id_1, device_id_2: device_id_2} = ctx
 
-      expect(Edgehog.Astarte.Device.NetworkInterfaceMock, :get, 2, fn
+      expect(Edgehog.Astarte.Device.NetworkInterface, :get, 2, fn
         _client, ^device_id_1 ->
           {:ok, network_interfaces_fixture(name: "eth0", technology: "Ethernet")}
 
@@ -373,7 +373,7 @@ defmodule EdgehogWeb.Schema.Query.DevicesTest do
     test "OS info", ctx do
       %{tenant: tenant, device_id_1: device_id_1, device_id_2: device_id_2} = ctx
 
-      expect(Edgehog.Astarte.Device.OSInfoMock, :get, 2, fn
+      expect(Edgehog.Astarte.Device.OSInfo, :get, 2, fn
         _client, ^device_id_1 ->
           {:ok, os_info_fixture(name: "foo_1", version: "1.0.0")}
 
@@ -417,7 +417,7 @@ defmodule EdgehogWeb.Schema.Query.DevicesTest do
     test "Runtime info", ctx do
       %{tenant: tenant, device_id_1: device_id_1, device_id_2: device_id_2} = ctx
 
-      expect(Edgehog.Astarte.Device.RuntimeInfoMock, :get, 2, fn
+      expect(Edgehog.Astarte.Device.RuntimeInfo, :get, 2, fn
         _client, ^device_id_1 ->
           {:ok, runtime_info_fixture(name: "edgehog-esp32-device", version: "0.7.0")}
 
@@ -461,7 +461,7 @@ defmodule EdgehogWeb.Schema.Query.DevicesTest do
     test "Storage Usage", ctx do
       %{tenant: tenant, device_id_1: device_id_1, device_id_2: device_id_2} = ctx
 
-      expect(Edgehog.Astarte.Device.StorageUsageMock, :get, 2, fn
+      expect(Edgehog.Astarte.Device.StorageUsage, :get, 2, fn
         _client, ^device_id_1 ->
           {:ok, storage_usage_fixture(label: "Disk 0", free_bytes: 1_000_000)}
 
@@ -505,7 +505,7 @@ defmodule EdgehogWeb.Schema.Query.DevicesTest do
     test "System Status", ctx do
       %{tenant: tenant, device_id_1: device_id_1, device_id_2: device_id_2} = ctx
 
-      expect(Edgehog.Astarte.Device.SystemStatusMock, :get, 2, fn
+      expect(Edgehog.Astarte.Device.SystemStatus, :get, 2, fn
         _client, ^device_id_1 ->
           {:ok, system_status_fixture(task_count: 193, uptime_milliseconds: 200_159)}
 
@@ -549,7 +549,7 @@ defmodule EdgehogWeb.Schema.Query.DevicesTest do
     test "queries WiFi scan results", ctx do
       %{tenant: tenant, device_id_1: device_id_1, device_id_2: device_id_2} = ctx
 
-      expect(Edgehog.Astarte.Device.WiFiScanResultMock, :get, 2, fn
+      expect(Edgehog.Astarte.Device.WiFiScanResult, :get, 2, fn
         _client, ^device_id_1 ->
           {:ok, wifi_scan_results_fixture(connected: true, rssi: -40)}
 

@@ -23,7 +23,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreTriggersTest do
   import Edgehog.TenantsFixtures
 
   alias Astarte.Client.APIError
-  alias Edgehog.Astarte.Trigger.MockDataLayer
+  alias Edgehog.Astarte.Trigger.AstarteDataLayer
   alias Edgehog.Tenants.Reconciler.Context
   alias Edgehog.Tenants.Reconciler.Core.Triggers, as: Core
 
@@ -86,7 +86,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreTriggersTest do
 
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^trigger_name ->
         {:error, api_error(status: 404)}
       end)
@@ -107,12 +107,12 @@ defmodule Edgehog.Tenants.Reconciler.CoreTriggersTest do
 
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^trigger_name ->
         {:ok, %{"data" => trigger}}
       end)
-      |> expect(:create, 0, fn _client, _trigger_map -> :ok end)
-      |> expect(:delete, 0, fn _client, _trigger_name -> :ok end)
+      |> reject(:create, 2)
+      |> reject(:delete, 2)
 
       refute context
              |> Core.reconcile_trigger(trigger)
@@ -126,12 +126,12 @@ defmodule Edgehog.Tenants.Reconciler.CoreTriggersTest do
       %{"name" => trigger_name} = trigger
       %{rm_client: client} = context
 
-      Edgehog.Astarte.Trigger.MockDataLayer
+      Edgehog.Astarte.Trigger.AstarteDataLayer
       |> expect(:get, fn ^client, ^trigger_name ->
         {:ok, %{"data" => Map.put(trigger, "additional-field", "some-value")}}
       end)
-      |> expect(:create, 0, fn _client, _trigger_map -> :ok end)
-      |> expect(:delete, 0, fn _client, _trigger_name -> :ok end)
+      |> reject(:create, 2)
+      |> reject(:delete, 2)
 
       refute context
              |> Core.reconcile_trigger(trigger)
@@ -145,15 +145,15 @@ defmodule Edgehog.Tenants.Reconciler.CoreTriggersTest do
       %{"name" => trigger_name} = trigger
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^trigger_name ->
         {_, no_ignore_ssl_errors_map} = pop_in(trigger["action"]["ignore_ssl_errors"])
         {_, no_defaults_map} = pop_in(no_ignore_ssl_errors_map["action"]["http_static_headers"])
 
         {:ok, %{"data" => no_defaults_map}}
       end)
-      |> expect(:create, 0, fn _client, _trigger_map -> :ok end)
-      |> expect(:delete, 0, fn _client, _trigger_name -> :ok end)
+      |> reject(:create, 2)
+      |> reject(:delete, 2)
 
       refute context
              |> Core.reconcile_trigger(trigger)
@@ -167,7 +167,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreTriggersTest do
       %{"name" => trigger_name} = trigger
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^trigger_name ->
         {:ok, %{"data" => put_trigger_url(trigger, "https://other.url.example/triggers")}}
       end)
@@ -180,7 +180,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreTriggersTest do
     end
 
     test "crashes on API errors", %{context: context, trigger: trigger} do
-      expect(MockDataLayer, :get, fn _client, _trigger_name ->
+      expect(AstarteDataLayer, :get, fn _client, _trigger_name ->
         {:error, api_error(status: 502)}
       end)
 

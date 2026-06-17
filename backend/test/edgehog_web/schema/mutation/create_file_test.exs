@@ -23,7 +23,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
 
   import Edgehog.FilesFixtures
 
-  alias Edgehog.Files.StorageMock
+  alias Edgehog.Files.File.BucketStorage, as: Storage
 
   describe "createFile mutation" do
     setup %{tenant: tenant} do
@@ -48,11 +48,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
       gz_file_url = "https://example.com/encoding/gz/some-name.bin.gz"
       lz4_file_url = "https://example.com/encoding/lz4/some-name.bin.lz4"
 
-      expect(StorageMock, :store, 3, fn tenant_id,
-                                        filename_arg,
-                                        repository_id,
-                                        encoding,
-                                        _upload ->
+      expect(Storage, :store, 3, fn tenant_id, filename_arg, repository_id, encoding, _upload ->
         assert tenant_id == tenant.tenant_id
         assert repository_id == repository.id
 
@@ -88,7 +84,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
       path = build_temp_file!("ustar.tar", binary)
       upload = plug_upload(path, "ustar.tar")
 
-      Mox.expect(StorageMock, :store, 3, fn _, _, _, _, _ ->
+      expect(Storage, :store, 3, fn _, _, _, _, _ ->
         {:ok, "https://example.com/file.tar"}
       end)
 
@@ -156,11 +152,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
       repository_id: repository_id,
       upload: upload
     } do
-      Mox.expect(StorageMock, :store, 3, fn _tenant_id,
-                                            _name,
-                                            _repository_id,
-                                            _encoding,
-                                            _upload ->
+      expect(Storage, :store, 3, fn _tenant_id, _name, _repository_id, _encoding, _upload ->
         {:error, :storage_unavailable}
       end)
 
@@ -195,11 +187,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
       filename = "some-name.bin"
       lz4_file_url = "https://example.com/encoding/lz4/some-name.bin.lz4"
 
-      expect(StorageMock, :store, 3, fn tenant_id,
-                                        filename_arg,
-                                        repository_id,
-                                        encoding,
-                                        _upload ->
+      expect(Storage, :store, 3, fn tenant_id, filename_arg, repository_id, encoding, _upload ->
         assert tenant_id == tenant.tenant_id
         assert repository_id == repository.id
 
@@ -218,7 +206,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
         end
       end)
 
-      Mox.expect(StorageMock, :delete, 1, fn _file, :lz4 ->
+      expect(Storage, :delete, 1, fn _file, :lz4 ->
         :ok
       end)
 
@@ -252,11 +240,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
       filename = "some-name.bin"
       base_file_url = "https://example.com/some-name.bin"
 
-      expect(StorageMock, :store, 3, fn tenant_id,
-                                        filename_arg,
-                                        repository_id,
-                                        encoding,
-                                        _upload ->
+      expect(Storage, :store, 3, fn tenant_id, filename_arg, repository_id, encoding, _upload ->
         assert tenant_id == tenant.tenant_id
         assert repository_id == repository.id
 
@@ -275,7 +259,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
         end
       end)
 
-      Mox.expect(StorageMock, :delete, 1, fn file, nil ->
+      expect(Storage, :delete, 1, fn file, nil ->
         assert file.name == filename
         assert file.base_file.url == base_file_url
         :ok
@@ -307,13 +291,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
       repository_id: repository_id,
       upload: upload
     } do
-      Mox.expect(StorageMock, :store, 0, fn _tenant_id,
-                                            _name,
-                                            _repository_id,
-                                            _encoding,
-                                            _upload ->
-        {:ok, "https://bucket.example.com/file.bin"}
-      end)
+      reject(&Storage.store/5)
 
       document = """
       mutation CreateFile($input: CreateFileInput!) {
@@ -405,11 +383,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
       repository_id: repository_id,
       upload: upload
     } do
-      Mox.expect(StorageMock, :store, 3, fn _tenant_id,
-                                            _name,
-                                            _repository_id,
-                                            _encoding,
-                                            _upload ->
+      expect(Storage, :store, 3, fn _tenant_id, _name, _repository_id, _encoding, _upload ->
         {:ok, "https://bucket.example.com/assoc.bin"}
       end)
 
@@ -427,11 +401,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileTest do
       repository_id: repository_id,
       tmp_path: tmp_path
     } do
-      Mox.expect(StorageMock, :store, 3, fn _tenant_id,
-                                            _name,
-                                            _repository_id,
-                                            _encoding,
-                                            _upload ->
+      expect(Storage, :store, 3, fn _tenant_id, _name, _repository_id, _encoding, _upload ->
         {:ok, "https://bucket.example.com/digest.bin"}
       end)
 

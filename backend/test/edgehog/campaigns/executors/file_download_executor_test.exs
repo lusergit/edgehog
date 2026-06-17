@@ -26,29 +26,29 @@ defmodule Edgehog.Campaigns.Executors.FileDownloadExecutorTest do
 
   alias Astarte.Client.APIError
   alias Ecto.Adapters.SQL
-  alias Edgehog.Astarte.Device.DeviceStatusMock
+  alias Edgehog.Astarte.Device.DeviceStatus
+  alias Edgehog.Astarte.Device.FileDownloadRequest
   alias Edgehog.Astarte.Device.FileDownloadRequest.RequestData
-  alias Edgehog.Astarte.Device.FileDownloadRequestMock
   alias Edgehog.Astarte.Device.FileTransferCapabilities
-  alias Edgehog.Astarte.Device.FileTransferCapabilitiesMock
+  alias Edgehog.Astarte.Device.FileTransferCapabilities
   alias Edgehog.Campaigns
   alias Edgehog.Campaigns.Campaign
   alias Edgehog.Campaigns.CampaignMechanism.Core, as: MechanismCore
   alias Edgehog.Campaigns.CampaignMechanism.FileDownload
   alias Edgehog.Campaigns.CampaignMechanism.FileDownload.Executor
   alias Edgehog.Files
-  alias Edgehog.StorageMock
+  alias Edgehog.Storage
 
   setup do
-    stub(DeviceStatusMock, :get, fn _client, _device_id ->
+    stub(DeviceStatus, :get, fn _client, _device_id ->
       {:error, :not_found}
     end)
 
-    stub(FileDownloadRequestMock, :request_download, fn _client, _device_id, _request_data ->
+    stub(FileDownloadRequest, :request_download, fn _client, _device_id, _request_data ->
       :ok
     end)
 
-    stub(FileTransferCapabilitiesMock, :get, fn _client, _device_id ->
+    stub(FileTransferCapabilities, :get, fn _client, _device_id ->
       {:ok,
        %FileTransferCapabilities{
          unix_permissions: false,
@@ -57,7 +57,7 @@ defmodule Edgehog.Campaigns.Executors.FileDownloadExecutorTest do
        }}
     end)
 
-    stub(StorageMock, :read_presigned_url, fn path ->
+    stub(Storage, :read_presigned_url, fn path ->
       {:ok, %{get_url: "http://example.test/#{path}"}}
     end)
 
@@ -176,7 +176,7 @@ defmodule Edgehog.Campaigns.Executors.FileDownloadExecutorTest do
       target_device_ids = Enum.map(campaign.campaign_targets, & &1.device.device_id)
 
       expect(
-        FileDownloadRequestMock,
+        FileDownloadRequest,
         :request_download,
         target_count,
         fn _client, device_id, _request_data ->
@@ -259,7 +259,7 @@ defmodule Edgehog.Campaigns.Executors.FileDownloadExecutorTest do
       parent = self()
 
       expect(
-        FileDownloadRequestMock,
+        FileDownloadRequest,
         :request_download,
         max_requests,
         fn _client, _device_id, %RequestData{id: file_download_request_id} ->
@@ -313,14 +313,7 @@ defmodule Edgehog.Campaigns.Executors.FileDownloadExecutorTest do
           tenant: tenant
         } = ctx
 
-        expect(
-          FileDownloadRequestMock,
-          :request_download,
-          0,
-          fn _client, _device_id, _request_data ->
-            :ok
-          end
-        )
+        reject(&FileDownloadRequest.request_download/3)
 
         update_file_download_request_status!(tenant, file_download_request_id, unquote(status))
 
@@ -494,7 +487,7 @@ defmodule Edgehog.Campaigns.Executors.FileDownloadExecutorTest do
       } = ctx
 
       expect(
-        FileDownloadRequestMock,
+        FileDownloadRequest,
         :request_download,
         failing_target_count,
         fn _client, _device_id, _request_data ->
@@ -530,15 +523,6 @@ defmodule Edgehog.Campaigns.Executors.FileDownloadExecutorTest do
       wait_for_sync!(repeat(init_ref, max_requests))
 
       wait_for_state(pid, :wait_for_available_slot)
-
-      expect(
-        FileDownloadRequestMock,
-        :request_download,
-        0,
-        fn _client, _device_id, _request_data ->
-          :ok
-        end
-      )
 
       ref = Process.monitor(pid)
 
@@ -658,10 +642,10 @@ defmodule Edgehog.Campaigns.Executors.FileDownloadExecutorTest do
   end
 
   @executor_allowed_mocks [
-    DeviceStatusMock,
-    FileTransferCapabilitiesMock,
-    FileDownloadRequestMock,
-    StorageMock
+    DeviceStatus,
+    FileTransferCapabilities,
+    FileDownloadRequest,
+    Storage
   ]
 
   defp start_and_monitor_executor!(campaign, opts \\ []) do
@@ -690,7 +674,7 @@ defmodule Edgehog.Campaigns.Executors.FileDownloadExecutorTest do
   end
 
   defp allow_test_resources(pid) do
-    Enum.each(@executor_allowed_mocks, &Mox.allow(&1, self(), pid))
+    Enum.each(@executor_allowed_mocks, &Mimic.allow(&1, self(), pid))
 
     SQL.Sandbox.allow(Repo, self(), pid)
 
@@ -715,12 +699,16 @@ defmodule Edgehog.Campaigns.Executors.FileDownloadExecutorTest do
     parent = self()
     ref = make_ref()
 
-    expect(FileDownloadRequestMock, :request_download, count, fn _client,
-                                                                 _device_id,
-                                                                 _request_data ->
-      send_sync(parent, ref)
-      :ok
-    end)
+    if count > 0 do
+      expect(FileDownloadRequest, :request_download, count, fn _client,
+                                                               _device_id,
+                                                               _request_data ->
+        send_sync(parent, ref)
+        :ok
+      end)
+    else
+      reject(&FileDownloadRequest.request_download/3)
+    end
 
     ref
   end

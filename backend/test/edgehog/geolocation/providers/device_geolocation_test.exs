@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2022 SECO Mind Srl
+# Copyright 2022-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ defmodule Edgehog.Geolocation.Providers.DeviceGeolocationTest do
   import Edgehog.DevicesFixtures
   import Edgehog.TenantsFixtures
 
-  alias Edgehog.Astarte.Device.GeolocationMock
+  alias Edgehog.Astarte.Device.Geolocation
   alias Edgehog.Geolocation.Position
   alias Edgehog.Geolocation.Providers.DeviceGeolocation
 
@@ -38,7 +38,7 @@ defmodule Edgehog.Geolocation.Providers.DeviceGeolocationTest do
     end
 
     test "geolocate/1 returns error without input SensorPosition list", %{device: device} do
-      expect(GeolocationMock, :get, fn _appengine_client, _device_id -> {:ok, []} end)
+      expect(Geolocation, :get, fn _appengine_client, _device_id -> {:ok, []} end)
       assert DeviceGeolocation.geolocate(device) == {:error, :sensor_positions_not_found}
     end
 
@@ -57,7 +57,7 @@ defmodule Edgehog.Geolocation.Providers.DeviceGeolocationTest do
         }
       ]
 
-      expect(GeolocationMock, :get, fn _appengine_client, _device_id ->
+      expect(Geolocation, :get, fn _appengine_client, _device_id ->
         {:ok, sensors_positions}
       end)
 
@@ -78,7 +78,7 @@ defmodule Edgehog.Geolocation.Providers.DeviceGeolocationTest do
     end
 
     test "geolocate/1 returns error if fetching from the device fails", %{device: device} do
-      expect(GeolocationMock, :get, fn _appengine_client, _device_id ->
+      expect(Geolocation, :get, fn _appengine_client, _device_id ->
         {:error, :some_astarte_error}
       end)
 

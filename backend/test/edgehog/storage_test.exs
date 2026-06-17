@@ -23,7 +23,7 @@ defmodule Edgehog.StorageTest do
   use Edgehog.DataCase, async: true
 
   alias Edgehog.Astarte.Device.FileTransferCapabilities
-  alias Edgehog.Astarte.Device.FileTransferCapabilitiesMock
+  alias Edgehog.Astarte.Device.FileTransferCapabilities
   alias Edgehog.BaseImages.BaseImage
   alias Edgehog.Files.Compressor
   alias Edgehog.Files.FileDownloadRequest
@@ -39,17 +39,6 @@ defmodule Edgehog.StorageTest do
   end
 
   describe "Backend Storage Integration test" do
-    setup do
-      # Do not mock the storage for integration
-      Mox.stub_with(Edgehog.BaseImages.StorageMock, Edgehog.BaseImages.BucketStorage)
-      Mox.stub_with(Edgehog.Assets.SystemModelPictureMock, Edgehog.Assets.SystemModelPicture)
-      Mox.stub_with(Edgehog.OSManagement.EphemeralImageMock, Edgehog.OSManagement.EphemeralImage)
-      Mox.stub_with(Edgehog.Files.StorageMock, Edgehog.Files.File.BucketStorage)
-      Mox.stub_with(Edgehog.Files.EphemeralFileMock, Edgehog.Files.EphemeralFile)
-
-      :ok
-    end
-
     test "Base Images can be uploaded, read and deleted", %{tenant: tenant} do
       base_image_collection =
         Edgehog.BaseImagesFixtures.base_image_collection_fixture(tenant: tenant)
@@ -109,7 +98,7 @@ defmodule Edgehog.StorageTest do
       file = temporary_file_fixture()
       device_id = [tenant: tenant] |> Edgehog.DevicesFixtures.device_fixture() |> Map.fetch!(:id)
 
-      Mox.stub(Edgehog.Astarte.Device.OTARequestV1Mock, :update, fn _, _, _, _ -> :ok end)
+      Mimic.stub(Edgehog.Astarte.Device.OTARequest.V1, :update, fn _, _, _, _ -> :ok end)
 
       ota_operation =
         Edgehog.OSManagement.OTAOperation
@@ -182,7 +171,7 @@ defmodule Edgehog.StorageTest do
       file = temporary_file_fixture()
       device_id = [tenant: tenant] |> Edgehog.DevicesFixtures.device_fixture() |> Map.fetch!(:id)
 
-      Mox.stub(FileTransferCapabilitiesMock, :get, fn _client, _device_id ->
+      Mimic.stub(FileTransferCapabilities, :get, fn _client, _device_id ->
         {:ok,
          %FileTransferCapabilities{
            unix_permissions: false,
@@ -191,7 +180,7 @@ defmodule Edgehog.StorageTest do
          }}
       end)
 
-      Mox.stub(Edgehog.Astarte.Device.FileDownloadRequestMock, :request_download, fn _, _, _ ->
+      Mimic.stub(Edgehog.Astarte.Device.FileDownloadRequest, :request_download, fn _, _, _ ->
         :ok
       end)
 

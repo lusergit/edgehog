@@ -24,8 +24,8 @@ defmodule EdgehogWeb.Schema.Mutation.SendDeploymentUpgradeTest do
 
   import Edgehog.ContainersFixtures
 
-  alias Edgehog.Astarte.Device.CreateDeploymentRequestMock
-  alias Edgehog.Astarte.Device.DeploymentUpdateMock
+  alias Edgehog.Astarte.Device.CreateDeploymentRequest
+  alias Edgehog.Astarte.Device.DeploymentUpdate
   alias Edgehog.Containers
 
   describe "sendDeploymentUpgrade" do
@@ -56,7 +56,7 @@ defmodule EdgehogWeb.Schema.Mutation.SendDeploymentUpgradeTest do
         |> deployment_fixture()
         |> Containers.mark_deployment_as_stopped(tenant: tenant)
 
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, fn _, _, _ -> :ok end)
+      expect(CreateDeploymentRequest, :send_create_deployment_request, fn _, _, _ -> :ok end)
 
       result =
         [tenant: tenant, deployment: deployment_0_0_1, target: release_0_0_2]
@@ -80,8 +80,8 @@ defmodule EdgehogWeb.Schema.Mutation.SendDeploymentUpgradeTest do
         |> deployment_fixture()
         |> Containers.mark_deployment_as_stopped(tenant: tenant)
 
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, fn _, _, _ -> :ok end)
-      expect(DeploymentUpdateMock, :update, fn _, _, _ -> :ok end)
+      expect(CreateDeploymentRequest, :send_create_deployment_request, fn _, _, _ -> :ok end)
+      expect(DeploymentUpdate, :update, fn _, _, _ -> :ok end)
 
       result =
         [tenant: tenant, deployment: deployment_0_0_1, target: release_0_0_2]
@@ -138,9 +138,7 @@ defmodule EdgehogWeb.Schema.Mutation.SendDeploymentUpgradeTest do
       deployment_0_0_1 =
         deployment_fixture(release_id: release_0_0_1.id, tenant: tenant)
 
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 0, fn _, _, _ ->
-        :ok
-      end)
+      reject(&CreateDeploymentRequest.send_create_deployment_request/3)
 
       _result =
         [tenant: tenant, deployment: deployment_0_0_1, target: release_0_0_2]

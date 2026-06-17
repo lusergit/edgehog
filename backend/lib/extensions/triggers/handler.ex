@@ -66,12 +66,13 @@ defmodule Ash.Astarte.Triggers.Handler do
            Astarte.fetch_realm_by_name(realm_name, query: read_query, tenant: tenant) do
       {event, device_id, timestamp} = unpack_payload(payload)
 
-      context = %{
-        tenant: tenant,
-        realm_id: realm.id,
-        device_id: device_id,
-        timestamp: timestamp
-      }
+      context =
+        %{
+          tenant: tenant,
+          realm_id: realm.id,
+          device_id: device_id,
+          timestamp: timestamp
+        }
 
       map_handling(handlers, :handle_event, [event, [], context], tenant, realm.id)
     end

@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2024 SECO Mind Srl
+# Copyright 2024-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,12 +23,6 @@ defmodule Edgehog.BaseImages.BaseImage.Changes.HandleFileUpload do
   use Ash.Resource.Change
 
   alias Edgehog.BaseImages.BucketStorage
-
-  @storage_module Application.compile_env(
-                    :edgehog,
-                    :base_images_storage_module,
-                    BucketStorage
-                  )
 
   @impl Ash.Resource.Change
   def change(%Ash.Changeset{valid?: false} = changeset, _opts, _context), do: changeset
@@ -53,7 +47,7 @@ defmodule Edgehog.BaseImages.BaseImage.Changes.HandleFileUpload do
     {:ok, base_image_collection_id} =
       Ash.Changeset.fetch_argument(changeset, :base_image_collection_id)
 
-    case @storage_module.store(tenant_id, base_image_collection_id, base_image_version, file) do
+    case BucketStorage.store(tenant_id, base_image_collection_id, base_image_version, file) do
       {:ok, file_url} ->
         changeset
         |> Ash.Changeset.force_change_attribute(:url, file_url)
@@ -69,7 +63,7 @@ defmodule Edgehog.BaseImages.BaseImage.Changes.HandleFileUpload do
   defp cleanup_on_error(changeset, {:error, _} = result) do
     if changeset.context[:file_uploaded?] do
       {:ok, base_image} = Ash.Changeset.apply_attributes(changeset)
-      _ = @storage_module.delete(base_image)
+      _ = BucketStorage.delete(base_image)
     end
 
     result

@@ -21,14 +21,14 @@
 defmodule EdgehogWeb.Schema.Mutation.SetLedBehaviorTest do
   use EdgehogWeb.GraphqlCase, async: true
 
-  alias Edgehog.Astarte.Device.LedBehaviorMock
+  alias Edgehog.Astarte.Device.LedBehavior
   alias Edgehog.DevicesFixtures
 
   describe "SetLedBehavior mutation" do
     test "sets BLINK led behavior for the specified device", %{tenant: tenant} do
       {astarte_device_id, graphql_id} = sample_device_id(tenant)
 
-      expect(LedBehaviorMock, :post, 1, fn _client, ^astarte_device_id, "Blink60Seconds" ->
+      expect(LedBehavior, :post, 1, fn _client, ^astarte_device_id, "Blink60Seconds" ->
         :ok
       end)
 
@@ -39,7 +39,7 @@ defmodule EdgehogWeb.Schema.Mutation.SetLedBehaviorTest do
     test "sets DOUBLE_BLINK led behavior for the specified device", %{tenant: tenant} do
       {astarte_device_id, graphql_id} = sample_device_id(tenant)
 
-      expect(LedBehaviorMock, :post, 1, fn _client, ^astarte_device_id, "DoubleBlink60Seconds" ->
+      expect(LedBehavior, :post, 1, fn _client, ^astarte_device_id, "DoubleBlink60Seconds" ->
         :ok
       end)
 
@@ -50,7 +50,7 @@ defmodule EdgehogWeb.Schema.Mutation.SetLedBehaviorTest do
     test "sets SLOW_BLINK led behavior for the specified device", %{tenant: tenant} do
       {astarte_device_id, graphql_id} = sample_device_id(tenant)
 
-      expect(LedBehaviorMock, :post, 1, fn _client, ^astarte_device_id, "SlowBlink60Seconds" ->
+      expect(LedBehavior, :post, 1, fn _client, ^astarte_device_id, "SlowBlink60Seconds" ->
         :ok
       end)
 
@@ -78,7 +78,7 @@ defmodule EdgehogWeb.Schema.Mutation.SetLedBehaviorTest do
       device = DevicesFixtures.device_fixture(tenant: tenant)
       id = AshGraphql.Resource.encode_relay_id(device)
 
-      expect(LedBehaviorMock, :post, 0, fn _client, _device_id, _behavior -> raise "Error!" end)
+      reject(LedBehavior, :post, 3)
 
       assert %{errors: [%{message: _msg}]} =
                set_led_behavior_mutation(tenant: tenant, id: id, behavior: "FOO")

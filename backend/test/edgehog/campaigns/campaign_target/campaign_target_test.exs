@@ -30,21 +30,21 @@ defmodule Edgehog.Campaigns.CampaignTargetTest do
 
   alias Ash.Error.Invalid
   alias Edgehog.Astarte.Device.FileTransferCapabilities
-  alias Edgehog.Astarte.Device.FileTransferCapabilitiesMock
+  alias Edgehog.Astarte.Device.FileTransferCapabilities
   alias Edgehog.Campaigns
   alias Edgehog.Files
-  alias Edgehog.StorageMock
+  alias Edgehog.Storage
 
   setup do
-    stub(Edgehog.Astarte.Device.DeviceStatusMock, :get, fn _client, _device_id ->
+    stub(Edgehog.Astarte.Device.DeviceStatus, :get, fn _client, _device_id ->
       {:error, :not_found}
     end)
 
-    stub(StorageMock, :read_presigned_url, fn path ->
+    stub(Storage, :read_presigned_url, fn path ->
       {:ok, %{get_url: "http://example.test/#{path}"}}
     end)
 
-    stub(FileTransferCapabilitiesMock, :get, fn _client, _device_id ->
+    stub(FileTransferCapabilities, :get, fn _client, _device_id ->
       {:ok,
        %FileTransferCapabilities{
          unix_permissions: false,

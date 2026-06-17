@@ -25,7 +25,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreInterfacesTest do
   import Edgehog.TenantsFixtures
 
   alias Astarte.Client.APIError
-  alias Edgehog.Astarte.Interface.MockDataLayer
+  alias Edgehog.Astarte.Interface.AstarteDataLayer
   alias Edgehog.Tenants.Reconciler.Context
   alias Edgehog.Tenants.Reconciler.Core.Interfaces, as: Core
 
@@ -96,7 +96,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreInterfacesTest do
 
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^name, ^major ->
         {:error, api_error(status: 404)}
       end)
@@ -120,12 +120,12 @@ defmodule Edgehog.Tenants.Reconciler.CoreInterfacesTest do
 
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^name, ^major ->
         {:ok, %{"data" => interface}}
       end)
-      |> expect(:create, 0, fn _client, _interface_map -> :ok end)
-      |> expect(:update, 0, fn _client, _interface_name, _major, _interface_map -> :ok end)
+      |> reject(:create, 2)
+      |> reject(:update, 4)
 
       refute context
              |> Core.reconcile_interface(interface)
@@ -144,12 +144,12 @@ defmodule Edgehog.Tenants.Reconciler.CoreInterfacesTest do
 
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^name, ^major ->
         {:ok, %{"data" => put_minor_version(interface, minor + 1)}}
       end)
-      |> expect(:create, 0, fn _client, _interface_map -> :ok end)
-      |> expect(:update, 0, fn _client, _interface_name, _major, _interface_map -> :ok end)
+      |> reject(:create, 2)
+      |> reject(:update, 4)
 
       refute context
              |> Core.reconcile_interface(interface)
@@ -168,7 +168,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreInterfacesTest do
 
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^name, ^major ->
         {:ok, %{"data" => put_minor_version(interface, minor - 1)}}
       end)
@@ -182,7 +182,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreInterfacesTest do
     end
 
     test "crashes on API errors", %{context: context, interface: interface} do
-      expect(MockDataLayer, :get, fn _client, _interface_name, _major ->
+      expect(AstarteDataLayer, :get, fn _client, _interface_name, _major ->
         {:error, api_error(status: 500)}
       end)
 

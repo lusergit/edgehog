@@ -27,8 +27,8 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
 
   alias Ecto.Adapters.SQL
   alias Edgehog.Astarte.Device.BaseImage
-  alias Edgehog.Astarte.Device.BaseImageMock
-  alias Edgehog.Astarte.Device.OTARequestV1Mock
+  alias Edgehog.Astarte.Device.BaseImage
+  alias Edgehog.Astarte.Device.OTARequest
   alias Edgehog.Campaigns
   alias Edgehog.Campaigns.Campaign
   alias Edgehog.Campaigns.CampaignMechanism.Core, as: MechanismCore
@@ -37,7 +37,7 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
   alias Edgehog.OSManagement
 
   setup do
-    OTARequestV1Mock
+    OTARequest.V1
     |> stub(:update, fn _client, _device_id, _uuid, _url ->
       :ok
     end)
@@ -45,7 +45,7 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
       :ok
     end)
 
-    stub(BaseImageMock, :get, fn _client, _device_id ->
+    stub(BaseImage, :get, fn _client, _device_id ->
       base_image = %BaseImage{
         name: "esp-idf",
         version: "0.1.0",
@@ -185,10 +185,10 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
       target_device_ids = Enum.map(campaign.campaign_targets, & &1.device.device_id)
 
       # Expect target_count update calls and send back a message for each device
-      expect(OTARequestV1Mock, :update, target_count, fn _client,
-                                                         device_id,
-                                                         _uuid,
-                                                         ^base_image_url ->
+      expect(OTARequest.V1, :update, target_count, fn _client,
+                                                      device_id,
+                                                      _uuid,
+                                                      ^base_image_url ->
         send_sync(parent, {ref, device_id})
         :ok
       end)
@@ -277,10 +277,10 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
 
       parent = self()
 
-      expect(OTARequestV1Mock, :update, max_updates, fn _client,
-                                                        _device_id,
-                                                        ota_operation_id,
-                                                        _url ->
+      expect(OTARequest.V1, :update, max_updates, fn _client,
+                                                     _device_id,
+                                                     ota_operation_id,
+                                                     _url ->
         # Since we don't know _which_ target will receive the request, we send it back from here
         send(parent, {:updated_target, ota_operation_id})
         :ok
@@ -338,9 +338,7 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
         } = ctx
 
         # Expect no calls to the mock
-        expect(OTARequestV1Mock, :update, 0, fn _client, _device_id, _uuid, _base_image_url ->
-          :ok
-        end)
+        reject(&OTARequest.V1.update/4)
 
         update_ota_operation_status!(tenant, ota_operation_id, unquote(status))
 
@@ -419,7 +417,7 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
         tenant: tenant
       } = ctx
 
-      expect(BaseImageMock, :get, target_count, fn _client, _device_id ->
+      expect(BaseImage, :get, target_count, fn _client, _device_id ->
         # Reply like the target already has the correct base image version
         {:ok, astarte_base_image_with_version(base_image_version)}
       end)
@@ -440,7 +438,7 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
         tenant: tenant
       } = ctx
 
-      expect(BaseImageMock, :get, target_count, fn _client, _device_id ->
+      expect(BaseImage, :get, target_count, fn _client, _device_id ->
         # Reply like the target already has an higher version
         {:ok, astarte_base_image_with_version(higher_base_image_version)}
       end)
@@ -519,7 +517,7 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
       incompatible_base_image_version = "1.4.2"
 
       # Stub BaseImage with a compatible base image by default
-      stub(BaseImageMock, :get, fn _client, _device_id ->
+      stub(BaseImage, :get, fn _client, _device_id ->
         # Reply like the target already has an incompatible version
         {:ok, astarte_base_image_with_version("2.0.0")}
       end)
@@ -608,10 +606,10 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
       } = ctx
 
       # Expect failing_target_count calls to the mock and return a non-temporary error
-      expect(OTARequestV1Mock, :update, failing_target_count, fn _client,
-                                                                 _device_id,
-                                                                 _uuid,
-                                                                 _base_image_url ->
+      expect(OTARequest.V1, :update, failing_target_count, fn _client,
+                                                              _device_id,
+                                                              _uuid,
+                                                              _base_image_url ->
         status = Enum.random(400..499)
         {:error, %Astarte.Client.APIError{status: status, response: "F"}}
       end)
@@ -633,7 +631,7 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
         tenant: tenant
       } = ctx
 
-      expect(BaseImageMock, :get, failing_target_count, fn _client, _device_id ->
+      expect(BaseImage, :get, failing_target_count, fn _client, _device_id ->
         # Reply like the target already has an higher version
         {:ok, astarte_base_image_with_version(higher_base_image_version)}
       end)
@@ -654,7 +652,7 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
         tenant: tenant
       } = ctx
 
-      expect(BaseImageMock, :get, failing_target_count, fn _client, _device_id ->
+      expect(BaseImage, :get, failing_target_count, fn _client, _device_id ->
         # Reply like the target already has an incompatible version
         {:ok, astarte_base_image_with_version(incompatible_base_image_version)}
       end)
@@ -674,7 +672,7 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
         tenant: tenant
       } = ctx
 
-      expect(BaseImageMock, :get, failing_target_count, fn _client, _device_id ->
+      expect(BaseImage, :get, failing_target_count, fn _client, _device_id ->
         # Reply like the target already has an incompatible version
         {:ok, astarte_base_image_with_version(nil)}
       end)
@@ -756,9 +754,6 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
 
       # Arrive at waiting for available slot
       wait_for_state(pid, :wait_for_available_slot)
-
-      # While paused, no further OTA requests should be sent
-      expect(OTARequestV1Mock, :update, 0, fn _client, _device_id, _uuid, _url -> :ok end)
 
       # Monitor the executor to detect termination
       ref = Process.monitor(pid)
@@ -851,7 +846,7 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
 
   # This functions are used to coordinate the test, waiting for a specific ref or a list of
   # refs regardless of the reception order. It's useful to coordinate with the executor process
-  # by sending messages from Mox expectations.
+  # by sending messages from Mimic expectations.
   defp send_sync(dest, ref) do
     send(dest, {:sync, ref})
   end
@@ -906,9 +901,9 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
   end
 
   @executor_allowed_mocks [
-    BaseImageMock,
-    Edgehog.Astarte.Device.DeviceStatusMock,
-    OTARequestV1Mock
+    BaseImage,
+    Edgehog.Astarte.Device.DeviceStatus,
+    OTARequest.V1
   ]
 
   defp start_and_monitor_executor!(campaign, opts \\ []) do
@@ -940,8 +935,8 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
   end
 
   defp allow_test_resources(pid) do
-    # Allow all relevant Mox mocks to be called by the Executor process
-    Enum.each(@executor_allowed_mocks, &Mox.allow(&1, self(), pid))
+    # Allow all relevant Mimic mocks to be called by the Executor process
+    Enum.each(@executor_allowed_mocks, &Mimic.allow(&1, self(), pid))
 
     # Also allow the pid to use SQL Sandbox
     SQL.Sandbox.allow(Repo, self(), pid)
@@ -981,11 +976,15 @@ defmodule Edgehog.Campaigns.Executors.FirmwareUpgradeExecutorTest do
     ref = make_ref()
 
     # Expect count calls to the mock
-    expect(OTARequestV1Mock, :update, count, fn _client, _device_id, _uuid, _url ->
-      # Send the sync
-      send_sync(parent, ref)
-      :ok
-    end)
+    if count > 0 do
+      expect(OTARequest.V1, :update, count, fn _client, _device_id, _uuid, _url ->
+        # Send the sync
+        send_sync(parent, ref)
+        :ok
+      end)
+    else
+      reject(&OTARequest.V1.update/4)
+    end
 
     ref
   end

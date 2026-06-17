@@ -22,7 +22,7 @@ defmodule EdgehogWeb.AuthTest do
   # This can't be async: true since it modifies the Application env
   use EdgehogWeb.ConnCase
 
-  alias Edgehog.Containers.ReconcilerMock
+  alias Edgehog.Containers.Reconciler
 
   @query """
   {
@@ -33,9 +33,9 @@ defmodule EdgehogWeb.AuthTest do
   """
 
   setup do
-    stub(ReconcilerMock, :register_device, fn _device, _tenant -> :ok end)
-    stub(ReconcilerMock, :stop_device, fn _device, _tenant -> :ok end)
-    stub(ReconcilerMock, :start_link, fn _opts -> :ok end)
+    stub(Reconciler, :register_device, fn _device, _tenant -> :ok end)
+    stub(Reconciler, :stop_device, fn _device, _tenant -> :ok end)
+    stub(Reconciler, :start_link, fn _opts -> :ok end)
 
     :ok
   end

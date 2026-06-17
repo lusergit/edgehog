@@ -31,7 +31,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeploymentCampaignActionConflictTest do
   import Edgehog.DevicesFixtures
   import Edgehog.GroupsFixtures
 
-  alias Edgehog.Astarte.Device.DeploymentCommandMock
+  alias Edgehog.Astarte.Device.DeploymentCommand
 
   require Ash.Query
 
@@ -68,7 +68,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeploymentCampaignActionConflictTest do
           target_release_id: target_release.id
         )
 
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _, _, _ -> :ok end)
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _, _, _ -> :ok end)
 
       result = send_start_deployment_mutation(tenant: tenant, deployment: deployment)
 
@@ -85,7 +85,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeploymentCampaignActionConflictTest do
       tenant: tenant,
       deployment: deployment
     } do
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _, _, _ -> :ok end)
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _, _, _ -> :ok end)
 
       result = send_start_deployment_mutation(tenant: tenant, deployment: deployment)
 
@@ -122,7 +122,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeploymentCampaignActionConflictTest do
       # Create a campaign with the same operation type (start)
       _campaign = create_in_progress_campaign(tenant, :deployment_start, deployment)
 
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _, _, _ -> :ok end)
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _, _, _ -> :ok end)
 
       result = send_start_deployment_mutation(tenant: tenant, deployment: deployment)
 
@@ -142,7 +142,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeploymentCampaignActionConflictTest do
       # Create a campaign that is idle (not in progress)
       _campaign = create_idle_campaign(tenant, :deployment_stop, deployment)
 
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _, _, _ -> :ok end)
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _, _, _ -> :ok end)
 
       result = send_start_deployment_mutation(tenant: tenant, deployment: deployment)
 
@@ -236,7 +236,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeploymentCampaignActionConflictTest do
       # Create a campaign that is finished
       _campaign = create_finished_campaign(tenant, :deployment_stop, deployment)
 
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _, _, _ -> :ok end)
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _, _, _ -> :ok end)
 
       result = send_start_deployment_mutation(tenant: tenant, deployment: deployment)
 

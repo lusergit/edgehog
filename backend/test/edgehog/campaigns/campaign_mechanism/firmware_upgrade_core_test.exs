@@ -29,8 +29,8 @@ defmodule Edgehog.Campaigns.CampaignMechanism.FirmwareUpgradeCoreTest do
   alias Ash.Error.Invalid
   alias Astarte.Client.APIError
   alias Edgehog.Astarte.Device.BaseImage
-  alias Edgehog.Astarte.Device.BaseImageMock
-  alias Edgehog.Astarte.Device.OTARequestV1Mock
+  alias Edgehog.Astarte.Device.BaseImage
+  alias Edgehog.Astarte.Device.OTARequest
   alias Edgehog.Campaigns
   alias Edgehog.Campaigns.Campaign
   alias Edgehog.Campaigns.CampaignMechanism.Core, as: MechanismCore
@@ -43,7 +43,7 @@ defmodule Edgehog.Campaigns.CampaignMechanism.FirmwareUpgradeCoreTest do
   alias Phoenix.Socket.Broadcast
 
   setup do
-    stub(OTARequestV1Mock, :update, fn _client, _device_id, _uuid, _url -> :ok end)
+    stub(OTARequest.V1, :update, fn _client, _device_id, _uuid, _url -> :ok end)
     %{tenant: tenant_fixture()}
   end
 
@@ -89,7 +89,7 @@ defmodule Edgehog.Campaigns.CampaignMechanism.FirmwareUpgradeCoreTest do
         target: target
       } = ctx
 
-      expect(OTARequestV1Mock, :update, fn _client, device_id, _uuid, url ->
+      expect(OTARequest.V1, :update, fn _client, device_id, _uuid, url ->
         assert device_id == target.device.device_id
         assert url == base_image.url
         :ok
@@ -106,7 +106,7 @@ defmodule Edgehog.Campaigns.CampaignMechanism.FirmwareUpgradeCoreTest do
         target: target
       } = ctx
 
-      expect(OTARequestV1Mock, :update, fn _client, device_id, _uuid, url ->
+      expect(OTARequest.V1, :update, fn _client, device_id, _uuid, url ->
         assert device_id == target.device.device_id
         assert url == base_image.url
         {:error, %APIError{status: 500, response: "Internal server error"}}
@@ -137,7 +137,7 @@ defmodule Edgehog.Campaigns.CampaignMechanism.FirmwareUpgradeCoreTest do
     test "returns the version if Astarte API replies with a success", ctx do
       %{target: target} = ctx
 
-      expect(BaseImageMock, :get, fn _client, device_id ->
+      expect(BaseImage, :get, fn _client, device_id ->
         assert device_id == target.device.device_id
 
         base_image = %BaseImage{
@@ -157,7 +157,7 @@ defmodule Edgehog.Campaigns.CampaignMechanism.FirmwareUpgradeCoreTest do
     test "returns error if the Astarte API replies with an error", ctx do
       %{target: target} = ctx
 
-      expect(BaseImageMock, :get, fn _client, _device_id ->
+      expect(BaseImage, :get, fn _client, _device_id ->
         {:error, %APIError{status: 500, response: "Internal server error"}}
       end)
 
@@ -167,7 +167,7 @@ defmodule Edgehog.Campaigns.CampaignMechanism.FirmwareUpgradeCoreTest do
     test "returns error if the returned version is invalid", ctx do
       %{target: target} = ctx
 
-      expect(BaseImageMock, :get, fn _client, _device_id ->
+      expect(BaseImage, :get, fn _client, _device_id ->
         base_image = %BaseImage{
           name: "esp-idf",
           version: "3.not-a-valid-semver",
@@ -184,7 +184,7 @@ defmodule Edgehog.Campaigns.CampaignMechanism.FirmwareUpgradeCoreTest do
     test "returns error if the returned version is empty", ctx do
       %{target: target} = ctx
 
-      expect(BaseImageMock, :get, fn _client, _device_id ->
+      expect(BaseImage, :get, fn _client, _device_id ->
         base_image = %BaseImage{
           name: "esp-idf",
           version: nil,

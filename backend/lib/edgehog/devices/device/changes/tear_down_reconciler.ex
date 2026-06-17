@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2025 SECO Mind Srl
+# Copyright 2025-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,8 +27,6 @@ defmodule Edgehog.Devices.Device.Changes.TearDownReconciler do
 
   alias Edgehog.Containers.Reconciler
 
-  @reconciler_module Application.compile_env(:edgehog, :container_reconciler, Reconciler)
-
   @impl Ash.Resource.Change
   def change(changeset, _opts, _context) do
     Ash.Changeset.after_action(changeset, fn _changeset, device ->
@@ -37,7 +35,7 @@ defmodule Edgehog.Devices.Device.Changes.TearDownReconciler do
         |> Ash.load!(:tenant)
         |> Map.get(:tenant, nil)
 
-      @reconciler_module.stop_device(device, tenant)
+      Reconciler.stop_device(device, tenant)
 
       {:ok, device}
     end)

@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2021-2024 SECO Mind Srl
+# Copyright 2021-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@
 #
 
 defmodule Edgehog.Geolocation.GeolocationProvider do
-  @moduledoc false
+  @moduledoc """
+  Geolocation provider default and callbacks.
+  """
   alias Edgehog.Devices.Device
   alias Edgehog.Geolocation.Position
 

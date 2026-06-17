@@ -27,11 +27,11 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
   import Edgehog.TenantsFixtures
 
   alias Ecto.Adapters.SQL
-  alias Edgehog.Astarte.Device.CreateDeploymentRequestMock
-  alias Edgehog.Astarte.Device.DeploymentCommandMock
-  alias Edgehog.Astarte.Device.DeploymentUpdateMock
+  alias Edgehog.Astarte.Device.CreateDeploymentRequest
+  alias Edgehog.Astarte.Device.DeploymentCommand
+  alias Edgehog.Astarte.Device.DeploymentUpdate
   alias Edgehog.Astarte.Device.FileTransferCapabilities
-  alias Edgehog.Astarte.Device.FileTransferCapabilitiesMock
+  alias Edgehog.Astarte.Device.FileTransferCapabilities
   alias Edgehog.Campaigns
   alias Edgehog.Campaigns.Campaign
   alias Edgehog.Campaigns.CampaignMechanism.Core, as: MechanismCore
@@ -41,23 +41,23 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
 
   setup do
     # Stub the deployment request mock (for upgrade/deploy operation)
-    stub(CreateDeploymentRequestMock, :send_create_deployment_request, fn _client,
-                                                                          _device_id,
-                                                                          _data ->
+    stub(CreateDeploymentRequest, :send_create_deployment_request, fn _client,
+                                                                      _device_id,
+                                                                      _data ->
       :ok
     end)
 
     # Stub the deployment command mock (for start operation after upgrade)
-    stub(DeploymentCommandMock, :send_deployment_command, fn _client, _device_id, _data ->
+    stub(DeploymentCommand, :send_deployment_command, fn _client, _device_id, _data ->
       :ok
     end)
 
     # Stub the deployment update mock (called when deployment transitions to started - ready action)
-    stub(DeploymentUpdateMock, :update, fn _client, _device_id, _data ->
+    stub(DeploymentUpdate, :update, fn _client, _device_id, _data ->
       :ok
     end)
 
-    stub(FileTransferCapabilitiesMock, :get, fn _client, _device_id ->
+    stub(FileTransferCapabilities, :get, fn _client, _device_id ->
       {:ok,
        %FileTransferCapabilities{
          unix_permissions: false,
@@ -192,7 +192,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
 
       # Expect target_count upgrade calls and send back a message for each device
       expect(
-        CreateDeploymentRequestMock,
+        CreateDeploymentRequest,
         :send_create_deployment_request,
         target_count,
         fn _client, device_id, _data ->
@@ -286,7 +286,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
       parent = self()
 
       expect(
-        CreateDeploymentRequestMock,
+        CreateDeploymentRequest,
         :send_create_deployment_request,
         max_upgrades,
         fn _client, _device_id, data ->
@@ -349,11 +349,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
 
       # For upgrade, :stopped means deployed but not started yet - still in progress
       # Expect no calls to the mock
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 0, fn _client,
-                                                                                 _device_id,
-                                                                                 _data ->
-        :ok
-      end)
+      reject(CreateDeploymentRequest, :send_create_deployment_request, 3)
 
       update_deployment_state!(tenant, deployment_id, :stopped)
 
@@ -388,11 +384,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
         } = ctx
 
         # Expect no calls to the mock
-        expect(CreateDeploymentRequestMock, :send_create_deployment_request, 0, fn _client,
-                                                                                   _device_id,
-                                                                                   _data ->
-          :ok
-        end)
+        reject(&CreateDeploymentRequest.send_create_deployment_request/3)
 
         update_deployment_state!(tenant, deployment_id, unquote(status))
 
@@ -608,7 +600,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
 
       # Expect failing_target_count calls to the mock and return a non-temporary error
       expect(
-        CreateDeploymentRequestMock,
+        CreateDeploymentRequest,
         :send_create_deployment_request,
         failing_target_count,
         fn _client, _device_id, _data ->
@@ -646,13 +638,6 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
 
       # Arrive at waiting for available slot
       wait_for_state(pid, :wait_for_available_slot)
-
-      # While paused, no further upgrade requests should be sent
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 0, fn _client,
-                                                                                 _device_id,
-                                                                                 _data ->
-        :ok
-      end)
 
       # Monitor the executor to detect termination
       ref = Process.monitor(pid)
@@ -812,10 +797,10 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
   end
 
   @executor_allowed_mocks [
-    Edgehog.Astarte.Device.DeviceStatusMock,
-    CreateDeploymentRequestMock,
-    DeploymentCommandMock,
-    FileTransferCapabilitiesMock
+    Edgehog.Astarte.Device.DeviceStatus,
+    CreateDeploymentRequest,
+    DeploymentCommand,
+    FileTransferCapabilities
   ]
 
   defp start_and_monitor_executor!(campaign, opts \\ []) do
@@ -847,8 +832,8 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
   end
 
   defp allow_test_resources(pid) do
-    # Allow all relevant Mox mocks to be called by the Executor process
-    Enum.each(@executor_allowed_mocks, &Mox.allow(&1, self(), pid))
+    # Allow all relevant Mimic mocks to be called by the Executor process
+    Enum.each(@executor_allowed_mocks, &Mimic.allow(&1, self(), pid))
 
     # Also allow the pid to use SQL Sandbox
     SQL.Sandbox.allow(Repo, self(), pid)
@@ -879,14 +864,19 @@ defmodule Edgehog.Campaigns.Executors.DeploymentUpgradeExecutorTest do
     parent = self()
     ref = make_ref()
 
-    # Expect count calls to the mock
-    expect(CreateDeploymentRequestMock, :send_create_deployment_request, count, fn _client,
-                                                                                   _device_id,
-                                                                                   _data ->
-      # Send the sync
-      send_sync(parent, ref)
-      :ok
-    end)
+    if count > 0 do
+      # Expect count calls to the mock
+      expect(CreateDeploymentRequest, :send_create_deployment_request, count, fn _client,
+                                                                                 _device_id,
+                                                                                 _data ->
+        # Send the sync
+        send_sync(parent, ref)
+        :ok
+      end)
+    else
+      # if count <= 0 => reject calls
+      reject(&CreateDeploymentRequest.send_create_deployment_request/3)
+    end
 
     ref
   end

@@ -27,12 +27,6 @@ defmodule Edgehog.Files.File.Changes.HandleFileDeletion do
 
   alias Edgehog.Files.File.BucketStorage
 
-  @storage_module Application.compile_env(
-                    :edgehog,
-                    :files_storage_module,
-                    BucketStorage
-                  )
-
   @impl Ash.Resource.Change
   def change(%Ash.Changeset{valid?: false} = changeset, _opts, _context), do: changeset
 
@@ -43,9 +37,9 @@ defmodule Edgehog.Files.File.Changes.HandleFileDeletion do
   end
 
   defp delete_old_file({:ok, file} = result) do
-    _ = @storage_module.delete(file, nil)
-    _ = @storage_module.delete(file, :gz)
-    _ = @storage_module.delete(file, :lz4)
+    _ = BucketStorage.delete(file, nil)
+    _ = BucketStorage.delete(file, :gz)
+    _ = BucketStorage.delete(file, :lz4)
 
     result
   end

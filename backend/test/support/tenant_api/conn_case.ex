@@ -37,6 +37,7 @@ defmodule EdgehogWeb.ConnCase do
 
   use ExUnit.CaseTemplate
   use EdgehogWeb, :verified_routes
+  use Mimic
 
   alias Ecto.Adapters.SQL
   alias EdgehogWeb.Auth.Token
@@ -44,9 +45,9 @@ defmodule EdgehogWeb.ConnCase do
   using do
     quote do
       use EdgehogWeb, :verified_routes
+      use Mimic
 
       import EdgehogWeb.ConnCase
-      import Mox
       import Phoenix.ConnTest
 
       # Import conveniences for testing with connections

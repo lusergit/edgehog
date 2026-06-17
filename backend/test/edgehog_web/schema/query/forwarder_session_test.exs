@@ -24,14 +24,14 @@ defmodule EdgehogWeb.Schema.Query.ForwarderSessionTest do
   import Edgehog.DevicesFixtures
 
   alias Edgehog.Astarte.Device.ForwarderSession
-  alias Edgehog.Astarte.Device.ForwarderSessionMock
+  alias Edgehog.Astarte.Device.ForwarderSession
 
   describe "forwarderSession query" do
     test "returns the forwarder session", %{tenant: tenant} do
       device = device_fixture(online: true, tenant: tenant)
       device_id = device.device_id
 
-      expect(ForwarderSessionMock, :list_sessions, fn _appengine_client, ^device_id ->
+      expect(ForwarderSession, :list_sessions, fn _appengine_client, ^device_id ->
         {:ok,
          [
            %ForwarderSession{
@@ -63,7 +63,7 @@ defmodule EdgehogWeb.Schema.Query.ForwarderSessionTest do
       device = device_fixture(online: true, tenant: tenant)
       device_id = device.device_id
 
-      expect(ForwarderSessionMock, :list_sessions, fn _appengine_client, ^device_id ->
+      expect(ForwarderSession, :list_sessions, fn _appengine_client, ^device_id ->
         {:ok, []}
       end)
 
@@ -82,9 +82,7 @@ defmodule EdgehogWeb.Schema.Query.ForwarderSessionTest do
     test "returns null if the device is disconnected", %{tenant: tenant} do
       device = device_fixture(online: false, tenant: tenant)
 
-      expect(ForwarderSessionMock, :list_sessions, 0, fn _appengine_client, _device_id ->
-        :unreachable
-      end)
+      reject(&ForwarderSession.list_sessions/2)
 
       result =
         run_query(

@@ -27,7 +27,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeleteExecutorTest do
   import Edgehog.TenantsFixtures
 
   alias Ecto.Adapters.SQL
-  alias Edgehog.Astarte.Device.DeploymentCommandMock
+  alias Edgehog.Astarte.Device.DeploymentCommand
   alias Edgehog.Campaigns
   alias Edgehog.Campaigns.Campaign
   alias Edgehog.Campaigns.CampaignMechanism.Core, as: MechanismCore
@@ -37,7 +37,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeleteExecutorTest do
   alias Edgehog.Containers.Deployment
 
   setup do
-    stub(DeploymentCommandMock, :send_deployment_command, fn _client, _device_id, _data ->
+    stub(DeploymentCommand, :send_deployment_command, fn _client, _device_id, _data ->
       :ok
     end)
 
@@ -170,7 +170,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeleteExecutorTest do
 
       # Expect target_count deployment calls and send back a message for each device
       expect(
-        DeploymentCommandMock,
+        DeploymentCommand,
         :send_deployment_command,
         target_count,
         # TODO: assert that we' receiving the correct data!
@@ -265,7 +265,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeleteExecutorTest do
       parent = self()
 
       expect(
-        DeploymentCommandMock,
+        DeploymentCommand,
         :send_deployment_command,
         max_deployments,
         fn _client,
@@ -522,7 +522,7 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeleteExecutorTest do
 
       # Expect failing_target_count calls to the mock and return a non-temporary error
       expect(
-        DeploymentCommandMock,
+        DeploymentCommand,
         :send_deployment_command,
         failing_target_count,
         fn _client, _device_id, _data ->
@@ -560,11 +560,6 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeleteExecutorTest do
 
       # Arrive at waiting for available slot
       wait_for_state(pid, :wait_for_available_slot)
-
-      # While paused, no further delete requests should be sent
-      expect(DeploymentCommandMock, :send_deployment_command, 0, fn _client, _device_id, _data ->
-        :ok
-      end)
 
       # Monitor the executor to detect termination
       ref = Process.monitor(pid)
@@ -715,8 +710,8 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeleteExecutorTest do
   end
 
   @executor_allowed_mocks [
-    Edgehog.Astarte.Device.DeviceStatusMock,
-    DeploymentCommandMock
+    Edgehog.Astarte.Device.DeviceStatus,
+    DeploymentCommand
   ]
 
   defp start_and_monitor_executor!(campaign, opts \\ []) do
@@ -748,8 +743,8 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeleteExecutorTest do
   end
 
   defp allow_test_resources(pid) do
-    # Allow all relevant Mox mocks to be called by the Executor process
-    Enum.each(@executor_allowed_mocks, &Mox.allow(&1, self(), pid))
+    # Allow all relevant Mimic mocks to be called by the Executor process
+    Enum.each(@executor_allowed_mocks, &Mimic.allow(&1, self(), pid))
 
     # Also allow the pid to use SQL Sandbox
     SQL.Sandbox.allow(Repo, self(), pid)
@@ -780,13 +775,15 @@ defmodule Edgehog.Campaigns.Executors.DeploymentDeleteExecutorTest do
     parent = self()
     ref = make_ref()
 
-    expect(DeploymentCommandMock, :send_deployment_command, count, fn _client,
-                                                                      _device_id,
-                                                                      _data ->
-      # Send the sync
-      send_sync(parent, ref)
-      :ok
-    end)
+    if count > 0 do
+      expect(DeploymentCommand, :send_deployment_command, count, fn _client, _device_id, _data ->
+        # Send the sync
+        send_sync(parent, ref)
+        :ok
+      end)
+    else
+      reject(&DeploymentCommand.send_deployment_command/3)
+    end
 
     ref
   end

@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2023 SECO Mind Srl
+# Copyright 2023-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,9 +43,9 @@ defmodule EdgehogWeb.AdminAPI.ConnCase do
   using do
     quote do
       use EdgehogWeb, :verified_routes
+      use Mimic
 
       import EdgehogWeb.AdminAPI.ConnCase
-      import Mox
       import Phoenix.ConnTest
 
       # Import conveniences for testing with connections

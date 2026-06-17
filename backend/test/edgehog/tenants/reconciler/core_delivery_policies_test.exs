@@ -23,7 +23,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreDeliveryPoliciesTest do
   import Edgehog.TenantsFixtures
 
   alias Astarte.Client.APIError
-  alias Edgehog.Astarte.DeliveryPolicies.MockDataLayer
+  alias Edgehog.Astarte.DeliveryPolicies.AstarteDataLayer
   alias Edgehog.Tenants.Reconciler.Context
   alias Edgehog.Tenants.Reconciler.Core.DeliveryPolicies, as: Core
 
@@ -89,7 +89,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreDeliveryPoliciesTest do
 
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^policy_name ->
         {:error, api_error(status: 404)}
       end)
@@ -110,12 +110,12 @@ defmodule Edgehog.Tenants.Reconciler.CoreDeliveryPoliciesTest do
 
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^policy_name ->
         {:ok, %{"data" => policy}}
       end)
-      |> expect(:create, 0, fn _client, _policy_map -> :ok end)
-      |> expect(:delete, 0, fn _client, _policy_name -> :ok end)
+      |> reject(:create, 2)
+      |> reject(:delete, 2)
 
       refute context
              |> Core.reconcile_delivery_policy(policy)
@@ -130,12 +130,12 @@ defmodule Edgehog.Tenants.Reconciler.CoreDeliveryPoliciesTest do
 
       %{rm_client: client} = context
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:get, fn ^client, ^policy_name ->
         {:ok, %{"data" => Map.put(policy, "additional_field", "some-value")}}
       end)
-      |> expect(:create, 0, fn _client, _policy_map -> :ok end)
-      |> expect(:delete, 0, fn _client, _policy_name -> :ok end)
+      |> reject(:create, 2)
+      |> reject(:delete, 2)
 
       refute context
              |> Core.reconcile_delivery_policy(policy)
@@ -157,12 +157,12 @@ defmodule Edgehog.Tenants.Reconciler.CoreDeliveryPoliciesTest do
       }
 
       # Since we can't update policies, they get deleted and recreated
-      expect(MockDataLayer, :get, fn ^client, ^policy_name ->
+      expect(AstarteDataLayer, :get, fn ^client, ^policy_name ->
         {:ok, %{"data" => existing_policy_map}}
       end)
 
-      # Mock the trigger listing and deletion that happens when a policy is updated
-      Edgehog.Astarte.Trigger.MockDataLayer
+      #  the trigger listing and deletion that happens when a policy is updated
+      Edgehog.Astarte.Trigger.AstarteDataLayer
       |> expect(:list, fn ^client ->
         {:ok, %{"data" => [policy_name]}}
       end)
@@ -171,7 +171,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreDeliveryPoliciesTest do
       end)
       |> expect(:delete, fn ^client, ^policy_name -> :ok end)
 
-      MockDataLayer
+      AstarteDataLayer
       |> expect(:delete, fn ^client, ^policy_name -> :ok end)
       |> expect(:create, fn ^client, ^policy -> :ok end)
 
@@ -184,7 +184,7 @@ defmodule Edgehog.Tenants.Reconciler.CoreDeliveryPoliciesTest do
       context: context,
       policy: policy
     } do
-      expect(MockDataLayer, :get, fn _client, _policy_name ->
+      expect(AstarteDataLayer, :get, fn _client, _policy_name ->
         {:error, api_error(status: 403, message: "Forbidden")}
       end)
 

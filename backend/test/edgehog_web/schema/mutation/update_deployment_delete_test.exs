@@ -24,7 +24,7 @@ defmodule EdgehogWeb.Schema.Mutation.UpdateDeploymentDelete do
 
   import Edgehog.ContainersFixtures
 
-  alias Edgehog.Astarte.Device.DeploymentCommandMock
+  alias Edgehog.Astarte.Device.DeploymentCommand
 
   describe "deleteDeployment mutation tests" do
     test "delete on an existing deployment", %{tenant: tenant} do
@@ -34,7 +34,7 @@ defmodule EdgehogWeb.Schema.Mutation.UpdateDeploymentDelete do
         |> deployment_fixture()
         |> Edgehog.Containers.mark_deployment_as_stopped(tenant: tenant)
 
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _, _, _ -> :ok end)
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _, _, _ -> :ok end)
 
       [tenant: tenant, deployment: deployment]
       |> send_delete_deployment_mutation()

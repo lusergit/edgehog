@@ -19,21 +19,21 @@
 #
 
 defmodule EdgehogWeb.GraphqlCase do
-  @moduledoc false
-  use ExUnit.CaseTemplate
+  @moduledoc """
+  Test case for GraphQL queries to edgehog.
 
-  import Mox
+  Sets up a database connection and a tenant. 
+  """
+  use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL
 
   using do
     quote do
       import EdgehogWeb.GraphqlCase
-      import Mox
+      use Mimic
     end
   end
-
-  setup :verify_on_exit!
 
   setup tags do
     pid = SQL.Sandbox.start_owner!(Edgehog.Repo, shared: not tags[:async])

@@ -1,6 +1,6 @@
 # This file is part of Edgehog.
 #
-# Copyright 2021 - 2025 SECO Mind Srl
+# Copyright 2021 - 2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ defmodule EdgehogWeb.Schema.Mutation.UpdateSystemModelTest do
 
   import Edgehog.DevicesFixtures
 
-  alias Edgehog.Assets.SystemModelPictureMock
+  alias Edgehog.Assets.SystemModelPicture
   alias Edgehog.Devices.SystemModel
 
   describe "updateSystemModel mutation" do
@@ -158,7 +158,7 @@ defmodule EdgehogWeb.Schema.Mutation.UpdateSystemModelTest do
     test "allows uploading a picture file", %{tenant: tenant, id: id} do
       picture_url = "https://example.com/image.jpg"
 
-      expect(SystemModelPictureMock, :upload, fn _, _ -> {:ok, picture_url} end)
+      expect(SystemModelPicture, :upload, fn _, _ -> {:ok, picture_url} end)
 
       result =
         update_system_model_mutation(
@@ -181,7 +181,7 @@ defmodule EdgehogWeb.Schema.Mutation.UpdateSystemModelTest do
 
       new_picture_url = "https://example.com/new_image.jpg"
 
-      SystemModelPictureMock
+      SystemModelPicture
       |> expect(:delete, fn _, ^old_picture_url -> {:error, :cannot_delete} end)
       |> expect(:upload, fn _, _ -> {:ok, new_picture_url} end)
 
@@ -203,9 +203,9 @@ defmodule EdgehogWeb.Schema.Mutation.UpdateSystemModelTest do
 
       id = AshGraphql.Resource.encode_relay_id(system_model)
 
-      SystemModelPictureMock
+      SystemModelPicture
       |> expect(:upload, fn _, _ -> {:ok, picture_url} end)
-      |> expect(:delete, 0, fn _, _ -> :ok end)
+      |> reject(:delete, 2)
 
       result =
         update_system_model_mutation(
@@ -221,7 +221,7 @@ defmodule EdgehogWeb.Schema.Mutation.UpdateSystemModelTest do
       duplicate = system_model_fixture(tenant: tenant)
       picture_url = "https://example.com/image.jpg"
 
-      SystemModelPictureMock
+      SystemModelPicture
       |> expect(:upload, fn _, _ -> {:ok, picture_url} end)
       |> expect(:delete, fn _, ^picture_url -> :ok end)
 
@@ -252,9 +252,9 @@ defmodule EdgehogWeb.Schema.Mutation.UpdateSystemModelTest do
     end
 
     test "returns error when fails to update picture_file", %{tenant: tenant, id: id} do
-      SystemModelPictureMock
+      SystemModelPicture
       |> expect(:upload, fn _, _ -> {:error, :no_space_left} end)
-      |> expect(:delete, 0, fn _, _ -> :ok end)
+      |> reject(:delete, 2)
 
       result =
         update_system_model_mutation(

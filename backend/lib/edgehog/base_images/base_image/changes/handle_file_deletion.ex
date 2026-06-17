@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2024 SECO Mind Srl
+# Copyright 2024-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,12 +24,6 @@ defmodule Edgehog.BaseImages.BaseImage.Changes.HandleFileDeletion do
 
   alias Edgehog.BaseImages.BucketStorage
 
-  @storage_module Application.compile_env(
-                    :edgehog,
-                    :base_images_storage_module,
-                    BucketStorage
-                  )
-
   @impl Ash.Resource.Change
   def change(%Ash.Changeset{valid?: false} = changeset, _opts, _context), do: changeset
 
@@ -40,7 +34,7 @@ defmodule Edgehog.BaseImages.BaseImage.Changes.HandleFileDeletion do
   end
 
   defp delete_old_file({:ok, base_image} = result) do
-    _ = @storage_module.delete(base_image)
+    _ = BucketStorage.delete(base_image)
 
     result
   end

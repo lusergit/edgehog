@@ -20,13 +20,10 @@
 
 defmodule Edgehog.AssetsTest do
   use ExUnit.Case, async: true
-
-  import Mox
+  use Mimic
 
   alias Edgehog.Assets
-  alias Edgehog.Assets.SystemModelPictureMock
-
-  setup :verify_on_exit!
+  alias Edgehog.Assets.SystemModelPicture
 
   # Storage is disabled by default in test, but mock is configured
   # So the call goes through the mock
@@ -39,7 +36,7 @@ defmodule Edgehog.AssetsTest do
       system_model = %{id: "123"}
       picture_file = %Plug.Upload{path: "/tmp/test.png", filename: "test.png"}
 
-      stub(SystemModelPictureMock, :upload, fn _model, _file ->
+      stub(SystemModelPicture, :upload, fn _model, _file ->
         {:error, :mock_not_real}
       end)
 
@@ -56,7 +53,7 @@ defmodule Edgehog.AssetsTest do
       system_model = %{id: "123"}
       picture_url = "https://example.com/picture.png"
 
-      stub(SystemModelPictureMock, :delete, fn _model, _url ->
+      stub(SystemModelPicture, :delete, fn _model, _url ->
         {:error, :mock_not_real}
       end)
 

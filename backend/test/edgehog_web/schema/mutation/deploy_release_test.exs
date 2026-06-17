@@ -22,12 +22,12 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
   import Edgehog.ContainersFixtures
   import Edgehog.DevicesFixtures
 
-  alias Edgehog.Astarte.Device.CreateContainerRequestMock
-  alias Edgehog.Astarte.Device.CreateDeploymentRequestMock
-  alias Edgehog.Astarte.Device.CreateDeviceMappingRequestMock
-  alias Edgehog.Astarte.Device.CreateImageRequestMock
-  alias Edgehog.Astarte.Device.CreateNetworkRequestMock
-  alias Edgehog.Astarte.Device.CreateVolumeRequestMock
+  alias Edgehog.Astarte.Device.CreateContainerRequest
+  alias Edgehog.Astarte.Device.CreateDeploymentRequest
+  alias Edgehog.Astarte.Device.CreateDeviceMappingRequest
+  alias Edgehog.Astarte.Device.CreateImageRequest
+  alias Edgehog.Astarte.Device.CreateNetworkRequest
+  alias Edgehog.Astarte.Device.CreateVolumeRequest
 
   test "deployRelease creates the deployment on the device", %{tenant: tenant} do
     containers = 3
@@ -54,21 +54,19 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
     release =
       release_fixture(tenant: tenant, containers: containers, container_params: container_params)
 
-    expect(CreateImageRequestMock, :send_create_image_request, images, fn _, _, _ -> :ok end)
+    expect(CreateImageRequest, :send_create_image_request, images, fn _, _, _ -> :ok end)
 
-    expect(CreateVolumeRequestMock, :send_create_volume_request, volumes, fn _, _, _ -> :ok end)
+    expect(CreateVolumeRequest, :send_create_volume_request, volumes, fn _, _, _ -> :ok end)
 
-    expect(CreateNetworkRequestMock, :send_create_network_request, containers, fn _, _, _ ->
+    expect(CreateNetworkRequest, :send_create_network_request, containers, fn _, _, _ ->
       :ok
     end)
 
-    expect(CreateDeviceMappingRequestMock, :send_create_device_mapping_request, 1, fn _, _, _ ->
+    expect(CreateDeviceMappingRequest, :send_create_device_mapping_request, 1, fn _, _, _ ->
       :ok
     end)
 
-    expect(CreateContainerRequestMock, :send_create_container_request, containers, fn _,
-                                                                                      _,
-                                                                                      data ->
+    expect(CreateContainerRequest, :send_create_container_request, containers, fn _, _, data ->
       assert Enum.count(data.volumeIds) == volumes_per_container
 
       binds_by_source =
@@ -92,7 +90,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
       :ok
     end)
 
-    expect(CreateDeploymentRequestMock, :send_create_deployment_request, 1, fn _, _, data ->
+    expect(CreateDeploymentRequest, :send_create_deployment_request, 1, fn _, _, data ->
       assert Enum.count(data.containers) == containers
       :ok
     end)
@@ -135,13 +133,13 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
 
     ordered_containers = [container_1.id, container_3.id, container_2.id]
 
-    expect(CreateImageRequestMock, :send_create_image_request, 3, fn _, _, _ -> :ok end)
+    expect(CreateImageRequest, :send_create_image_request, 3, fn _, _, _ -> :ok end)
 
-    expect(CreateContainerRequestMock, :send_create_container_request, 3, fn _, _, _ ->
+    expect(CreateContainerRequest, :send_create_container_request, 3, fn _, _, _ ->
       :ok
     end)
 
-    expect(CreateDeploymentRequestMock, :send_create_deployment_request, 1, fn _, _, data ->
+    expect(CreateDeploymentRequest, :send_create_deployment_request, 1, fn _, _, data ->
       assert data.containers == ordered_containers
       :ok
     end)
@@ -181,9 +179,9 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
         container_dependencies: container_dependencies
       )
 
-    expect(CreateImageRequestMock, :send_create_image_request, 2, fn _, _, _ -> :ok end)
+    expect(CreateImageRequest, :send_create_image_request, 2, fn _, _, _ -> :ok end)
 
-    expect(CreateContainerRequestMock, :send_create_container_request, 2, fn _, _, _ ->
+    expect(CreateContainerRequest, :send_create_container_request, 2, fn _, _, _ ->
       :ok
     end)
 
@@ -258,7 +256,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
         system_models: [system_model]
       )
 
-    expect(CreateDeploymentRequestMock, :send_create_deployment_request, 1, fn _, _, _ ->
+    expect(CreateDeploymentRequest, :send_create_deployment_request, 1, fn _, _, _ ->
       :ok
     end)
 

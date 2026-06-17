@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2021-2022 SECO Mind Srl
+# Copyright 2021-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,13 +26,13 @@ defmodule Edgehog.Geolocation.Providers.IPBaseTest do
   import Tesla.Mock
 
   alias Edgehog.Astarte.Device.DeviceStatus
-  alias Edgehog.Astarte.Device.DeviceStatusMock
+  alias Edgehog.Astarte.Device.DeviceStatus
   alias Edgehog.Geolocation.Position
   alias Edgehog.Geolocation.Providers.IPBase
 
   describe "ip_geolocation" do
     setup do
-      stub(DeviceStatusMock, :get, fn _client, _device_id ->
+      stub(DeviceStatus, :get, fn _client, _device_id ->
         device_status = %DeviceStatus{
           last_connection: ~U[2021-11-15 10:44:57.432516Z],
           last_disconnection: ~U[2021-11-15 10:45:57.432516Z],
@@ -48,7 +48,7 @@ defmodule Edgehog.Geolocation.Providers.IPBaseTest do
     end
 
     test "geolocate/1 returns error without input IP address", %{device: device} do
-      expect(DeviceStatusMock, :get, fn _appengine_client, _device_id ->
+      expect(DeviceStatus, :get, fn _appengine_client, _device_id ->
         {:ok,
          %DeviceStatus{
            last_connection: nil,

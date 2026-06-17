@@ -24,7 +24,7 @@ defmodule EdgehogWeb.Schema.Mutation.CancelOtaOperationTest do
   import Edgehog.DevicesFixtures
   import Edgehog.OSManagementFixtures
 
-  alias Edgehog.Astarte.Device.OTARequestV1Mock
+  alias Edgehog.Astarte.Device.OTARequest
 
   describe "cancelOtaOperation mutation" do
     test "cancels OTA operation with valid data", %{tenant: tenant} do
@@ -40,7 +40,7 @@ defmodule EdgehogWeb.Schema.Mutation.CancelOtaOperationTest do
 
       ota_operation_id = AshGraphql.Resource.encode_relay_id(ota_operation)
 
-      expect(OTARequestV1Mock, :cancel, fn _client, ^astarte_device_id, _uuid ->
+      expect(OTARequest.V1, :cancel, fn _client, ^astarte_device_id, _uuid ->
         :ok
       end)
 
@@ -79,7 +79,7 @@ defmodule EdgehogWeb.Schema.Mutation.CancelOtaOperationTest do
 
       ota_operation_id = AshGraphql.Resource.encode_relay_id(ota_operation)
 
-      expect(OTARequestV1Mock, :cancel, fn _client, _device_id, _uuid ->
+      expect(OTARequest.V1, :cancel, fn _client, _device_id, _uuid ->
         {:error, api_error(status: 503, message: "Service unavailable")}
       end)
 
@@ -107,7 +107,7 @@ defmodule EdgehogWeb.Schema.Mutation.CancelOtaOperationTest do
 
       ota_operation_id = AshGraphql.Resource.encode_relay_id(ota_operation)
 
-      expect(OTARequestV1Mock, :cancel, fn _client, ^astarte_device_id, _uuid ->
+      expect(OTARequest.V1, :cancel, fn _client, ^astarte_device_id, _uuid ->
         :ok
       end)
 
@@ -135,7 +135,7 @@ defmodule EdgehogWeb.Schema.Mutation.CancelOtaOperationTest do
 
       ota_operation_id = AshGraphql.Resource.encode_relay_id(ota_operation)
 
-      expect(OTARequestV1Mock, :cancel, fn _client, ^astarte_device_id, _uuid ->
+      expect(OTARequest.V1, :cancel, fn _client, ^astarte_device_id, _uuid ->
         :ok
       end)
 
@@ -163,7 +163,7 @@ defmodule EdgehogWeb.Schema.Mutation.CancelOtaOperationTest do
 
       ota_operation_id = AshGraphql.Resource.encode_relay_id(ota_operation)
 
-      expect(OTARequestV1Mock, :cancel, fn _client, ^astarte_device_id, _uuid ->
+      expect(OTARequest.V1, :cancel, fn _client, ^astarte_device_id, _uuid ->
         :ok
       end)
 
@@ -242,9 +242,7 @@ defmodule EdgehogWeb.Schema.Mutation.CancelOtaOperationTest do
     id = AshGraphql.Resource.encode_relay_id(fixture)
 
     # Expect the ephemeral image deletion since we're destroying a manual OTA operation
-    expect(Edgehog.OSManagement.EphemeralImageMock, :delete, fn _tenant_id,
-                                                                _ota_operation_id,
-                                                                _url ->
+    expect(Edgehog.OSManagement.EphemeralImage, :delete, fn _tenant_id, _ota_operation_id, _url ->
       :ok
     end)
 

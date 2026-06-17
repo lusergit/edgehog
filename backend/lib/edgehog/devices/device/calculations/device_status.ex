@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2024 SECO Mind Srl
+# Copyright 2024-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,12 +23,7 @@ defmodule Edgehog.Devices.Device.Calculations.DeviceStatus do
   use Ash.Resource.Calculation
 
   alias Ash.Resource.Calculation
-
-  @device_status Application.compile_env(
-                   :edgehog,
-                   :astarte_device_status_module,
-                   Edgehog.Astarte.Device.DeviceStatus
-                 )
+  alias Edgehog.Astarte.Device.DeviceStatus
 
   @impl Calculation
   def load(_query, _opts, _context) do
@@ -43,7 +38,7 @@ defmodule Edgehog.Devices.Device.Calculations.DeviceStatus do
         appengine_client: client
       } = device
 
-      case @device_status.get(client, device_id) do
+      case DeviceStatus.get(client, device_id) do
         {:ok, result} -> result
         {:error, _reason} -> nil
       end

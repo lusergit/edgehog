@@ -25,12 +25,11 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentUpgradeCoreTest do
   import Edgehog.CampaignsFixtures
   import Edgehog.ContainersFixtures
   import Edgehog.TenantsFixtures
-  import Mox
 
   alias Ash.Error.Invalid
   alias Astarte.Client.APIError
-  alias Edgehog.Astarte.Device.CreateDeploymentRequestMock
-  alias Edgehog.Astarte.Device.DeploymentCommandMock
+  alias Edgehog.Astarte.Device.CreateDeploymentRequest
+  alias Edgehog.Astarte.Device.DeploymentCommand
   alias Edgehog.Campaigns
   alias Edgehog.Campaigns.Campaign
   alias Edgehog.Campaigns.CampaignMechanism.Core, as: MechanismCore
@@ -38,8 +37,6 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentUpgradeCoreTest do
   alias Edgehog.Campaigns.CampaignTarget
   alias Edgehog.Containers
   alias Phoenix.Socket.Broadcast
-
-  setup :verify_on_exit!
 
   setup do
     %{tenant: tenant_fixture()}
@@ -177,9 +174,9 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentUpgradeCoreTest do
       {:ok, _deployment} =
         Containers.mark_deployment_as_started(deployment, tenant: tenant.tenant_id)
 
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 1, fn _client,
-                                                                                 _device_id,
-                                                                                 _data ->
+      expect(CreateDeploymentRequest, :send_create_deployment_request, 1, fn _client,
+                                                                             _device_id,
+                                                                             _data ->
         :ok
       end)
 
@@ -225,9 +222,9 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentUpgradeCoreTest do
         Containers.mark_deployment_as_started(deployment, tenant: tenant.tenant_id)
 
       # First do the operation to link the deployment to the target
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 2, fn _client,
-                                                                                 _device_id,
-                                                                                 _data ->
+      expect(CreateDeploymentRequest, :send_create_deployment_request, 2, fn _client,
+                                                                             _device_id,
+                                                                             _data ->
         :ok
       end)
 
@@ -276,9 +273,9 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentUpgradeCoreTest do
         Containers.mark_deployment_as_started(deployment, tenant: tenant.tenant_id)
 
       # First do the operation to link the deployment to the target
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 1, fn _client,
-                                                                                 _device_id,
-                                                                                 _data ->
+      expect(CreateDeploymentRequest, :send_create_deployment_request, 1, fn _client,
+                                                                             _device_id,
+                                                                             _data ->
         :ok
       end)
 
@@ -295,7 +292,7 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentUpgradeCoreTest do
       {:ok, _deployment} =
         Containers.mark_deployment_as_stopped(target_deployment, tenant: tenant.tenant_id)
 
-      expect(DeploymentCommandMock, :send_deployment_command, 1, fn _client, _device_id, _data ->
+      expect(DeploymentCommand, :send_deployment_command, 1, fn _client, _device_id, _data ->
         :ok
       end)
 
@@ -357,9 +354,9 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentUpgradeCoreTest do
       {:ok, _deployment} =
         Containers.mark_deployment_as_started(deployment, tenant: tenant.tenant_id)
 
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 1, fn _client,
-                                                                                 _device_id,
-                                                                                 _data ->
+      expect(CreateDeploymentRequest, :send_create_deployment_request, 1, fn _client,
+                                                                             _device_id,
+                                                                             _data ->
         :ok
       end)
 

@@ -27,7 +27,7 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
   import Edgehog.TenantsFixtures
 
   alias Edgehog.Files.DeviceFile
-  alias Edgehog.Files.EphemeralFileMock
+  alias Edgehog.Files.EphemeralFile
   alias Edgehog.Files.FileDeleteRequest
   alias Edgehog.Files.FileDownloadRequest
   alias Edgehog.Files.FileUploadRequest
@@ -57,7 +57,7 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
 
       path = Routes.astarte_trigger_path(conn, :process_event, tenant.slug)
 
-      expect(EphemeralFileMock, :delete, 1, fn _, _, _ ->
+      expect(EphemeralFile, :delete, 1, fn _, _, _ ->
         :ok
       end)
 
@@ -98,7 +98,7 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerControllerTest do
           status: :pending
         )
 
-      expect(EphemeralFileMock, :delete, 1, fn _, _, _ ->
+      expect(EphemeralFile, :delete, 1, fn _, _, _ ->
         :ok
       end)
 

@@ -35,18 +35,18 @@ defmodule Edgehog.DataCase do
   """
 
   use ExUnit.CaseTemplate
-
-  import Mox
+  use Mimic
 
   alias Ecto.Adapters.SQL
 
   using do
     quote do
+      use Mimic
+
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
       import Edgehog.DataCase
-      import Mox
 
       alias Edgehog.Repo
     end

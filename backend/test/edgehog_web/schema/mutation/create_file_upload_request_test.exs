@@ -25,13 +25,13 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileUploadRequestTest do
   import Edgehog.FilesFixtures
 
   alias Astarte.Client.APIError
+  alias Edgehog.Astarte.Device.FileUploadRequest
   alias Edgehog.Astarte.Device.FileUploadRequest.RequestData
-  alias Edgehog.Astarte.Device.FileUploadRequestMock
-  alias Edgehog.StorageMock
+  alias Edgehog.Storage
 
   describe "createFileUploadRequest mutation" do
     test "creates file upload request with all fields", %{tenant: tenant} do
-      expect(StorageMock, :create_presigned_urls, fn path ->
+      expect(Storage, :create_presigned_urls, fn path ->
         assert String.contains?(path, "uploads/tenants/#{tenant.tenant_id}/file_upload_requests/")
 
         {:ok,
@@ -41,7 +41,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileUploadRequestTest do
          }}
       end)
 
-      expect(FileUploadRequestMock, :request_upload, fn _client, device_id, request_data ->
+      expect(FileUploadRequest, :request_upload, fn _client, device_id, request_data ->
         assert is_binary(device_id)
 
         assert %RequestData{
@@ -79,7 +79,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileUploadRequestTest do
     end
 
     test "creates storage file upload request with device file id", %{tenant: tenant} do
-      expect(StorageMock, :create_presigned_urls, fn path ->
+      expect(Storage, :create_presigned_urls, fn path ->
         assert String.contains?(path, "uploads/tenants/#{tenant.tenant_id}/file_upload_requests/")
 
         {:ok,
@@ -91,7 +91,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileUploadRequestTest do
 
       device_file = device_file_fixture(tenant: tenant)
 
-      expect(FileUploadRequestMock, :request_upload, fn _client, _device_id, request_data ->
+      expect(FileUploadRequest, :request_upload, fn _client, _device_id, request_data ->
         assert %RequestData{source: source, sourceType: :storage} = request_data
         assert source == device_file.file_id
         :ok
@@ -153,7 +153,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileUploadRequestTest do
     end
 
     test "fails if Astarte API returns error", %{tenant: tenant} do
-      expect(StorageMock, :create_presigned_urls, fn _path ->
+      expect(Storage, :create_presigned_urls, fn _path ->
         {:ok,
          %{
            put_url: "http://example.test/upload",
@@ -161,7 +161,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileUploadRequestTest do
          }}
       end)
 
-      expect(FileUploadRequestMock, :request_upload, fn _, _, _ ->
+      expect(FileUploadRequest, :request_upload, fn _, _, _ ->
         {:error, %APIError{status: 500, response: "Internal Server Error"}}
       end)
 

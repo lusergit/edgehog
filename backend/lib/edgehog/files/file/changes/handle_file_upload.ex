@@ -31,8 +31,6 @@ defmodule Edgehog.Files.File.Changes.HandleFileUpload do
 
   require Logger
 
-  @storage_module Application.compile_env(:edgehog, :files_storage_module, BucketStorage)
-
   @encodings [nil, :gz, :lz4]
   @minute_ms 60_000
   @bytes_per_gb 1_073_741_824
@@ -112,7 +110,7 @@ defmodule Edgehog.Files.File.Changes.HandleFileUpload do
   defp do_file_upload(changeset, file_name, repo_id, encoding, encoded_file) do
     tenant_id = changeset.to_tenant
 
-    case @storage_module.store(tenant_id, file_name, repo_id, encoding, encoded_file) do
+    case BucketStorage.store(tenant_id, file_name, repo_id, encoding, encoded_file) do
       {:ok, url} ->
         {attr, context_key} = select_file_encoding_context(encoding)
 
@@ -258,7 +256,7 @@ defmodule Edgehog.Files.File.Changes.HandleFileUpload do
   defp do_cleanup(file_record, context) do
     Enum.each(@encodings, fn encoding ->
       {_, key} = select_file_encoding_context(encoding)
-      if context[key], do: @storage_module.delete(file_record, encoding)
+      if context[key], do: BucketStorage.delete(file_record, encoding)
     end)
   end
 end

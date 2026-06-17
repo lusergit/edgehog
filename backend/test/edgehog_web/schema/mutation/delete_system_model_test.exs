@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2022-2024 SECO Mind Srl
+# Copyright 2022-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 
 defmodule EdgehogWeb.Schema.Mutation.DeleteSystemModelTest do
   use EdgehogWeb.GraphqlCase, async: true
+  use Mimic
 
   import Edgehog.DevicesFixtures
 
@@ -58,7 +59,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeleteSystemModelTest do
 
       id = AshGraphql.Resource.encode_relay_id(fixture)
 
-      expect(Edgehog.Assets.SystemModelPictureMock, :delete, fn _, ^picture_url ->
+      expect(Edgehog.Assets.SystemModelPicture, :delete, fn _, ^picture_url ->
         {:error, :cannot_delete}
       end)
 

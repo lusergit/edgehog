@@ -25,19 +25,16 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentDeployCoreTest do
   import Edgehog.CampaignsFixtures
   import Edgehog.ContainersFixtures
   import Edgehog.TenantsFixtures
-  import Mox
 
   alias Ash.Error.Invalid
   alias Astarte.Client.APIError
-  alias Edgehog.Astarte.Device.CreateDeploymentRequestMock
+  alias Edgehog.Astarte.Device.CreateDeploymentRequest
   alias Edgehog.Campaigns
   alias Edgehog.Campaigns.Campaign
   alias Edgehog.Campaigns.CampaignMechanism.Core, as: MechanismCore
   alias Edgehog.Campaigns.CampaignMechanism.DeploymentDeploy
   alias Edgehog.Campaigns.CampaignTarget
   alias Phoenix.Socket.Broadcast
-
-  setup :verify_on_exit!
 
   setup do
     %{tenant: tenant_fixture()}
@@ -149,9 +146,9 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentDeployCoreTest do
 
       mechanism = campaign.campaign_mechanism.value
 
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 1, fn _client,
-                                                                                 _device_id,
-                                                                                 _data ->
+      expect(CreateDeploymentRequest, :send_create_deployment_request, 1, fn _client,
+                                                                             _device_id,
+                                                                             _data ->
         :ok
       end)
 
@@ -182,9 +179,9 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentDeployCoreTest do
 
       mechanism = campaign.campaign_mechanism.value
 
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 1, fn _client,
-                                                                                 _device_id,
-                                                                                 _data ->
+      expect(CreateDeploymentRequest, :send_create_deployment_request, 1, fn _client,
+                                                                             _device_id,
+                                                                             _data ->
         :ok
       end)
 
@@ -230,9 +227,9 @@ defmodule Edgehog.Campaigns.CampaignMechanism.DeploymentDeployCoreTest do
       assert {:ok, target} =
                MechanismCore.fetch_next_valid_target(mechanism, campaign.id, tenant.tenant_id)
 
-      expect(CreateDeploymentRequestMock, :send_create_deployment_request, 1, fn _client,
-                                                                                 _device_id,
-                                                                                 _data ->
+      expect(CreateDeploymentRequest, :send_create_deployment_request, 1, fn _client,
+                                                                             _device_id,
+                                                                             _data ->
         :ok
       end)
 

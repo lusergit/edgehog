@@ -52,109 +52,6 @@ config :edgehog, EdgehogWeb.Endpoint,
   pubsub_server: Edgehog.PubSub,
   server: false
 
-# Mocks for tests
-config :edgehog, :assets_system_model_picture_module, Edgehog.Assets.SystemModelPictureMock
-
-config :edgehog,
-       :astarte_available_containers_module,
-       Edgehog.Astarte.Device.AvailableContainersMock
-
-config :edgehog,
-       :astarte_available_deployments_module,
-       Edgehog.Astarte.Device.AvailableDeploymentsMock
-
-config :edgehog,
-       :astarte_available_device_mappings_module,
-       Edgehog.Astarte.Device.AvailableDeviceMappingsMock
-
-config :edgehog,
-       :astarte_available_devices_module,
-       Edgehog.Astarte.Device.AvailableDevicesMock
-
-config :edgehog, :astarte_available_images_module, Edgehog.Astarte.Device.AvailableImagesMock
-config :edgehog, :astarte_available_networks_module, Edgehog.Astarte.Device.AvailableNetworksMock
-config :edgehog, :astarte_available_volumes_module, Edgehog.Astarte.Device.AvailableVolumesMock
-config :edgehog, :astarte_base_image_module, Edgehog.Astarte.Device.BaseImageMock
-config :edgehog, :astarte_battery_status_module, Edgehog.Astarte.Device.BatteryStatusMock
-
-config :edgehog,
-       :astarte_cellular_connection_module,
-       Edgehog.Astarte.Device.CellularConnectionMock
-
-config :edgehog,
-       :astarte_create_container_request_module,
-       Edgehog.Astarte.Device.CreateContainerRequestMock
-
-config :edgehog,
-       :astarte_create_deployment_request_module,
-       Edgehog.Astarte.Device.CreateDeploymentRequestMock
-
-config :edgehog,
-       :astarte_create_device_mapping_request_module,
-       Edgehog.Astarte.Device.CreateDeviceMappingRequestMock
-
-config :edgehog,
-       :astarte_create_image_request_module,
-       Edgehog.Astarte.Device.CreateImageRequestMock
-
-config :edgehog,
-       :astarte_create_network_request_module,
-       Edgehog.Astarte.Device.CreateNetworkRequestMock
-
-config :edgehog,
-       :astarte_create_volume_request_module,
-       Edgehog.Astarte.Device.CreateVolumeRequestMock
-
-config :edgehog,
-       :astarte_delivery_policies_data_layer,
-       Edgehog.Astarte.DeliveryPolicies.MockDataLayer
-
-config :edgehog, :astarte_deployment_command_module, Edgehog.Astarte.Device.DeploymentCommandMock
-config :edgehog, :astarte_deployment_update_module, Edgehog.Astarte.Device.DeploymentUpdateMock
-config :edgehog, :astarte_device_status_module, Edgehog.Astarte.Device.DeviceStatusMock
-
-config :edgehog,
-       :astarte_file_download_request_module,
-       Edgehog.Astarte.Device.FileDownloadRequestMock
-
-config :edgehog,
-       :astarte_file_upload_request_module,
-       Edgehog.Astarte.Device.FileUploadRequestMock
-
-config :edgehog,
-       :astarte_file_delete_request_module,
-       Edgehog.Astarte.Device.FileDeleteRequestMock
-
-config :edgehog,
-       :astarte_file_transfer_capabilities_module,
-       Edgehog.Astarte.Device.FileTransferCapabilitiesMock
-
-config :edgehog,
-       :astarte_file_download_request_module,
-       Edgehog.Astarte.Device.FileDownloadRequestMock
-
-config :edgehog, :astarte_forwarder_session_module, Edgehog.Astarte.Device.ForwarderSessionMock
-config :edgehog, :astarte_geolocation_module, Edgehog.Astarte.Device.GeolocationMock
-config :edgehog, :astarte_hardware_info_module, Edgehog.Astarte.Device.HardwareInfoMock
-config :edgehog, :astarte_interface_data_layer, Edgehog.Astarte.Interface.MockDataLayer
-config :edgehog, :astarte_led_behavior_module, Edgehog.Astarte.Device.LedBehaviorMock
-config :edgehog, :astarte_network_interface_module, Edgehog.Astarte.Device.NetworkInterfaceMock
-config :edgehog, :astarte_os_info_module, Edgehog.Astarte.Device.OSInfoMock
-config :edgehog, :astarte_ota_request_v0_module, Edgehog.Astarte.Device.OTARequestV0Mock
-config :edgehog, :astarte_ota_request_v1_module, Edgehog.Astarte.Device.OTARequestV1Mock
-config :edgehog, :astarte_runtime_info_module, Edgehog.Astarte.Device.RuntimeInfoMock
-config :edgehog, :astarte_storage_usage_module, Edgehog.Astarte.Device.StorageUsageMock
-config :edgehog, :astarte_system_status_module, Edgehog.Astarte.Device.SystemStatusMock
-config :edgehog, :astarte_trigger_data_layer, Edgehog.Astarte.Trigger.MockDataLayer
-config :edgehog, :astarte_wifi_scan_result_module, Edgehog.Astarte.Device.WiFiScanResultMock
-config :edgehog, :base_images_storage_module, Edgehog.BaseImages.StorageMock
-config :edgehog, :container_reconciler, Edgehog.Containers.ReconcilerMock
-config :edgehog, :files_storage_module, Edgehog.Files.StorageMock
-config :edgehog, :files_ephemeral_file_module, Edgehog.Files.EphemeralFileMock
-config :edgehog, :os_management_ephemeral_image_module, Edgehog.OSManagement.EphemeralImageMock
-config :edgehog, :presigned_urls_storage_module, Edgehog.StorageMock
-config :edgehog, :reconciler_module, Edgehog.Tenants.ReconcilerMock
-
 # Enable s3 storage since we're using mocks for it
 config :edgehog, enable_s3_storage?: true
 
@@ -164,8 +61,8 @@ config :edgehog, google_geolocation_api_key: "test_api_key"
 config :edgehog, ipbase_api_key: "test_api_key"
 
 config :edgehog,
-  preferred_geolocation_providers: [Edgehog.Geolocation.GeolocationProviderMock],
-  preferred_geocoding_providers: [Edgehog.Geolocation.GeocodingProviderMock]
+  preferred_geolocation_providers: [Edgehog.Geolocation.Providers.TestGeolocation],
+  preferred_geocoding_providers: [Edgehog.Geolocation.Providers.TestGeocoding]
 
 config :goth,
   disabled: true

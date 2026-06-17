@@ -23,7 +23,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
   import Edgehog.DevicesFixtures
   import Edgehog.OSManagementFixtures
 
-  alias Edgehog.Astarte.Device.DeviceStatusMock
+  alias Edgehog.Astarte.Device.DeviceStatus
 
   describe "device query" do
     test "returns device if present", %{tenant: tenant} do
@@ -198,7 +198,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     end
 
     test "Base Image info", %{tenant: tenant, id: id, device_id: device_id} do
-      expect(Edgehog.Astarte.Device.BaseImageMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.BaseImage, :get, fn _client, ^device_id ->
         {:ok,
          base_image_info_fixture(
            name: "my-image",
@@ -235,7 +235,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     end
 
     test "Battery Status", %{tenant: tenant, id: id, device_id: device_id} do
-      expect(Edgehog.Astarte.Device.BatteryStatusMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.BatteryStatus, :get, fn _client, ^device_id ->
         {:ok,
          battery_status_fixture(
            slot: "Slot 1",
@@ -271,7 +271,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     end
 
     test "Cellular Connection", %{tenant: tenant, id: id, device_id: device_id} do
-      Edgehog.Astarte.Device.CellularConnectionMock
+      Edgehog.Astarte.Device.CellularConnection
       |> expect(:get_modem_properties, fn _client, ^device_id ->
         {:ok,
          modem_properties_fixture(
@@ -338,7 +338,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     end
 
     test "Hardware Info", %{tenant: tenant, id: id, device_id: device_id} do
-      expect(Edgehog.Astarte.Device.HardwareInfoMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.HardwareInfo, :get, fn _client, ^device_id ->
         {:ok, hardware_info_fixture(cpu_architecture: "arm", cpu_model: "ARMv7")}
       end)
 
@@ -363,7 +363,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     end
 
     test "Network Interfaces", %{tenant: tenant, id: id, device_id: device_id} do
-      expect(Edgehog.Astarte.Device.NetworkInterfaceMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.NetworkInterface, :get, fn _client, ^device_id ->
         {:ok,
          network_interfaces_fixture(
            name: "eth0",
@@ -398,7 +398,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
       container_id = Ash.UUID.generate()
       status = "Stopped"
 
-      expect(Edgehog.Astarte.Device.AvailableContainersMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.AvailableContainers, :get, fn _client, ^device_id ->
         {:ok, available_containers_fixture(id: container_id, status: status)}
       end)
 
@@ -426,7 +426,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
       volume_id = Ash.UUID.generate()
       created = true
 
-      expect(Edgehog.Astarte.Device.AvailableVolumesMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.AvailableVolumes, :get, fn _client, ^device_id ->
         {:ok, available_volumes_fixture(id: volume_id, created: created)}
       end)
 
@@ -449,7 +449,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     end
 
     test "OS info", %{tenant: tenant, id: id, device_id: device_id} do
-      expect(Edgehog.Astarte.Device.OSInfoMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.OSInfo, :get, fn _client, ^device_id ->
         {:ok, os_info_fixture(name: "foo", version: "3.0.0")}
       end)
 
@@ -474,7 +474,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     end
 
     test "Runtime info", %{tenant: tenant, id: id, device_id: device_id} do
-      expect(Edgehog.Astarte.Device.RuntimeInfoMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.RuntimeInfo, :get, fn _client, ^device_id ->
         {:ok,
          runtime_info_fixture(
            name: "edgehog-esp32-device",
@@ -511,7 +511,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     end
 
     test "Storage Usage", %{tenant: tenant, id: id, device_id: device_id} do
-      expect(Edgehog.Astarte.Device.StorageUsageMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.StorageUsage, :get, fn _client, ^device_id ->
         {:ok,
          storage_usage_fixture(label: "Flash", free_bytes: 345_678, total_bytes: 348_360_704)}
       end)
@@ -540,7 +540,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     end
 
     test "System Status", %{tenant: tenant, id: id, device_id: device_id} do
-      expect(Edgehog.Astarte.Device.SystemStatusMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.SystemStatus, :get, fn _client, ^device_id ->
         {:ok,
          system_status_fixture(
            boot_id: "1c0cf72f-8428-4838-8626-1a748df5b889",
@@ -578,7 +578,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     end
 
     test "WiFi scan results", %{tenant: tenant, id: id, device_id: device_id} do
-      expect(Edgehog.Astarte.Device.WiFiScanResultMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.WiFiScanResult, :get, fn _client, ^device_id ->
         {:ok, wifi_scan_results_fixture(channel: 7, essid: "MyAP")}
       end)
 
@@ -607,7 +607,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
       id: id,
       device_id: device_id
     } do
-      expect(Edgehog.Astarte.Device.AvailableImagesMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.AvailableImages, :get, fn _client, ^device_id ->
         {:ok, available_images_fixture()}
       end)
 
@@ -636,7 +636,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
       id: id,
       device_id: device_id
     } do
-      expect(Edgehog.Astarte.Device.AvailableNetworksMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.AvailableNetworks, :get, fn _client, ^device_id ->
         {:ok, available_networks_fixture()}
       end)
 
@@ -664,7 +664,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
       id: id,
       device_id: device_id
     } do
-      expect(Edgehog.Astarte.Device.AvailableDeploymentsMock, :get, fn _client, ^device_id ->
+      expect(Edgehog.Astarte.Device.AvailableDeployments, :get, fn _client, ^device_id ->
         {:ok, available_deployments_fixture()}
       end)
 
@@ -712,7 +712,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
           {name, %Edgehog.Astarte.InterfaceVersion{major: major, minor: minor}}
         end)
 
-      expect(DeviceStatusMock, :get, fn _client, ^device_id ->
+      expect(DeviceStatus, :get, fn _client, ^device_id ->
         {:ok, device_status_fixture(introspection: all_interfaces_introspection)}
       end)
 
@@ -764,7 +764,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     test "contain only geolocation for empty introspection", ctx do
       %{tenant: tenant, id: id, device_id: device_id} = ctx
 
-      expect(DeviceStatusMock, :get, fn _client, ^device_id ->
+      expect(DeviceStatus, :get, fn _client, ^device_id ->
         {:ok, device_status_fixture(introspection: %{})}
       end)
 
@@ -845,10 +845,10 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
   end
 
   describe "device location/position" do
-    alias Edgehog.Geolocation.GeocodingProviderMock
-    alias Edgehog.Geolocation.GeolocationProviderMock
     alias Edgehog.Geolocation.Location
     alias Edgehog.Geolocation.Position
+    alias Edgehog.Geolocation.Providers.TestGeocoding, as: GeocodingProvider
+    alias Edgehog.Geolocation.Providers.TestGeolocation, as: GeolocationProvider
 
     setup %{tenant: tenant} do
       device = device_fixture(tenant: tenant)
@@ -881,7 +881,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     test "returns both position and location", ctx do
       %{tenant: tenant, id: id, document: document} = ctx
 
-      expect(GeolocationProviderMock, :geolocate, fn _device ->
+      expect(GeolocationProvider, :geolocate, fn _device ->
         {:ok,
          %Position{
            latitude: 45.4095285,
@@ -895,7 +895,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
          }}
       end)
 
-      expect(GeocodingProviderMock, :reverse_geocode, fn _position ->
+      expect(GeocodingProvider, :reverse_geocode, fn _position ->
         {:ok,
          %Location{
            formatted_address: "4 Privet Drive, Little Whinging, Surrey, UK",
@@ -928,7 +928,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     test "returns nil when it cannot geolocate the position", ctx do
       %{tenant: tenant, id: id, document: document} = ctx
 
-      expect(GeolocationProviderMock, :geolocate, fn _device ->
+      expect(GeolocationProvider, :geolocate, fn _device ->
         {:error, :position_not_found}
       end)
 
@@ -944,7 +944,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
     test "returns the position even if it cannot reverse geocode it to a location", ctx do
       %{tenant: tenant, id: id, document: document} = ctx
 
-      expect(GeolocationProviderMock, :geolocate, fn _device ->
+      expect(GeolocationProvider, :geolocate, fn _device ->
         {:ok,
          %Position{
            latitude: 45.4095285,
@@ -958,7 +958,7 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
          }}
       end)
 
-      expect(GeocodingProviderMock, :reverse_geocode, fn _position ->
+      expect(GeocodingProvider, :reverse_geocode, fn _position ->
         {:error, :location_not_found}
       end)
 

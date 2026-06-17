@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2021-2022 SECO Mind Srl
+# Copyright 2021-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ defmodule Edgehog.Geolocation.Providers.GoogleGeolocationTest do
   import Edgehog.TenantsFixtures
   import Tesla.Mock
 
-  alias Edgehog.Astarte.Device.WiFiScanResultMock
+  alias Edgehog.Astarte.Device.WiFiScanResult
   alias Edgehog.Geolocation.Position
   alias Edgehog.Geolocation.Providers.GoogleGeolocation
 
@@ -39,7 +39,7 @@ defmodule Edgehog.Geolocation.Providers.GoogleGeolocationTest do
     end
 
     test "geolocate/1 returns error without input AP list", %{device: device} do
-      expect(WiFiScanResultMock, :get, fn _appengine_client, _device_id -> {:ok, []} end)
+      expect(WiFiScanResult, :get, fn _appengine_client, _device_id -> {:ok, []} end)
       assert GoogleGeolocation.geolocate(device) == {:error, :wifi_scan_results_not_found}
     end
 
@@ -56,7 +56,7 @@ defmodule Edgehog.Geolocation.Providers.GoogleGeolocationTest do
         }
       ]
 
-      expect(WiFiScanResultMock, :get, fn _appengine_client, _device_id -> {:ok, wifi_scans} end)
+      expect(WiFiScanResult, :get, fn _appengine_client, _device_id -> {:ok, wifi_scans} end)
 
       response = %{
         "location" => %{
@@ -101,7 +101,7 @@ defmodule Edgehog.Geolocation.Providers.GoogleGeolocationTest do
         }
       ]
 
-      expect(WiFiScanResultMock, :get, fn _appengine_client, _device_id -> {:ok, wifi_scans} end)
+      expect(WiFiScanResult, :get, fn _appengine_client, _device_id -> {:ok, wifi_scans} end)
 
       response = %{
         "garbage" => "error"

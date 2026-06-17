@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2023 SECO Mind Srl
+# Copyright 2023-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ defmodule Edgehog.Astarte.InterfaceTest do
 
   alias Astarte.Client.APIError
   alias Edgehog.Astarte.Interface
-  alias Edgehog.Astarte.Interface.MockDataLayer
+  alias Edgehog.Astarte.Interface.AstarteDataLayer
 
   describe "fetch_by_name_and_major/3" do
     setup do
@@ -47,7 +47,7 @@ defmodule Edgehog.Astarte.InterfaceTest do
         major: major
       } = ctx
 
-      expect(MockDataLayer, :get, fn ^client, ^interface_name, ^major ->
+      expect(AstarteDataLayer, :get, fn ^client, ^interface_name, ^major ->
         {:ok, %{"data" => interface_map_fixture(name: interface_name, major: major)}}
       end)
 
@@ -61,7 +61,7 @@ defmodule Edgehog.Astarte.InterfaceTest do
         major: major
       } = ctx
 
-      expect(MockDataLayer, :get, fn ^client, ^interface_name, ^major ->
+      expect(AstarteDataLayer, :get, fn ^client, ^interface_name, ^major ->
         {:error, api_error(status: 404)}
       end)
 
@@ -76,7 +76,7 @@ defmodule Edgehog.Astarte.InterfaceTest do
         major: major
       } = ctx
 
-      expect(MockDataLayer, :get, fn ^client, ^interface_name, ^major ->
+      expect(AstarteDataLayer, :get, fn ^client, ^interface_name, ^major ->
         {:error, api_error(status: 500, message: "Internal Server Error")}
       end)
 
@@ -106,7 +106,7 @@ defmodule Edgehog.Astarte.InterfaceTest do
         interface_map: interface_map
       } = ctx
 
-      expect(MockDataLayer, :create, fn ^client, ^interface_map -> :ok end)
+      expect(AstarteDataLayer, :create, fn ^client, ^interface_map -> :ok end)
       assert :ok = Interface.create(client, interface_map)
     end
 
@@ -116,7 +116,7 @@ defmodule Edgehog.Astarte.InterfaceTest do
         interface_map: interface_map
       } = ctx
 
-      expect(MockDataLayer, :create, fn ^client, ^interface_map ->
+      expect(AstarteDataLayer, :create, fn ^client, ^interface_map ->
         {:error, api_error(status: 422, message: "Invalid Entity")}
       end)
 
@@ -158,7 +158,7 @@ defmodule Edgehog.Astarte.InterfaceTest do
         interface_map: interface_map
       } = ctx
 
-      expect(MockDataLayer, :update, fn ^client, ^interface_name, ^major, ^interface_map ->
+      expect(AstarteDataLayer, :update, fn ^client, ^interface_name, ^major, ^interface_map ->
         :ok
       end)
 
@@ -173,7 +173,7 @@ defmodule Edgehog.Astarte.InterfaceTest do
         interface_map: interface_map
       } = ctx
 
-      expect(MockDataLayer, :update, fn ^client, ^interface_name, ^major, ^interface_map ->
+      expect(AstarteDataLayer, :update, fn ^client, ^interface_name, ^major, ^interface_map ->
         {:error, api_error(status: 403, message: "Forbidden")}
       end)
 

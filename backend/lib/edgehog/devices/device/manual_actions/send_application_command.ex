@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2024 SECO Mind Srl
+# Copyright 2024-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,14 +22,9 @@ defmodule Edgehog.Devices.Device.ManualActions.SendApplicationCommand do
   @moduledoc false
   use Ash.Resource.ManualUpdate
 
+  alias Edgehog.Astarte.Device.DeploymentCommand
   alias Edgehog.Astarte.Device.DeploymentCommand.RequestData
   alias Edgehog.Containers.Deployment
-
-  @deployment_command Application.compile_env(
-                        :edgehog,
-                        :astarte_deployment_command_module,
-                        Edgehog.Astarte.Device.DeploymentCommand
-                      )
 
   @impl Ash.Resource.ManualUpdate
   def update(changeset, _opts, _context) do
@@ -42,7 +37,7 @@ defmodule Edgehog.Devices.Device.ManualActions.SendApplicationCommand do
          {:ok, device} <- Ash.load(device, :appengine_client),
          data = %RequestData{deployment_id: deployment.id, command: command},
          :ok <-
-           @deployment_command.send_deployment_command(
+           DeploymentCommand.send_deployment_command(
              device.appengine_client,
              device.device_id,
              data

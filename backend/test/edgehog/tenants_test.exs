@@ -28,12 +28,12 @@ defmodule Edgehog.TenantsTest do
   alias Ash.Error.Changes.Required
   alias Ash.Error.Invalid
   alias Edgehog.Astarte
-  alias Edgehog.BaseImages.StorageMock, as: BaseImagesStorageMock
-  alias Edgehog.Files.EphemeralFileMock
-  alias Edgehog.Files.StorageMock, as: FilesStorageMock
-  alias Edgehog.OSManagement.EphemeralImageMock
+  alias Edgehog.BaseImages.BucketStorage, as: BaseImagesStorage
+  alias Edgehog.Files.EphemeralFile
+  alias Edgehog.Files.File.BucketStorage, as: FilesStorage
+  alias Edgehog.OSManagement.EphemeralImage
   alias Edgehog.Tenants
-  alias Edgehog.Tenants.ReconcilerMock
+  alias Edgehog.Tenants.Reconciler
   alias Edgehog.Tenants.Tenant
 
   require Ash.Query
@@ -51,7 +51,7 @@ defmodule Edgehog.TenantsTest do
 
   describe "Tenants.create_tenant/1" do
     setup do
-      stub(ReconcilerMock, :reconcile, fn _tenant -> :ok end)
+      stub(Reconciler, :reconcile, fn _tenant -> :ok end)
 
       :ok
     end
@@ -144,7 +144,7 @@ defmodule Edgehog.TenantsTest do
     test "triggers tenant reconciliation" do
       fixture = tenant_fixture()
 
-      expect(ReconcilerMock, :reconcile, fn %Tenant{} = tenant ->
+      expect(Reconciler, :reconcile, fn %Tenant{} = tenant ->
         assert tenant.slug == fixture.slug
 
         :ok
@@ -156,10 +156,10 @@ defmodule Edgehog.TenantsTest do
 
   describe "Tenants.provision_tenant/1" do
     setup do
-      stub(ReconcilerMock, :reconcile, fn _tenant -> :ok end)
-      stub(Edgehog.Containers.ReconcilerMock, :register_device, fn _device, _tenant -> :ok end)
-      stub(Edgehog.Containers.ReconcilerMock, :stop_device, fn _device, _tenant -> :ok end)
-      stub(Edgehog.Containers.ReconcilerMock, :start_link, fn _opts -> :ok end)
+      stub(Reconciler, :reconcile, fn _tenant -> :ok end)
+      stub(Edgehog.Containers.Reconciler, :register_device, fn _device, _tenant -> :ok end)
+      stub(Edgehog.Containers.Reconciler, :stop_device, fn _device, _tenant -> :ok end)
+      stub(Edgehog.Containers.Reconciler, :start_link, fn _opts -> :ok end)
       :ok
     end
 
@@ -224,7 +224,7 @@ defmodule Edgehog.TenantsTest do
     end
 
     test "triggers tenant reconciliation" do
-      expect(ReconcilerMock, :reconcile, fn %Tenant{} = tenant ->
+      expect(Reconciler, :reconcile, fn %Tenant{} = tenant ->
         assert tenant.slug == "test"
 
         :ok
@@ -308,10 +308,10 @@ defmodule Edgehog.TenantsTest do
     alias Edgehog.Tenants
 
     setup do
-      stub(Tenants.ReconcilerMock, :reconcile, fn _tenant -> :ok end)
-      stub(Containers.ReconcilerMock, :register_device, fn _device, _tenant -> :ok end)
-      stub(Containers.ReconcilerMock, :stop_device, fn _device, _tenant -> :ok end)
-      stub(Containers.ReconcilerMock, :start_link, fn _opts -> :ok end)
+      stub(Tenants.Reconciler, :reconcile, fn _tenant -> :ok end)
+      stub(Containers.Reconciler, :register_device, fn _device, _tenant -> :ok end)
+      stub(Containers.Reconciler, :stop_device, fn _device, _tenant -> :ok end)
+      stub(Containers.Reconciler, :start_link, fn _opts -> :ok end)
       %{tenant: tenant_fixture()}
     end
 
@@ -370,24 +370,24 @@ defmodule Edgehog.TenantsTest do
           tenant: tenant
         )
 
-      expect(BaseImagesStorageMock, :delete, fn to_delete ->
+      expect(BaseImagesStorage, :delete, fn to_delete ->
         assert to_delete.id == base_image.id
         :ok
       end)
 
-      expect(FilesStorageMock, :delete, 3, fn to_delete, _encoding ->
+      expect(FilesStorage, :delete, 3, fn to_delete, _encoding ->
         assert to_delete.id == file.id
         :ok
       end)
 
-      expect(EphemeralImageMock, :delete, fn tenant_id, ota_operation_id, url ->
+      expect(EphemeralImage, :delete, fn tenant_id, ota_operation_id, url ->
         assert tenant_id == manual_ota_operation.tenant_id
         assert ota_operation_id == manual_ota_operation.id
         assert url == manual_ota_operation.base_image_url
         :ok
       end)
 
-      expect(EphemeralFileMock, :delete, fn tenant_id, file_download_request_id, url ->
+      expect(EphemeralFile, :delete, fn tenant_id, file_download_request_id, url ->
         assert tenant_id == file_download_request.tenant_id
         assert file_download_request_id == file_download_request.id
         assert url == file_download_request.url

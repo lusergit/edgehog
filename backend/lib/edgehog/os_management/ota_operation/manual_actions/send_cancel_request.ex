@@ -25,12 +25,6 @@ defmodule Edgehog.OSManagement.OTAOperation.ManualActions.SendCancelRequest do
   alias Edgehog.Astarte.Device.OTARequest
   alias Edgehog.Error.AstarteAPIError
 
-  @ota_request_v1_module Application.compile_env(
-                           :edgehog,
-                           :astarte_ota_request_v1_module,
-                           OTARequest.V1
-                         )
-
   @impl Ash.Resource.Actions.Implementation
   def run(input, _opts, _context) do
     %{
@@ -47,7 +41,7 @@ defmodule Edgehog.OSManagement.OTAOperation.ManualActions.SendCancelRequest do
       )
 
     with {:error, %Astarte.Client.APIError{} = api_error} <-
-           @ota_request_v1_module.cancel(client, device_id, ota_operation_id) do
+           OTARequest.V1.cancel(client, device_id, ota_operation_id) do
       reason =
         AstarteAPIError.exception(
           status: api_error.status,

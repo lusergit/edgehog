@@ -24,7 +24,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDeleteRequestTest do
   import Edgehog.DevicesFixtures
   import Edgehog.FilesFixtures
 
-  alias Edgehog.Astarte.Device.FileDeleteRequestMock
+  alias Edgehog.Astarte.Device.FileDeleteRequest
 
   describe "createFileDeleteRequest mutation" do
     test "creates File Delete Request with all fields", %{tenant: tenant} do
@@ -34,7 +34,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDeleteRequestTest do
       device_file = device_file_fixture(tenant: tenant, device_id: device.id)
       encoded_device_file_id = AshGraphql.Resource.encode_relay_id(device_file)
 
-      expect(FileDeleteRequestMock, :request_deletion, fn _, _, _ -> :ok end)
+      expect(FileDeleteRequest, :request_deletion, fn _, _, _ -> :ok end)
 
       result =
         create_file_delete_request_mutation(
@@ -104,7 +104,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDeleteRequestTest do
     end
 
     test "fails if an API error is returned", %{tenant: tenant} do
-      expect(FileDeleteRequestMock, :request_deletion, fn _, _, _ ->
+      expect(FileDeleteRequest, :request_deletion, fn _, _, _ ->
         {:error, api_error(status: 418, message: "I'm a teapot")}
       end)
 

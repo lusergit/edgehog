@@ -1,7 +1,7 @@
 #
 # This file is part of Edgehog.
 #
-# Copyright 2025 SECO Mind Srl
+# Copyright 2025-2026 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,18 +27,18 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
   import Edgehog.DevicesFixtures
   import Edgehog.TenantsFixtures
 
+  alias Edgehog.Astarte.Device.AvailableContainers
   alias Edgehog.Astarte.Device.AvailableContainers.ContainerStatus
-  alias Edgehog.Astarte.Device.AvailableContainersMock
+  alias Edgehog.Astarte.Device.AvailableDeployments
   alias Edgehog.Astarte.Device.AvailableDeployments.DeploymentStatus
-  alias Edgehog.Astarte.Device.AvailableDeploymentsMock
+  alias Edgehog.Astarte.Device.AvailableDeviceMappings
   alias Edgehog.Astarte.Device.AvailableDeviceMappings.DeviceMappingStatus
-  alias Edgehog.Astarte.Device.AvailableDeviceMappingsMock
+  alias Edgehog.Astarte.Device.AvailableImages
   alias Edgehog.Astarte.Device.AvailableImages.ImageStatus
-  alias Edgehog.Astarte.Device.AvailableImagesMock
+  alias Edgehog.Astarte.Device.AvailableNetworks
   alias Edgehog.Astarte.Device.AvailableNetworks.NetworkStatus
-  alias Edgehog.Astarte.Device.AvailableNetworksMock
+  alias Edgehog.Astarte.Device.AvailableVolumes
   alias Edgehog.Astarte.Device.AvailableVolumes.VolumeStatus
-  alias Edgehog.Astarte.Device.AvailableVolumesMock
   alias Edgehog.Containers.Reconciler
 
   describe "reconcile_images/2" do
@@ -73,7 +73,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
     } do
       device_id = device.device_id
 
-      expect(AvailableImagesMock, :get, fn _client, ^device_id ->
+      expect(AvailableImages, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%ImageStatus{
@@ -106,7 +106,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
 
       device_id = device.device_id
 
-      expect(AvailableImagesMock, :get, fn _client, ^device_id ->
+      expect(AvailableImages, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%ImageStatus{
@@ -167,7 +167,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
     } do
       device_id = device.device_id
 
-      expect(AvailableVolumesMock, :get, fn _client, ^device_id ->
+      expect(AvailableVolumes, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%VolumeStatus{
@@ -200,7 +200,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
 
       device_id = device.device_id
 
-      expect(AvailableVolumesMock, :get, fn _client, ^device_id ->
+      expect(AvailableVolumes, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%VolumeStatus{
@@ -263,7 +263,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
     } do
       device_id = device.device_id
 
-      expect(AvailableNetworksMock, :get, fn _client, ^device_id ->
+      expect(AvailableNetworks, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%NetworkStatus{
@@ -296,7 +296,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
 
       device_id = device.device_id
 
-      expect(AvailableNetworksMock, :get, fn _client, ^device_id ->
+      expect(AvailableNetworks, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%NetworkStatus{
@@ -359,7 +359,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
     } do
       device_id = device.device_id
 
-      expect(AvailableDeviceMappingsMock, :get, fn _client, ^device_id ->
+      expect(AvailableDeviceMappings, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%DeviceMappingStatus{
@@ -392,7 +392,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
 
       device_id = device.device_id
 
-      expect(AvailableDeviceMappingsMock, :get, fn _client, ^device_id ->
+      expect(AvailableDeviceMappings, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%DeviceMappingStatus{
@@ -451,7 +451,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
     } do
       device_id = device.device_id
 
-      expect(AvailableContainersMock, :get, fn _client, ^device_id ->
+      expect(AvailableContainers, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%ContainerStatus{
@@ -484,7 +484,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
 
       device_id = device.device_id
 
-      expect(AvailableContainersMock, :get, fn _client, ^device_id ->
+      expect(AvailableContainers, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%ContainerStatus{
@@ -536,7 +536,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
     } do
       device_id = device.device_id
 
-      expect(AvailableDeploymentsMock, :get, fn _client, ^device_id ->
+      expect(AvailableDeployments, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%DeploymentStatus{
@@ -569,7 +569,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
 
       device_id = device.device_id
 
-      expect(AvailableDeploymentsMock, :get, fn _client, ^device_id ->
+      expect(AvailableDeployments, :get, fn _client, ^device_id ->
         status =
           [
             struct!(%DeploymentStatus{

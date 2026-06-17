@@ -25,14 +25,14 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
   import Edgehog.FilesFixtures
 
   alias Astarte.Client.APIError
-  alias Edgehog.Astarte.Device.FileDownloadRequestMock
+  alias Edgehog.Astarte.Device.FileDownloadRequest
   alias Edgehog.Astarte.Device.FileTransferCapabilities
-  alias Edgehog.Astarte.Device.FileTransferCapabilitiesMock
-  alias Edgehog.Files.EphemeralFileMock
-  alias Edgehog.StorageMock
+  alias Edgehog.Astarte.Device.FileTransferCapabilities
+  alias Edgehog.Files.EphemeralFile
+  alias Edgehog.Storage
 
   setup do
-    stub(FileTransferCapabilitiesMock, :get, fn _client, _device_id ->
+    stub(FileTransferCapabilities, :get, fn _client, _device_id ->
       {:ok,
        %FileTransferCapabilities{
          unix_permissions: false,
@@ -58,11 +58,11 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
       upload: upload,
       tmp_path: tmp_path
     } do
-      expect(EphemeralFileMock, :upload, fn _, _, _ ->
+      expect(EphemeralFile, :upload, fn _, _, _ ->
         {:ok, "https://example.com/test.bin"}
       end)
 
-      expect(FileDownloadRequestMock, :request_download, fn _, _, _ -> :ok end)
+      expect(FileDownloadRequest, :request_download, fn _, _, _ -> :ok end)
 
       result =
         create_manual_file_download_request_mutation(
@@ -108,15 +108,15 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
     end
 
     test "fails if Astarte API returns error", %{tenant: tenant, upload: upload} do
-      expect(EphemeralFileMock, :upload, fn _, _, _ ->
+      expect(EphemeralFile, :upload, fn _, _, _ ->
         {:ok, "https://example.com/f.bin"}
       end)
 
-      expect(EphemeralFileMock, :delete, fn _, _, _ ->
+      expect(EphemeralFile, :delete, fn _, _, _ ->
         {:ok, "https://example.com/f.bin"}
       end)
 
-      expect(FileDownloadRequestMock, :request_download, fn _, _, _ ->
+      expect(FileDownloadRequest, :request_download, fn _, _, _ ->
         {:error, %APIError{status: 500, response: "Internal Server Error"}}
       end)
 
@@ -145,7 +145,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
 
   describe "createManagedFileDownloadRequest mutation" do
     test "creates managed file download request from file", %{tenant: tenant} do
-      expect(FileDownloadRequestMock, :request_download, fn _, _, _ -> :ok end)
+      expect(FileDownloadRequest, :request_download, fn _, _, _ -> :ok end)
 
       file = file_fixture(tenant: tenant, name: "managed.bin")
 
@@ -185,9 +185,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
       other_tenant = Edgehog.TenantsFixtures.tenant_fixture()
       other_file = file_fixture(tenant: other_tenant)
 
-      expect(StorageMock, :read_presigned_url, 0, fn _ ->
-        {:ok, %{get_url: "http://example.test/not-used"}}
-      end)
+      reject(&Storage.read_presigned_url/1)
 
       result =
         create_managed_file_download_request_mutation(
@@ -200,7 +198,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
     end
 
     test "chooses correct url and encoding depending on device capabilities", %{tenant: tenant} do
-      stub(FileTransferCapabilitiesMock, :get, fn _client, _device_id ->
+      stub(FileTransferCapabilities, :get, fn _client, _device_id ->
         {:ok,
          %FileTransferCapabilities{
            unix_permissions: false,
@@ -209,7 +207,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
          }}
       end)
 
-      expect(FileDownloadRequestMock, :request_download, fn _, _, _ -> :ok end)
+      expect(FileDownloadRequest, :request_download, fn _, _, _ -> :ok end)
 
       file = file_fixture(tenant: tenant, name: "managed.bin")
 
@@ -233,7 +231,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
       test "test encoding #{encoding} for non archive file", %{tenant: tenant} do
         encoding = unquote(encoding)
 
-        stub(FileTransferCapabilitiesMock, :get, fn _client, _device_id ->
+        stub(FileTransferCapabilities, :get, fn _client, _device_id ->
           {:ok,
            %FileTransferCapabilities{
              unix_permissions: false,
@@ -242,7 +240,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
            }}
         end)
 
-        expect(FileDownloadRequestMock, :request_download, fn _, _, _ -> :ok end)
+        expect(FileDownloadRequest, :request_download, fn _, _, _ -> :ok end)
 
         file = file_fixture(tenant: tenant, name: "managed.bin")
 
@@ -273,7 +271,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
       test "test encoding #{encoding} for archive file", %{tenant: tenant} do
         encoding = unquote(encoding)
 
-        stub(FileTransferCapabilitiesMock, :get, fn _client, _device_id ->
+        stub(FileTransferCapabilities, :get, fn _client, _device_id ->
           {:ok,
            %FileTransferCapabilities{
              unix_permissions: false,
@@ -282,7 +280,7 @@ defmodule EdgehogWeb.Schema.Mutation.CreateFileDownloadRequestTest do
            }}
         end)
 
-        expect(FileDownloadRequestMock, :request_download, fn _, _, _ -> :ok end)
+        expect(FileDownloadRequest, :request_download, fn _, _, _ -> :ok end)
 
         file = file_fixture(tenant: tenant, name: "managed.bin", is_archive: true)
 

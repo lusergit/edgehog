@@ -17,7 +17,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 defmodule Edgehog.Tenants.ReconcilerTest do
-  # This can't be async: true because we're using Mox in global mode
+  # This can't be async: true because we're using Mimic in global mode
   use Edgehog.DataCase
 
   import Edgehog.AstarteFixtures
@@ -33,10 +33,10 @@ defmodule Edgehog.Tenants.ReconcilerTest do
 
   describe "reconcile_tenant/1" do
     setup do
-      # We have to use Mox in global mode because the Interfaces and Triggers mocks are
+      # We have to use Mimic in global mode because the Interfaces and Triggers mocks are
       # called by an anonymous task launched by the reconciler and we can't easily recover
       # its pid to allow mocks call from it
-      Mox.set_mox_global()
+      Mimic.set_mimic_global()
 
       # Mock the Astarte version check to support trigger delivery policies and
       # device registration and deletion triggers
@@ -63,7 +63,7 @@ defmodule Edgehog.Tenants.ReconcilerTest do
       test_pid = self()
       ref = make_ref()
 
-      Interface.MockDataLayer
+      Interface.AstarteDataLayer
       |> expect(:get, interface_count, fn _client, _interface_name, _major ->
         {:error, api_error(status: 404)}
       end)
@@ -73,7 +73,7 @@ defmodule Edgehog.Tenants.ReconcilerTest do
         :ok
       end)
 
-      DeliveryPolicies.MockDataLayer
+      DeliveryPolicies.AstarteDataLayer
       |> expect(:get, policy_count, fn _client, _policy_name ->
         {:error, api_error(status: 404)}
       end)
@@ -83,7 +83,7 @@ defmodule Edgehog.Tenants.ReconcilerTest do
         :ok
       end)
 
-      Trigger.MockDataLayer
+      Trigger.AstarteDataLayer
       |> expect(:get, trigger_count, fn _client, _trigger_name ->
         {:error, api_error(status: 404)}
       end)
@@ -124,7 +124,7 @@ defmodule Edgehog.Tenants.ReconcilerTest do
       test_pid = self()
       ref = make_ref()
 
-      Interface.MockDataLayer
+      Interface.AstarteDataLayer
       |> expect(:get, interface_count, fn _client, _interface_name, _major ->
         {:error, api_error(status: 404)}
       end)
@@ -135,15 +135,11 @@ defmodule Edgehog.Tenants.ReconcilerTest do
       end)
 
       # Should not call trigger delivery policies for old versions
-      Edgehog.Astarte.DeliveryPolicies.MockDataLayer
-      |> expect(:get, 0, fn _client, _policy_name ->
-        {:error, api_error(status: 404)}
-      end)
-      |> expect(:create, 0, fn _client, _policy_map ->
-        :ok
-      end)
+      Edgehog.Astarte.DeliveryPolicies.AstarteDataLayer
+      |> reject(:get, 2)
+      |> reject(:create, 2)
 
-      Trigger.MockDataLayer
+      Trigger.AstarteDataLayer
       |> expect(:get, trigger_count, fn _client, _trigger_name ->
         {:error, api_error(status: 404)}
       end)

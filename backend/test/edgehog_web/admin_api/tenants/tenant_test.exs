@@ -37,11 +37,11 @@ defmodule EdgehogWeb.AdminAPI.Tenants.TenantTest do
                          |> String.trim()
 
   setup do
-    stub(Edgehog.Tenants.ReconcilerMock, :reconcile_tenant, fn _tenant -> :ok end)
-    stub(Edgehog.Tenants.ReconcilerMock, :reconcile, fn _tenant -> :ok end)
-    stub(Edgehog.Containers.ReconcilerMock, :register_device, fn _device, _tenant -> :ok end)
-    stub(Edgehog.Containers.ReconcilerMock, :stop_device, fn _device, _tenant -> :ok end)
-    stub(Edgehog.Containers.ReconcilerMock, :start_link, fn _opts -> :ok end)
+    stub(Edgehog.Tenants.Reconciler, :reconcile_tenant, fn _tenant -> :ok end)
+    stub(Edgehog.Tenants.Reconciler, :reconcile, fn _tenant -> :ok end)
+    stub(Edgehog.Containers.Reconciler, :register_device, fn _device, _tenant -> :ok end)
+    stub(Edgehog.Containers.Reconciler, :stop_device, fn _device, _tenant -> :ok end)
+    stub(Edgehog.Containers.Reconciler, :start_link, fn _opts -> :ok end)
     {:ok, path: ~p"/admin-api/v1/tenants"}
   end
 
