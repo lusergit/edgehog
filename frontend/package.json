@@ -1,6 +1,6 @@
 {
   "name": "edgehog-device-manager-frontend",
-  "version": "0.13.0-rc.0",
+  "version": "0.13.0-rc.1",
   "bugs": {
     "url": "https://github.com/edgehog-device-manager/edgehog/issues"
   },
@@ -98,11 +98,7 @@
     "i18n:fix-paths": "node ../tools/langs_updater.js --fix-paths src/i18n/langs"
   },
   "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
+    "production": [">0.2%", "not dead", "not op_mini all"],
     "development": [
       "last 1 chrome version",
       "last 1 firefox version",
