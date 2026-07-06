@@ -497,32 +497,38 @@ const Sidebar = ({
             className="w-100 justify-content-center"
           />
         </div>
-        <div className="sidebar-meta text-muted fw-semibold">
-          <span className="sidebar-app-name">{appName}</span>
-          <small className="text-secondary opacity-75 ms-1">
-            v{appVersion}
-          </small>
+        <div className="sidebar-meta text-muted fw-semibold text-center">
+          <div>
+            <span className="sidebar-app-name">{appName}</span>
+            <small className="text-secondary opacity-75 ms-1">
+              v{appVersion}
+            </small>
+          </div>
 
-          {repoUrl && (
-            <a
-              href={repoUrl}
-              className="sidebar-app-name text-reset ms-1"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Icon className="text-black" icon="github" />
-            </a>
-          )}
+          {(repoUrl || docsUrl) && (
+            <div className="sidebar-app-name mt-1">
+              {repoUrl && (
+                <a
+                  href={repoUrl}
+                  className="text-reset mx-1"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Icon className="text-black" icon="github" />
+                </a>
+              )}
 
-          {docsUrl && (
-            <a
-              href={docsUrl}
-              className="sidebar-app-name text-reset ms-1"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Icon className="text-black" icon="documentation" />
-            </a>
+              {docsUrl && (
+                <a
+                  href={docsUrl}
+                  className="text-reset mx-1"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Icon className="text-black" icon="documentation" />
+                </a>
+              )}
+            </div>
           )}
         </div>
       </div>
