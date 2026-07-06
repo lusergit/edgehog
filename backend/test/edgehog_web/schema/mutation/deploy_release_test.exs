@@ -24,9 +24,9 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
 
   alias Edgehog.Astarte.Device.CreateContainerRequest
   alias Edgehog.Astarte.Device.CreateDeploymentRequest
-  alias Edgehog.Astarte.Device.CreateDeviceMappingRequest
   alias Edgehog.Astarte.Device.CreateNetworkRequest
   alias Edgehog.Astarte.Device.CreateVolumeRequest
+  alias Edgehog.Containers.DeviceMapping
   alias Edgehog.Containers.Image
 
   test "deployRelease creates the deployment on the device", %{tenant: tenant} do
@@ -62,9 +62,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
       :ok
     end)
 
-    expect(CreateDeviceMappingRequest, :send_create_device_mapping_request, 1, fn _, _, _ ->
-      :ok
-    end)
+    expect(DeviceMapping.Deployment.Provisioner, :provision, fn _, _, _ -> :ok end)
 
     expect(CreateContainerRequest, :send_create_container_request, containers, fn _, _, data ->
       assert Enum.count(data.volumeIds) == volumes_per_container

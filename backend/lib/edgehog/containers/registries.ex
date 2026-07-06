@@ -34,7 +34,8 @@ defmodule Edgehog.Containers.Registries do
   @impl Supervisor
   def init(_args) do
     children = [
-      {Registry, keys: :unique, name: Image.Deployment.Provisioner.Registry}
+      {Registry, keys: :unique, name: Image.Deployment.Provisioner.Registry},
+      {Registry, keys: :unique, name: DeviceMapping.Deployment.Provisioner.Registry}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
