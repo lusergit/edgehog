@@ -77,7 +77,8 @@ defmodule Edgehog.Devices.Device.ManualActions.SendCreateContainer do
         storageOpt: container.storage_opt,
         readOnlyRootfs: container.read_only_rootfs,
         tmpfs: container.tmpfs,
-        privileged: container.privileged
+        privileged: container.privileged,
+        deviceRequestIds: []
       }
 
       with :ok <-
