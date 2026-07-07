@@ -35,6 +35,7 @@ defmodule Edgehog.Containers.Registries do
   def init(_args) do
     children = [
       {Registry, keys: :unique, name: Image.Deployment.Provisioner.Registry},
+      {Registry, keys: :unique, name: Network.Deployment.Provisioner.Registry},
       {Registry, keys: :unique, name: DeviceMapping.Deployment.Provisioner.Registry}
     ]
 
