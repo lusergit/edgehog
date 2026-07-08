@@ -215,9 +215,7 @@ defmodule Edgehog.Containers.DeviceMapping.Deployment.Provisioner do
     retries = Map.fetch!(state, :retries)
     max_retries = Application.get_env(:edgehog, :max_device_mapping_deployment_retries, 100)
 
-    if retries > max_retries do
-      {:stop, {:shutdown, :max_retries}, state}
-    else
+    if retries < max_retries do
       timeout = timeout(state)
       timeout_seconds = round(timeout / 1000)
 
@@ -229,6 +227,8 @@ defmodule Edgehog.Containers.DeviceMapping.Deployment.Provisioner do
       """)
 
       {:noreply, increase_retries(state), timeout}
+    else
+      {:stop, {:shutdown, :max_retries}, state}
     end
   end
 
