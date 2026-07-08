@@ -205,7 +205,7 @@ defmodule Edgehog.Containers.DeviceMapping.Deployment.ProvisionerTest do
 
       Phoenix.PubSub.subscribe(
         Edgehog.PubSub,
-        "ready:device_mapping_deployment:#{device_mapping_deployment.id}"
+        "ready:device_mapping_deployments:#{device_mapping_deployment.id}"
       )
 
       Provisioner.start(provisioner)
@@ -217,7 +217,7 @@ defmodule Edgehog.Containers.DeviceMapping.Deployment.ProvisionerTest do
 
       Phoenix.PubSub.unsubscribe(
         Edgehog.PubSub,
-        "ready:device_mapping_deployment:#{device_mapping_deployment.id}"
+        "ready:device_mapping_deployments:#{device_mapping_deployment.id}"
       )
     end
   end

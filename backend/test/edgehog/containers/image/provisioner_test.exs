@@ -181,7 +181,7 @@ defmodule Edgehog.Containers.Image.Deployment.ProvisionerTest do
 
       Sandbox.allow(Edgehog.Repo, self(), provisioner)
 
-      Phoenix.PubSub.subscribe(Edgehog.PubSub, "ready:image_deployment:#{image_deployment.id}")
+      Phoenix.PubSub.subscribe(Edgehog.PubSub, "ready:image_deployments:#{image_deployment.id}")
 
       Provisioner.start(provisioner)
 
@@ -190,7 +190,7 @@ defmodule Edgehog.Containers.Image.Deployment.ProvisionerTest do
       assert new_image_deployment.id == image_deployment.id
       assert new_image_deployment.is_ready
 
-      Phoenix.PubSub.unsubscribe(Edgehog.PubSub, "ready:image_deployment:#{image_deployment.id}")
+      Phoenix.PubSub.unsubscribe(Edgehog.PubSub, "ready:image_deployments:#{image_deployment.id}")
     end
   end
 end

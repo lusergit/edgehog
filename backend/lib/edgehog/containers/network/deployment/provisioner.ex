@@ -178,7 +178,7 @@ defmodule Edgehog.Containers.Network.Deployment.Provisioner do
 
     Phoenix.PubSub.broadcast(
       Edgehog.PubSub,
-      "ready:network_deployment:#{id}",
+      "ready:network_deployments:#{id}",
       {:ready, network_deployment}
     )
 
@@ -204,7 +204,7 @@ defmodule Edgehog.Containers.Network.Deployment.Provisioner do
     """)
 
     # Unsubscribe from events, we're terminating
-    Phoenix.PubSub.unsubscribe(Edgehog.PubSub, "network_deployment:#{id}")
+    Phoenix.PubSub.unsubscribe(Edgehog.PubSub, "network_deployments:#{id}")
   end
 
   defp retry_or_stop(error, state) do

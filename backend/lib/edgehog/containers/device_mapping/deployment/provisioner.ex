@@ -178,7 +178,7 @@ defmodule Edgehog.Containers.DeviceMapping.Deployment.Provisioner do
 
     Phoenix.PubSub.broadcast(
       Edgehog.PubSub,
-      "ready:device_mapping_deployment:#{id}",
+      "ready:device_mapping_deployments:#{id}",
       {:ready, device_mapping_deployment}
     )
 
@@ -204,7 +204,7 @@ defmodule Edgehog.Containers.DeviceMapping.Deployment.Provisioner do
     """)
 
     # Unsubscribe from events, we're terminating
-    Phoenix.PubSub.unsubscribe(Edgehog.PubSub, "device_mapping_deployment:#{id}")
+    Phoenix.PubSub.unsubscribe(Edgehog.PubSub, "device_mapping_deployments:#{id}")
   end
 
   defp retry_or_stop(error, state) do
