@@ -37,6 +37,7 @@ defmodule Edgehog.Devices.Device.ManualActions.SendCreateContainer do
              :image,
              :networks,
              :device_mappings,
+             device_requests: [:capabilities],
              container_volumes: [:binding]
            ]),
          {:ok, device} <- Ash.load(device, :appengine_client) do
@@ -78,7 +79,7 @@ defmodule Edgehog.Devices.Device.ManualActions.SendCreateContainer do
         readOnlyRootfs: container.read_only_rootfs,
         tmpfs: container.tmpfs,
         privileged: container.privileged,
-        deviceRequestIds: []
+        deviceRequestIds: Enum.map(container.device_requests, & &1.id)
       }
 
       with :ok <-

@@ -36,7 +36,8 @@ defmodule Edgehog.Containers.Container.Deployment do
 
     paginate_relationship_with network_deployments: :relay,
                                volume_deployments: :relay,
-                               device_mapping_deployments: :relay
+                               device_mapping_deployments: :relay,
+                               device_request_deployments: :relay
   end
 
   actions do
@@ -196,6 +197,13 @@ defmodule Edgehog.Containers.Container.Deployment do
       through Edgehog.Containers.ContainerDeploymentDeviceMappingDeployment
       source_attribute_on_join_resource :container_deployment_id
       destination_attribute_on_join_resource :device_mapping_deployment_id
+      public? true
+    end
+
+    many_to_many :device_request_deployments, Edgehog.Containers.DeviceRequest.Deployment do
+      through Edgehog.Containers.ContainerDeploymentDeviceRequestDeployment
+      source_attribute_on_join_resource :container_deployment_id
+      destination_attribute_on_join_resource :device_request_deployment_id
       public? true
     end
   end

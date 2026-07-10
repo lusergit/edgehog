@@ -330,6 +330,26 @@ defmodule Edgehog.Containers do
         args: [:message]
     end
 
+    resource Edgehog.Containers.DeviceRequest
+
+    resource Edgehog.Containers.DeviceRequest.Deployment do
+      define :deploy_device_request,
+        action: :deploy,
+        args: [:device_request, :device]
+
+      define :destroy_device_request_deployment, action: :destroy
+
+      define :fetch_device_request_deployment,
+        action: :read,
+        get_by_identity: :device_request_instance
+
+      define :mark_device_request_deployment_as_sent, action: :mark_as_sent
+      define :mark_device_request_deployment_as_present, action: :mark_as_present
+      define :mark_device_request_deployment_as_not_present, action: :mark_as_not_present
+    end
+
+    resource Edgehog.Containers.ContainerDeploymentDeviceRequestDeployment
+
     resource Edgehog.Containers.ContainerDeploymentDeviceMappingDeployment
 
     resource DeploymentContainerDeployment

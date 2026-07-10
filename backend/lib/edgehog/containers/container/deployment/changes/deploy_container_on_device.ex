@@ -37,6 +37,7 @@ defmodule Edgehog.Containers.Container.Deployment.Changes.DeployContainerOnDevic
              :volume_deployments,
              :network_deployments,
              :device_mapping_deployments,
+             :device_request_deployments,
              :device,
              :container,
              :state
@@ -45,9 +46,13 @@ defmodule Edgehog.Containers.Container.Deployment.Changes.DeployContainerOnDevic
       volume_deployments = container_deployment.volume_deployments
       network_deployments = container_deployment.network_deployments
       device_mapping_deployments = container_deployment.device_mapping_deployments
+      device_request_deployments = container_deployment.device_request_deployments
 
       resources = [
-        image_deployment | volume_deployments ++ network_deployments ++ device_mapping_deployments
+        image_deployment
+        | volume_deployments ++
+            network_deployments ++
+            device_mapping_deployments ++ device_request_deployments
       ]
 
       Enum.each(resources, &deploy_resource(&1, deployment, tenant))

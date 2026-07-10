@@ -31,6 +31,7 @@ defmodule Edgehog.Devices.Device do
   alias Edgehog.Changes.NormalizeTagName
   alias Edgehog.Containers.Deployment
   alias Edgehog.Containers.DeviceMapping
+  alias Edgehog.Containers.DeviceRequest
   alias Edgehog.Containers.Image
   alias Edgehog.Containers.Release
   alias Edgehog.Containers.Volume
@@ -386,6 +387,24 @@ defmodule Edgehog.Devices.Device do
       end
 
       manual ManualActions.SendCreateDeviceMapping
+    end
+
+    update :send_create_device_request_request do
+      description "Send a create device request to the device."
+
+      argument :device_request, :struct do
+        constraints instance_of: DeviceRequest
+        description "The new device request for the device."
+        allow_nil? false
+      end
+
+      argument :deployment, :struct do
+        constraints instance_of: Deployment
+        description "The deployment in which this device request is used."
+        allow_nil? false
+      end
+
+      manual ManualActions.SendCreateDeviceRequest
     end
 
     update :send_release_command do

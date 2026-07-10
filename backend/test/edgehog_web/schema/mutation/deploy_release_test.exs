@@ -25,6 +25,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
   alias Edgehog.Astarte.Device.CreateContainerRequest
   alias Edgehog.Astarte.Device.CreateDeploymentRequest
   alias Edgehog.Containers.DeviceMapping
+  alias Edgehog.Containers.DeviceRequest
   alias Edgehog.Containers.Image
   alias Edgehog.Containers.Network
   alias Edgehog.Containers.Volume
@@ -41,12 +42,14 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
 
     network = network_fixture(tenant: tenant)
     device_mapping = device_mapping_fixture(tenant: tenant)
+    device_request = device_request_fixture(tenant: tenant)
 
     container_params = [
       volumes: volumes_per_container,
       volume_target: volume_target,
       networks: [network.id],
-      device_mappings: [device_mapping.id]
+      device_mappings: [device_mapping.id],
+      device_requests: [device_request.id]
     ]
 
     device = device_fixture(tenant: tenant)
@@ -61,6 +64,8 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
     expect(Network.Deployment.Provisioner, :provision, containers, fn _, _, _ -> :ok end)
 
     expect(DeviceMapping.Deployment.Provisioner, :provision, fn _, _, _ -> :ok end)
+
+    expect(DeviceRequest.Deployment.Provisioner, :provision, 1, fn _, _, _ -> :ok end)
 
     expect(CreateContainerRequest, :send_create_container_request, containers, fn _, _, data ->
       assert Enum.count(data.volumeIds) == volumes_per_container
