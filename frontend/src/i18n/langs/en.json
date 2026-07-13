@@ -305,6 +305,12 @@
   "components.ContainerDetails.capDrop": {
     "defaultMessage": "Cap Drop"
   },
+  "components.ContainerDetails.capabilities": {
+    "defaultMessage": "Capabilities"
+  },
+  "components.ContainerDetails.count": {
+    "defaultMessage": "Count"
+  },
   "components.ContainerDetails.cpuPeriodLabel": {
     "defaultMessage": "CPU Period (microseconds)"
   },
@@ -317,8 +323,23 @@
   "components.ContainerDetails.cpuRealtimeRuntimeLabel": {
     "defaultMessage": "CPU Realtime Runtime (microseconds)"
   },
+  "components.ContainerDetails.deviceIDs": {
+    "defaultMessage": "Device IDs"
+  },
   "components.ContainerDetails.deviceMappingsLabel": {
     "defaultMessage": "Device Mappings"
+  },
+  "components.ContainerDetails.deviceRequestIndex": {
+    "defaultMessage": "Request {index}"
+  },
+  "components.ContainerDetails.deviceRequestLabel": {
+    "defaultMessage": "Device Requests"
+  },
+  "components.ContainerDetails.driver": {
+    "defaultMessage": "Driver"
+  },
+  "components.ContainerDetails.driverOptions": {
+    "defaultMessage": "Driver Options"
   },
   "components.ContainerDetails.envLabel": {
     "defaultMessage": "Environment (JSON String)"
@@ -379,6 +400,9 @@
   },
   "components.ContainerDetails.noDeviceMappings": {
     "defaultMessage": "No device mappings assigned."
+  },
+  "components.ContainerDetails.noDeviceRequests": {
+    "defaultMessage": "No device requests assigned."
   },
   "components.ContainerDetails.noNetworks": {
     "defaultMessage": "No networks assigned."
@@ -549,6 +573,9 @@
   },
   "components.DeploymentDetails.deviceMappings": {
     "defaultMessage": "Device Mappings"
+  },
+  "components.DeploymentDetails.deviceRequests": {
+    "defaultMessage": "Device Requests"
   },
   "components.DeploymentDetails.incompatibleVersion": {
     "defaultMessage": "{version} (Incompatible system model)"
@@ -1844,6 +1871,15 @@
   "forms.CreateContainer.deviceMappingsLabel": {
     "defaultMessage": "Device Mappings"
   },
+  "forms.CreateContainer.deviceRequestIndex": {
+    "defaultMessage": "Request {index}"
+  },
+  "forms.CreateContainer.deviceRequestsAddButton": {
+    "defaultMessage": "Add Device Request"
+  },
+  "forms.CreateContainer.driverOptionsLabel": {
+    "defaultMessage": "Driver Options (JSON String)"
+  },
   "forms.CreateContainer.imageCredentialsLabel": {
     "defaultMessage": "Image Credentials"
   },
@@ -1870,6 +1906,12 @@
   },
   "forms.CreateContainer.networkPortBindingsLabel": {
     "defaultMessage": "Port Bindings"
+  },
+  "forms.CreateContainer.removeDeviceRequestButton": {
+    "defaultMessage": "Remove Request"
+  },
+  "forms.CreateContainer.requestsAddButton": {
+    "defaultMessage": "Add Request"
   },
   "forms.CreateContainer.resourceLimitsCpuPeriodLabel": {
     "defaultMessage": "CPU Period (microseconds)"
@@ -2852,6 +2894,60 @@
   },
   "forms.fieldExplanation.deviceMappings.title": {
     "defaultMessage": "Device Mappings"
+  },
+  "forms.fieldExplanation.deviceRequest.capabilities.description": {
+    "defaultMessage": "Each row represents an OR condition. Comma-separated values within a row represent AND conditions. For example, 'gpu,compute' requires both capabilities, while separate rows such as 'gpu' and 'video' allow either capability."
+  },
+  "forms.fieldExplanation.deviceRequest.capabilities.example": {
+    "defaultMessage": "gpu,compute video"
+  },
+  "forms.fieldExplanation.deviceRequest.capabilities.title": {
+    "defaultMessage": "Capabilities"
+  },
+  "forms.fieldExplanation.deviceRequest.count.description": {
+    "defaultMessage": "The number of matching devices to assign to the container. Set to -1 to request all matching devices, or specify a positive number to let Docker automatically choose that many devices."
+  },
+  "forms.fieldExplanation.deviceRequest.count.example": {
+    "defaultMessage": "-1"
+  },
+  "forms.fieldExplanation.deviceRequest.count.title": {
+    "defaultMessage": "Count"
+  },
+  "forms.fieldExplanation.deviceRequest.description": {
+    "defaultMessage": "Configure hardware device requirements for your container. Device requests allow you to specify a driver, required device count, device IDs, and capabilities."
+  },
+  "forms.fieldExplanation.deviceRequest.deviceIds.description": {
+    "defaultMessage": "Request specific hardware devices instead of allowing Docker to automatically select them. When Device IDs are specified, Count should usually be omitted or set to 0."
+  },
+  "forms.fieldExplanation.deviceRequest.deviceIds.example": {
+    "defaultMessage": "[\"0\", \"2\"]"
+  },
+  "forms.fieldExplanation.deviceRequest.deviceIds.title": {
+    "defaultMessage": "Device IDs"
+  },
+  "forms.fieldExplanation.deviceRequest.driver.description": {
+    "defaultMessage": "The name of the Docker runtime driver plugin installed on the host system (for example 'nvidia' or 'cdi'). Leave empty to use the default Docker runtime if supported."
+  },
+  "forms.fieldExplanation.deviceRequest.driver.example": {
+    "defaultMessage": "nvidia"
+  },
+  "forms.fieldExplanation.deviceRequest.driver.title": {
+    "defaultMessage": "Driver"
+  },
+  "forms.fieldExplanation.deviceRequest.example": {
+    "defaultMessage": "GPU device request: driver=nvidia, count=1"
+  },
+  "forms.fieldExplanation.deviceRequest.title": {
+    "defaultMessage": "Device Requests"
+  },
+  "forms.fieldExplanation.driverOptions.description": {
+    "defaultMessage": "A key-value map passed directly to the underlying device driver plugin for runtime-specific constraints (such as minimum driver versions or environmental bindings)"
+  },
+  "forms.fieldExplanation.driverOptions.example": {
+    "defaultMessage": "[(\"require.cuda\": \"12.2\")]"
+  },
+  "forms.fieldExplanation.driverOptions.title": {
+    "defaultMessage": "Driver Options"
   },
   "forms.fieldExplanation.env.description": {
     "defaultMessage": "JSON array of environment variables in 'KEY=VALUE' format, used to pass config to the containerized app."
