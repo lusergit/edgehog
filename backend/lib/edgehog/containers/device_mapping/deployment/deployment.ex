@@ -22,7 +22,8 @@ defmodule Edgehog.Containers.DeviceMapping.Deployment do
   @moduledoc false
   use Edgehog.MultitenantResource,
     domain: Edgehog.Containers,
-    extensions: [AshGraphql.Resource]
+    extensions: [AshGraphql.Resource],
+    notifiers: [Ash.Notifier.PubSub]
 
   alias Edgehog.Containers.Changes.MaybeNotifyUpwards
   alias Edgehog.Containers.Deployment
@@ -155,6 +156,16 @@ defmodule Edgehog.Containers.DeviceMapping.Deployment do
 
   identities do
     identity :device_mapping_instance, [:device_mapping_id, :device_id]
+  end
+
+  pub_sub do
+    prefix "device_mapping_deployments"
+    module EdgehogWeb.Endpoint
+
+    publish :mark_as_present, [[:id, "*"]]
+    publish :mark_as_not_present, [[:id, "*"]]
+    publish :mark_as_errored, [[:id, "*"]]
+    publish :set_state, [[:id, "*"]]
   end
 
   postgres do

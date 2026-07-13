@@ -24,10 +24,10 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
 
   alias Edgehog.Astarte.Device.CreateContainerRequest
   alias Edgehog.Astarte.Device.CreateDeploymentRequest
-  alias Edgehog.Astarte.Device.CreateDeviceMappingRequest
-  alias Edgehog.Astarte.Device.CreateImageRequest
-  alias Edgehog.Astarte.Device.CreateNetworkRequest
-  alias Edgehog.Astarte.Device.CreateVolumeRequest
+  alias Edgehog.Containers.DeviceMapping
+  alias Edgehog.Containers.Image
+  alias Edgehog.Containers.Network
+  alias Edgehog.Containers.Volume
 
   test "deployRelease creates the deployment on the device", %{tenant: tenant} do
     containers = 3
@@ -54,17 +54,13 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
     release =
       release_fixture(tenant: tenant, containers: containers, container_params: container_params)
 
-    expect(CreateImageRequest, :send_create_image_request, images, fn _, _, _ -> :ok end)
+    expect(Image.Deployment.Provisioner, :provision, images, fn _, _, _ -> :ok end)
 
-    expect(CreateVolumeRequest, :send_create_volume_request, volumes, fn _, _, _ -> :ok end)
+    expect(Volume.Deployment.Provisioner, :provision, volumes, fn _, _, _ -> :ok end)
 
-    expect(CreateNetworkRequest, :send_create_network_request, containers, fn _, _, _ ->
-      :ok
-    end)
+    expect(Network.Deployment.Provisioner, :provision, containers, fn _, _, _ -> :ok end)
 
-    expect(CreateDeviceMappingRequest, :send_create_device_mapping_request, 1, fn _, _, _ ->
-      :ok
-    end)
+    expect(DeviceMapping.Deployment.Provisioner, :provision, fn _, _, _ -> :ok end)
 
     expect(CreateContainerRequest, :send_create_container_request, containers, fn _, _, data ->
       assert Enum.count(data.volumeIds) == volumes_per_container
@@ -133,7 +129,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
 
     ordered_containers = [container_1.id, container_3.id, container_2.id]
 
-    expect(CreateImageRequest, :send_create_image_request, 3, fn _, _, _ -> :ok end)
+    expect(Image.Deployment.Provisioner, :provision, 3, fn _, _, _ -> :ok end)
 
     expect(CreateContainerRequest, :send_create_container_request, 3, fn _, _, _ ->
       :ok
@@ -179,7 +175,7 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
         container_dependencies: container_dependencies
       )
 
-    expect(CreateImageRequest, :send_create_image_request, 2, fn _, _, _ -> :ok end)
+    expect(Image.Deployment.Provisioner, :provision, 2, fn _, _, _ -> :ok end)
 
     expect(CreateContainerRequest, :send_create_container_request, 2, fn _, _, _ ->
       :ok

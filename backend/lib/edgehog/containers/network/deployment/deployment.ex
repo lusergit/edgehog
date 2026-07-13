@@ -22,7 +22,8 @@ defmodule Edgehog.Containers.Network.Deployment do
   @moduledoc false
   use Edgehog.MultitenantResource,
     domain: Edgehog.Containers,
-    extensions: [AshGraphql.Resource]
+    extensions: [AshGraphql.Resource],
+    notifiers: [Ash.Notifier.PubSub]
 
   alias Edgehog.Containers.Changes.MaybeNotifyUpwards
   alias Edgehog.Containers.Deployment
@@ -154,6 +155,17 @@ defmodule Edgehog.Containers.Network.Deployment do
 
   identities do
     identity :network_instance, [:network_id, :device_id]
+  end
+
+  pub_sub do
+    prefix "network_deployments"
+    module EdgehogWeb.Endpoint
+
+    publish :mark_as_sent, [[:id, "*"]]
+    publish :mark_as_available, [[:id, "*"]]
+    publish :mark_as_unavailable, [[:id, "*"]]
+    publish :mark_as_errored, [[:id, "*"]]
+    publish :set_state, [[:id, "*"]]
   end
 
   postgres do
