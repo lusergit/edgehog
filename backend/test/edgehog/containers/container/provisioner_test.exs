@@ -157,10 +157,9 @@ defmodule Edgehog.Containers.Container.Deployment.ProvisionerTest do
 
       Sandbox.allow(Edgehog.Repo, self(), provisioner)
 
-      Phoenix.PubSub.subscribe(
-        Edgehog.PubSub,
-        "ready:container_deployments:#{container_deployment.id}"
-      )
+      topic = Provisioner.topic(container_deployment)
+
+      Phoenix.PubSub.subscribe(Edgehog.PubSub, topic)
 
       Provisioner.start(provisioner)
 
@@ -169,10 +168,7 @@ defmodule Edgehog.Containers.Container.Deployment.ProvisionerTest do
       assert new_container_deployment.id == container_deployment.id
       assert new_container_deployment.is_ready
 
-      Phoenix.PubSub.unsubscribe(
-        Edgehog.PubSub,
-        "ready:container_deployments:#{container_deployment.id}"
-      )
+      Phoenix.PubSub.unsubscribe(Edgehog.PubSub, topic)
     end
   end
 
@@ -187,6 +183,7 @@ defmodule Edgehog.Containers.Container.Deployment.ProvisionerTest do
           :networks,
           :volumes,
           :device_mappings,
+          :device_requests,
           container_volumes: [:binding]
         ]
       )
@@ -207,6 +204,11 @@ defmodule Edgehog.Containers.Container.Deployment.ProvisionerTest do
     device_mapping_ids =
       container
       |> Map.get(:device_mappings, [])
+      |> Enum.map(& &1.id)
+
+    device_request_ids =
+      container
+      |> Map.get(:device_requests, [])
       |> Enum.map(& &1.id)
 
     env_encoding = container.env_encoding
@@ -232,6 +234,7 @@ defmodule Edgehog.Containers.Container.Deployment.ProvisionerTest do
       capAdd: container.cap_add,
       capDrop: container.cap_drop,
       deviceMappingIds: device_mapping_ids,
+      deviceRequestIds: device_request_ids,
       cpuPeriod: normalize(container.cpu_period),
       cpuQuota: normalize(container.cpu_quota),
       cpuRealtimePeriod: normalize(container.cpu_realtime_period),

@@ -69,14 +69,10 @@ defmodule Edgehog.Containers.Deployment.SupervisorTest do
       |> expect(:provision, fn deployment, _tenant ->
         assert deployment == og_deployment
 
-        %{id: id} = deployment
+        topic = Deployment.Provisioner.topic(deployment)
 
         # Simulate provisioning process finishing with correct readiness
-        Phoenix.PubSub.broadcast!(
-          Edgehog.PubSub,
-          "ready:deployments:#{id}",
-          {:ready, deployment}
-        )
+        Phoenix.PubSub.broadcast!(Edgehog.PubSub, topic, {:ready, deployment})
       end)
 
       Supervisor.start(supervisor)

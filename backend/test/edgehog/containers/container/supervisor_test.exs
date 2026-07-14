@@ -100,14 +100,10 @@ defmodule Edgehog.Containers.Container.Deployment.SupervisorTest do
         assert deployment.id == og_deployment.id
         assert container_deployment.id == original_container_deployment.id
 
-        %{id: id} = container_deployment
+        topic = Container.Deployment.Provisioner.topic(container_deployment)
 
         # Simulate provisioning process finishing with correct readiness
-        Phoenix.PubSub.broadcast!(
-          Edgehog.PubSub,
-          "ready:container_deployments:#{id}",
-          {:ready, container_deployment}
-        )
+        Phoenix.PubSub.broadcast!(Edgehog.PubSub, topic, {:ready, container_deployment})
       end)
 
       Supervisor.start(supervisor)

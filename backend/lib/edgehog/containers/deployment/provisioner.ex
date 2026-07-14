@@ -49,6 +49,16 @@ defmodule Edgehog.Containers.Deployment.Provisioner do
     GenServer.start_link(__MODULE__, args, name: name(deployment))
   end
 
+  @doc """
+  Returns the readiness topic the provisioner will publish onto when the resource
+  is ready.
+
+  it accepts either an entire %Edgehog.Containers.Deployment{} resource, or just
+  an ID.
+  """
+  def topic(%Deployment{id: id}), do: "deployments:provisioning:#{id}"
+  def topic(id), do: "deployments:provisioning:#{id}"
+
   def name(%Deployment{id: id}) do
     {:via, Registry, {ProvisionerRegistry, id}}
   end
@@ -170,12 +180,10 @@ defmodule Edgehog.Containers.Deployment.Provisioner do
 
     %{id: id} = deployment
 
+    topic = topic(deployment)
+
     # Broadcast readiness
-    Phoenix.PubSub.broadcast(
-      Edgehog.PubSub,
-      "ready:deployments:#{id}",
-      {:ready, deployment}
-    )
+    Phoenix.PubSub.broadcast(Edgehog.PubSub, topic, {:ready, deployment})
 
     # Log
     Logger.info("""

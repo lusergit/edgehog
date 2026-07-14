@@ -193,7 +193,10 @@ defmodule Edgehog.Containers.Deployment.ProvisionerTest do
 
       Sandbox.allow(Edgehog.Repo, self(), provisioner)
 
-      Phoenix.PubSub.subscribe(Edgehog.PubSub, "ready:deployments:#{deployment.id}")
+      # External services expect to be able to subscribe to this topic
+      topic = Provisioner.topic(deployment)
+
+      Phoenix.PubSub.subscribe(Edgehog.PubSub, topic)
 
       Provisioner.start(provisioner)
 
@@ -202,7 +205,7 @@ defmodule Edgehog.Containers.Deployment.ProvisionerTest do
       assert new_deployment.id == deployment.id
       assert new_deployment.is_ready
 
-      Phoenix.PubSub.unsubscribe(Edgehog.PubSub, "ready:deployments:#{deployment.id}")
+      Phoenix.PubSub.unsubscribe(Edgehog.PubSub, topic)
     end
   end
 end

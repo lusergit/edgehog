@@ -216,10 +216,10 @@ defmodule Edgehog.Containers.Container.Deployment.Supervisor.Core do
       tenant: tenant
     } = state
 
-    %{id: id} = container_deployment
+    topic = Container.Deployment.Provisioner.topic(container_deployment)
 
     # Subscribe to the container_deployment readiness
-    Phoenix.PubSub.subscribe(Edgehog.PubSub, "ready:container_deployments:#{id}")
+    Phoenix.PubSub.subscribe(Edgehog.PubSub, topic)
 
     # Start the provisioner
     Container.Deployment.Provisioner.provision(container_deployment, deployment, tenant)

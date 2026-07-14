@@ -71,6 +71,16 @@ defmodule Edgehog.Containers.Container.Deployment.Supervisor do
     GenServer.start_link(__MODULE__, args, name: name(container_deployment))
   end
 
+  @doc """
+  Returns the readiness topic the supervisor will publish onto when the resource
+  and its children are ready.
+
+  it accepts either an entire %Edgehog.Containers.Container.Deployment{}
+  resource, or just the ID.
+  """
+  def topic(%Container.Deployment{id: id}), do: "container_deployments:ready:#{id}"
+  def topic(id), do: "container_deployments:ready:#{id}"
+
   def name(%Container.Deployment{id: id}) do
     {:via, Registry, {SupervisorRegistry, id}}
   end
@@ -149,17 +159,13 @@ defmodule Edgehog.Containers.Container.Deployment.Supervisor do
       container_deployment: container_deployment
     } = state
 
-    %{id: id} = container_deployment
-
     timeout = timeout(state)
 
     if Core.ready?(state) do
+      topic = topic(container_deployment)
+
       # Broadcast readiness
-      Phoenix.PubSub.broadcast(
-        Edgehog.PubSub,
-        "provisioning:container_deployments:#{id}",
-        {:ready, container_deployment}
-      )
+      Phoenix.PubSub.broadcast(Edgehog.PubSub, topic, {:ready, container_deployment})
 
       # Terminate normally
       {:stop, :normal, state}
