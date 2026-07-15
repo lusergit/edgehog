@@ -192,5 +192,40 @@ defmodule Edgehog.Containers.Image.Deployment.ProvisionerTest do
 
       Phoenix.PubSub.unsubscribe(Edgehog.PubSub, "ready:image_deployments:#{image_deployment.id}")
     end
+
+    test "doesn't send deployment if it's ready", context do
+      %{
+        image_deployment: image_deployment,
+        provisioner: provisioner,
+        provisioner_ref: ref,
+        tenant: tenant
+      } = context
+
+      test_process = self()
+
+      CreateImageRequest
+      |> allow(test_process, provisioner)
+      |> reject(:send_create_image_request, 3)
+
+      Sandbox.allow(Edgehog.Repo, test_process, provisioner)
+
+      ready_topic = "ready:image_deployments:#{image_deployment.id}"
+      Phoenix.PubSub.subscribe(Edgehog.PubSub, ready_topic)
+
+      image_deployment =
+        image_deployment
+        |> Ash.Changeset.for_update(:mark_as_unpulled, %{})
+        |> Ash.update!(tenant: tenant)
+
+      Provisioner.start(provisioner)
+
+      assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
+      assert_receive {:ready, new_image_deployment}, 1000
+
+      assert new_image_deployment.id == image_deployment.id
+      assert new_image_deployment.is_ready
+
+      Phoenix.PubSub.unsubscribe(Edgehog.PubSub, ready_topic)
+    end
   end
 end
