@@ -77,7 +77,7 @@ defmodule Edgehog.Containers.Volume.Deployment.ProvisionerTest do
       }
     end
 
-    test "sets-up an volume on a device", context do
+    test "sets-up a volume on a device", context do
       %{
         volume_deployment: volume_deployment,
         deployment: deployment,
@@ -119,7 +119,7 @@ defmodule Edgehog.Containers.Volume.Deployment.ProvisionerTest do
       assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
     end
 
-    test "sets-up an volume on a device after a retry", context do
+    test "sets-up a volume on a device after a retry", context do
       %{
         volume_deployment: volume_deployment,
         deployment: deployment,
@@ -208,6 +208,41 @@ defmodule Edgehog.Containers.Volume.Deployment.ProvisionerTest do
         Edgehog.PubSub,
         "ready:volume_deployments:#{volume_deployment.id}"
       )
+    end
+
+    test "doesn't send deployment if it's ready", context do
+      %{
+        volume_deployment: volume_deployment,
+        provisioner: provisioner,
+        provisioner_ref: ref,
+        tenant: tenant
+      } = context
+
+      test_process = self()
+
+      CreateVolumeRequest
+      |> allow(test_process, provisioner)
+      |> reject(:send_create_volume_request, 3)
+
+      Sandbox.allow(Edgehog.Repo, test_process, provisioner)
+
+      ready_topic = "ready:volume_deployments:#{volume_deployment.id}"
+      Phoenix.PubSub.subscribe(Edgehog.PubSub, ready_topic)
+
+      volume_deployment =
+        volume_deployment
+        |> Ash.Changeset.for_update(:mark_as_unavailable, %{})
+        |> Ash.update!(tenant: tenant)
+
+      Provisioner.start(provisioner)
+
+      assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
+      assert_receive {:ready, new_volume_deployment}, 1000
+
+      assert new_volume_deployment.id == volume_deployment.id
+      assert new_volume_deployment.is_ready
+
+      Phoenix.PubSub.unsubscribe(Edgehog.PubSub, ready_topic)
     end
   end
 end
