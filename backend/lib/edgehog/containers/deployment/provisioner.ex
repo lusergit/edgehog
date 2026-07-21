@@ -73,7 +73,7 @@ defmodule Edgehog.Containers.Deployment.Provisioner do
 
     @impl GenServer
     def handle_cast(:start, state) do
-      {:noreply, state, {:continue, :send}}
+      {:noreply, state, {:continue, :check_deployment_state}}
     end
   end
 
@@ -102,12 +102,28 @@ defmodule Edgehog.Containers.Deployment.Provisioner do
 
   @impl GenServer
   def handle_continue(:maybe_send, %{mode: :auto} = state) do
-    {:noreply, state, {:continue, :send}}
+    {:noreply, state, {:continue, :check_deployment_state}}
   end
 
   @impl GenServer
   def handle_continue(:maybe_send, %{mode: :manual} = state) do
     {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_continue(
+        :check_deployment_state,
+        %{deployment: deployment} = state
+      ) do
+    deployment =
+      Ash.load!(deployment, :is_ready, tenant: deployment.tenant_id)
+
+    if deployment.is_ready do
+      new_state = Map.put(state, :deployment, deployment)
+      {:stop, :normal, new_state}
+    else
+      {:noreply, state, {:continue, :send}}
+    end
   end
 
   @impl GenServer

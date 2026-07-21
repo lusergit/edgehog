@@ -117,7 +117,7 @@ defmodule Edgehog.Containers.Deployment.ProvisionerTest do
       assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
     end
 
-    test "sets-up an image on a device after a retry", context do
+    test "sets-up a deployment on a device after a retry", context do
       %{
         deployment: deployment,
         provisioner: provisioner,
@@ -216,6 +216,41 @@ defmodule Edgehog.Containers.Deployment.ProvisionerTest do
       assert new_deployment.is_ready
 
       Phoenix.PubSub.unsubscribe(Edgehog.PubSub, topic)
+    end
+
+    test "doesn't send deployment if it's ready", context do
+      %{
+        deployment: deployment,
+        provisioner: provisioner,
+        provisioner_ref: ref,
+        tenant: tenant
+      } = context
+
+      test_process = self()
+
+      CreateDeploymentRequest
+      |> allow(test_process, provisioner)
+      |> reject(:send_create_deployment_request, 3)
+
+      Sandbox.allow(Edgehog.Repo, test_process, provisioner)
+
+      ready_topic = Provisioner.topic(deployment.id)
+      Phoenix.PubSub.subscribe(Edgehog.PubSub, ready_topic)
+
+      deployment =
+        deployment
+        |> Ash.Changeset.for_update(:mark_as_stopped, %{})
+        |> Ash.update!(tenant: tenant)
+
+      Provisioner.start(provisioner)
+
+      assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
+      assert_receive {:ready, new_deployment}, 1000
+
+      assert new_deployment.id == deployment.id
+      assert new_deployment.is_ready
+
+      Phoenix.PubSub.unsubscribe(Edgehog.PubSub, ready_topic)
     end
   end
 end
