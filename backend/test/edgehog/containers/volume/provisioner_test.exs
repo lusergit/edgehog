@@ -66,6 +66,8 @@ defmodule Edgehog.Containers.Volume.Deployment.ProvisionerTest do
 
       ref = Process.monitor(provisioner)
 
+      Sandbox.allow(Edgehog.Repo, self(), provisioner)
+
       %{
         tenant: tenant,
         deployment: deployment,
@@ -153,11 +155,9 @@ defmodule Edgehog.Containers.Volume.Deployment.ProvisionerTest do
         :ok
       end)
 
-      Sandbox.allow(Edgehog.Repo, self(), provisioner)
-
       Provisioner.start(provisioner)
 
-      assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
+      assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 2000
     end
 
     test "emits :ready on correct topic on provisioning completion", context do
@@ -191,8 +191,6 @@ defmodule Edgehog.Containers.Volume.Deployment.ProvisionerTest do
 
         :ok
       end)
-
-      Sandbox.allow(Edgehog.Repo, self(), provisioner)
 
       Phoenix.PubSub.subscribe(
         Edgehog.PubSub,

@@ -68,6 +68,7 @@ defmodule Edgehog.Containers.Network.Deployment.ProvisionerTest do
         end
 
       ref = Process.monitor(provisioner)
+      Sandbox.allow(Edgehog.Repo, self(), provisioner)
 
       %{
         tenant: tenant,
@@ -117,8 +118,6 @@ defmodule Edgehog.Containers.Network.Deployment.ProvisionerTest do
         :ok
       end)
 
-      Sandbox.allow(Edgehog.Repo, self(), provisioner)
-
       Provisioner.start(provisioner)
 
       assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
@@ -163,8 +162,6 @@ defmodule Edgehog.Containers.Network.Deployment.ProvisionerTest do
 
         :ok
       end)
-
-      Sandbox.allow(Edgehog.Repo, self(), provisioner)
 
       Provisioner.start(provisioner)
 

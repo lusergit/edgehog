@@ -52,6 +52,8 @@ defmodule Edgehog.Containers.Deployment.ProvisionerTest do
 
       ref = Process.monitor(provisioner)
 
+      Sandbox.allow(Edgehog.Repo, self(), provisioner)
+
       %{
         tenant: tenant,
         deployment: deployment,
@@ -80,16 +82,26 @@ defmodule Edgehog.Containers.Deployment.ProvisionerTest do
 
         [container_id] = containers
 
-        [container] =
+        [container_deployment] =
           deployment
-          |> Ash.load!([container_deployments: [:container]], tenant: tenant)
+          |> Ash.load!([container_deployments: [:container, :image_deployment]], tenant: tenant)
           |> Map.get(:container_deployments, [])
-          |> Enum.map(& &1.container)
+
+        container = container_deployment.container
+        image_deployment = container_deployment.image_deployment
 
         assert id == deployment.id
         assert container_id == container.id
 
         # Update the deployment to be ready
+
+        image_deployment
+        |> Ash.Changeset.for_update(:mark_as_unpulled, %{})
+        |> Ash.update!(tenant: tenant)
+
+        container_deployment
+        |> Ash.Changeset.for_update(:mark_as_created, %{})
+        |> Ash.update!(tenant: tenant)
 
         deployment
         |> Ash.Changeset.for_update(:mark_as_stopped, %{})
@@ -145,8 +157,6 @@ defmodule Edgehog.Containers.Deployment.ProvisionerTest do
 
         :ok
       end)
-
-      Sandbox.allow(Edgehog.Repo, self(), provisioner)
 
       Provisioner.start(provisioner)
 
