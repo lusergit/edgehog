@@ -70,7 +70,7 @@ defmodule Edgehog.Containers.Container.Deployment.ProvisionerTest do
       }
     end
 
-    test "sets-up an container on a device", context do
+    test "sets-up a container on a device", context do
       %{
         container_deployment: container_deployment,
         deployment: deployment,
@@ -100,7 +100,7 @@ defmodule Edgehog.Containers.Container.Deployment.ProvisionerTest do
       assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
     end
 
-    test "sets-up an container on a device after a retry", context do
+    test "sets-up a container on a device after a retry", context do
       %{
         container_deployment: container_deployment,
         deployment: deployment,
@@ -167,6 +167,41 @@ defmodule Edgehog.Containers.Container.Deployment.ProvisionerTest do
       assert new_container_deployment.is_ready
 
       Phoenix.PubSub.unsubscribe(Edgehog.PubSub, topic)
+    end
+
+    test "doesn't send deployment if it's ready", context do
+      %{
+        container_deployment: container_deployment,
+        provisioner: provisioner,
+        provisioner_ref: ref,
+        tenant: tenant
+      } = context
+
+      test_process = self()
+
+      CreateContainerRequest
+      |> allow(test_process, provisioner)
+      |> reject(:send_create_container_request, 3)
+
+      Sandbox.allow(Edgehog.Repo, test_process, provisioner)
+
+      ready_topic = Provisioner.topic(container_deployment.id)
+      Phoenix.PubSub.subscribe(Edgehog.PubSub, ready_topic)
+
+      container_deployment =
+        container_deployment
+        |> Ash.Changeset.for_update(:mark_as_received, %{})
+        |> Ash.update!(tenant: tenant)
+
+      Provisioner.start(provisioner)
+
+      assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
+      assert_receive {:ready, new_container_deployment}, 1000
+
+      assert new_container_deployment.id == container_deployment.id
+      assert new_container_deployment.is_ready
+
+      Phoenix.PubSub.unsubscribe(Edgehog.PubSub, ready_topic)
     end
   end
 
