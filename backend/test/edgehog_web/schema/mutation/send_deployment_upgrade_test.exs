@@ -24,6 +24,7 @@ defmodule EdgehogWeb.Schema.Mutation.SendDeploymentUpgradeTest do
 
   import Edgehog.ContainersFixtures
 
+  alias Ecto.Adapters.SQL.Sandbox
   alias Edgehog.Astarte.Device.DeploymentUpdate
   alias Edgehog.Containers
   alias Edgehog.Containers.Deployment
@@ -70,22 +71,33 @@ defmodule EdgehogWeb.Schema.Mutation.SendDeploymentUpgradeTest do
              |> Map.fetch!(:deployment_id) == deployment_id
     end
 
-    # TODO: Move this test onto the deployment supervisor test. Once the
-    # supervisor reads that all resources are ready it runs the ready actions,
-    # without running trough the database.
-    @tag :skip
     test "sends the deployment upgrade once the new deployment is ready", args do
       %{release_0_0_1: release_0_0_1, release_0_0_2: release_0_0_2, tenant: tenant} =
         args
 
-      # we need to set the state of deployment in one of ready states so the action validation passes
+      # We need to set the state of deployment in one of ready states so the
+      # action validation passes
       {:ok, deployment_0_0_1} =
         [release_id: release_0_0_1.id, tenant: tenant]
         |> deployment_fixture()
         |> Containers.mark_deployment_as_stopped(tenant: tenant)
 
-      expect(Deployment.Supervisor, :supervise, fn _, _ -> :ok end)
-      expect(DeploymentUpdate, :update, fn _, _, _ -> :ok end)
+      test_process = self()
+
+      expect(Deployment.Supervisor, :supervise, fn deployment, tenant ->
+        args = [
+          tenant: tenant,
+          deployment: deployment,
+          mode: :manual
+        ]
+
+        {:ok, supervisor} = Mimic.call_original(Deployment.Supervisor, :start_link, [args])
+
+        Sandbox.allow(Edgehog.Repo, test_process, supervisor)
+
+        # Send the supervisor pid to the test process
+        send(test_process, {:supervisor, supervisor})
+      end)
 
       result =
         [tenant: tenant, deployment: deployment_0_0_1, target: release_0_0_2]
@@ -94,10 +106,34 @@ defmodule EdgehogWeb.Schema.Mutation.SendDeploymentUpgradeTest do
 
       {:ok, %{id: deployment_id}} = AshGraphql.Resource.decode_relay_id(result["id"])
 
-      deployment_id
-      |> Containers.fetch_deployment!(tenant: tenant)
-      |> Containers.mark_deployment_as_stopped!(tenant: tenant)
-      |> Ash.load!(release: [containers: [:image, :volumes, :networks]], device: [])
+      # Receive the supervisor pid
+      assert_receive {:supervisor, sup}, 1000
+
+      ref = Process.monitor(sup)
+
+      # The update deploys the new version
+      Deployment.Provisioner
+      |> allow(test_process, sup)
+      |> expect(:provision, fn deployment, _ ->
+        topic = Deployment.Provisioner.topic(deployment)
+
+        # Broadcast readiness
+        Phoenix.PubSub.broadcast(Edgehog.PubSub, topic, {:ready, deployment})
+      end)
+
+      # And sends the update command
+      DeploymentUpdate
+      |> allow(test_process, sup)
+      |> expect(:update, fn _, _, data ->
+        assert data.to == deployment_id
+
+        :ok
+      end)
+
+      Deployment.Supervisor.start(sup)
+
+      # Assert supervisor shuts down correctly
+      assert_receive {:DOWN, ^ref, :process, ^sup, :normal}, 2000
     end
 
     test "fails if the deployments do not belong to the same application", args do
