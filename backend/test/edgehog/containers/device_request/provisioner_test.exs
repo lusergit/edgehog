@@ -83,7 +83,7 @@ defmodule Edgehog.Containers.DeviceRequest.Deployment.ProvisionerTest do
       }
     end
 
-    test "sets-up an device_request on a device", context do
+    test "sets-up a device request on a device", context do
       %{
         device_request_deployment: device_request_deployment,
         deployment: deployment,
@@ -136,7 +136,7 @@ defmodule Edgehog.Containers.DeviceRequest.Deployment.ProvisionerTest do
       assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
     end
 
-    test "sets-up an device_request on a device after a retry", context do
+    test "sets-up a device request on a device after a retry", context do
       %{
         device_request_deployment: device_request_deployment,
         deployment: deployment,
@@ -253,6 +253,41 @@ defmodule Edgehog.Containers.DeviceRequest.Deployment.ProvisionerTest do
         Edgehog.PubSub,
         "ready:device_request_deployment:#{device_request_deployment.id}"
       )
+    end
+
+    test "doesn't send deployment if it's ready", context do
+      %{
+        device_request_deployment: device_request_deployment,
+        provisioner: provisioner,
+        provisioner_ref: ref,
+        tenant: tenant
+      } = context
+
+      test_process = self()
+
+      CreateDeviceRequestRequest
+      |> allow(test_process, provisioner)
+      |> reject(:send_create_device_request_request, 3)
+
+      Sandbox.allow(Edgehog.Repo, test_process, provisioner)
+
+      ready_topic = "ready:device_request_deployments:#{device_request_deployment.id}"
+      Phoenix.PubSub.subscribe(Edgehog.PubSub, ready_topic)
+
+      device_request_deployment =
+        device_request_deployment
+        |> Ash.Changeset.for_update(:mark_as_present, %{})
+        |> Ash.update!(tenant: tenant)
+
+      Provisioner.start(provisioner)
+
+      assert_receive {:DOWN, ^ref, :process, ^provisioner, :normal}, 1000
+      assert_receive {:ready, new_device_request_deployment}, 1000
+
+      assert new_device_request_deployment.id == device_request_deployment.id
+      assert new_device_request_deployment.is_ready
+
+      Phoenix.PubSub.unsubscribe(Edgehog.PubSub, ready_topic)
     end
   end
 end

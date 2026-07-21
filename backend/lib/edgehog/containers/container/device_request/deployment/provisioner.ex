@@ -93,7 +93,7 @@ defmodule Edgehog.Containers.DeviceRequest.Deployment.Provisioner do
 
     @impl GenServer
     def handle_cast(:start, state) do
-      {:noreply, state, {:continue, :send}}
+      {:noreply, state, {:continue, :check_deployment_state}}
     end
   end
 
@@ -126,12 +126,28 @@ defmodule Edgehog.Containers.DeviceRequest.Deployment.Provisioner do
 
   @impl GenServer
   def handle_continue(:maybe_send, %{mode: :auto} = state) do
-    {:noreply, state, {:continue, :send}}
+    {:noreply, state, {:continue, :check_deployment_state}}
   end
 
   @impl GenServer
   def handle_continue(:maybe_send, %{mode: :manual} = state) do
     {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_continue(
+        :check_deployment_state,
+        %{device_request_deployment: device_request_deployment} = state
+      ) do
+    device_request_deployment =
+      Ash.load!(device_request_deployment, :is_ready, tenant: device_request_deployment.tenant_id)
+
+    if device_request_deployment.is_ready do
+      new_state = Map.put(state, :device_request_deployment, device_request_deployment)
+      {:stop, :normal, new_state}
+    else
+      {:noreply, state, {:continue, :send}}
+    end
   end
 
   @impl GenServer
