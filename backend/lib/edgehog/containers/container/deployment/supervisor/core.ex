@@ -61,7 +61,7 @@ defmodule Edgehog.Containers.Container.Deployment.Supervisor.Core do
     network_deployments = Map.get(container_deployment, :network_deployments, [])
     volume_deployments = Map.get(container_deployment, :volume_deployments, [])
     device_mapping_deployments = Map.get(container_deployment, :device_mapping_deployments, [])
-    device_request_deployments = Map.get(container_deployment, :device_mapping_deployments, [])
+    device_request_deployments = Map.get(container_deployment, :device_request_deployments, [])
 
     state
     |> Map.put(:container_deployment, container_deployment)
@@ -246,11 +246,17 @@ defmodule Edgehog.Containers.Container.Deployment.Supervisor.Core do
       |> Map.fetch!(:device_mappings_to_provision)
       |> Enum.empty?()
 
+    device_requests_ready =
+      state
+      |> Map.fetch!(:device_requests_to_provision)
+      |> Enum.empty?()
+
     image_ready and
       container_ready and
       volumes_ready and
       networks_ready and
-      device_mappings_ready
+      device_mappings_ready and
+      device_requests_ready
   end
 
   @doc """
@@ -334,5 +340,24 @@ defmodule Edgehog.Containers.Container.Deployment.Supervisor.Core do
     remove_matching_device_mapping = &Enum.reject(&1, id_matches)
 
     Map.update!(state, :device_mappings_to_provision, remove_matching_device_mapping)
+  end
+
+  @doc """
+  Removes a device request from the list of device requests that need to be provisioned.
+
+  The list of device requests to be provisioned is expected to be a list of device request
+  deployments in the key `:device_requests_to_provision` into the state.
+
+  Example:
+  if id matches depl2
+
+  (id, %{device_requests_to_provision: [depl1, depl2, depl3, ...]}) -> %{device_requests_to_provision: [depl1, depl3, ...]}
+  """
+  def device_request_ready(id, state) do
+    id_matches = &(&1.id == id)
+
+    remove_matching_device_request = &Enum.reject(&1, id_matches)
+
+    Map.update!(state, :device_requests_to_provision, remove_matching_device_request)
   end
 end
