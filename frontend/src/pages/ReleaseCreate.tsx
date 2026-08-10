@@ -179,7 +179,7 @@ const ReleaseWrapper = ({ getReleaseOptionsQuery }: ReleaseWrapperProps) => {
         title={
           <FormattedMessage
             id="pages.ReleaseCreate.title"
-            defaultMessage="Create Release for {applicationName}"
+            defaultMessage="Create Configuration for {applicationName}"
             values={{ applicationName }}
           />
         }

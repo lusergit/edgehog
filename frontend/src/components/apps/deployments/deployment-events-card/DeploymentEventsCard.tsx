@@ -19,7 +19,7 @@
 import { Badge, Card } from "react-bootstrap";
 import { defineMessages, FormattedMessage } from "react-intl";
 
-import { DeploymentEventType } from "@/api/__generated__/Releases_PaginationQuery.graphql";
+import { DeploymentEventType } from "@/api/__generated__/DeploymentDetails_events.graphql";
 
 import "@/components/apps/deployments/deployment-events-card/DeploymentEventsCard.scss";
 import type { Event } from "@/components/apps/deployments/deployment-details/DeploymentDetails";
