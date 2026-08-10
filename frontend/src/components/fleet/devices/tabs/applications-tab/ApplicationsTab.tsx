@@ -26,15 +26,18 @@ import {
   useSubscription,
 } from "react-relay/hooks";
 import { FormattedMessage, useIntl } from "react-intl";
-import { Card } from "react-bootstrap";
+import { Badge, Card } from "react-bootstrap";
 
 import type { ApplicationsTab_deployedApplications$key } from "@/api/__generated__/ApplicationsTab_deployedApplications.graphql";
 import type { ApplicationsTab_deployedApplications_RefetchQuery } from "@/api/__generated__/ApplicationsTab_deployedApplications_RefetchQuery.graphql";
+import type { MockInstalledApplication } from "@/mocks/applicationInfo";
 
-import AddAvailableApplications from "@/components/apps/releases/add-available-applications/AddAvailableApplications";
 import DeployedApplicationsTable from "@/components/apps/releases/deployed-applications-table/DeployedApplicationsTable";
 import Alert from "@/components/ui/alert/Alert";
+import Button from "@/components/ui/button/Button";
+import Icon from "@/components/ui/icon/Icon";
 import { Tab } from "@/components/ui/tabs/Tabs";
+import InstallApplicationModal from "@/components/fleet/devices/tabs/applications-tab/install-application-modal/InstallApplicationModal";
 
 // TODO: the fragment is defined on the RootQueryType so it can specify
 // which query to run, otherwise Relay would automatically use the `node`
@@ -85,6 +88,10 @@ interface DeviceApplicationsTabProps {
 
 const DeviceApplicationsTab = ({ deviceRef }: DeviceApplicationsTabProps) => {
   const [errorFeedback, setErrorFeedback] = useState<React.ReactNode>(null);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [mockInstalledApps, setMockInstalledApps] = useState<
+    MockInstalledApplication[]
+  >([]);
   const intl = useIntl();
 
   const [{ device }] = useRefetchableFragment<
@@ -164,6 +171,11 @@ const DeviceApplicationsTab = ({ deviceRef }: DeviceApplicationsTabProps) => {
 
   const isOnline = useMemo(() => device?.online ?? false, [device]);
 
+  const handleInstalled = (installed: MockInstalledApplication) => {
+    setMockInstalledApps((prev) => [installed, ...prev]);
+    setIsInstallModalOpen(false);
+  };
+
   if (!device || !device.capabilities.includes("CONTAINER_MANAGEMENT")) {
     return null;
   }
@@ -186,29 +198,83 @@ const DeviceApplicationsTab = ({ deviceRef }: DeviceApplicationsTabProps) => {
       >
         {errorFeedback}
       </Alert>
-      <Card className="h-100 border-0 p-3 shadow-sm mb-3">
-        <h5>
-          <FormattedMessage
-            id="components.fleet.devices.tabs.applications-tab.ApplicationsTab.InstallNewApp"
-            defaultMessage="Install Applications"
-          />
-        </h5>
-        <AddAvailableApplications
-          deviceId={device.id}
-          systemModelName={device.systemModel?.name}
-          isOnline={isOnline}
-          setErrorFeedback={setErrorFeedback}
-        />
-      </Card>
       <Card className="gap-2 border-0 shadow-sm flex-grow-1 p-4">
-        <h5 className="mt-4">
-          <FormattedMessage
-            id="components.fleet.devices.tabs.applications-tab.ApplicationsTab.DeployedApplications"
-            defaultMessage="Deployed Applications"
-          />
-        </h5>
+        <div className="d-flex justify-content-between align-items-center mt-4">
+          <h5 className="mb-0">
+            <FormattedMessage
+              id="components.fleet.devices.tabs.applications-tab.ApplicationsTab.DeployedApplications"
+              defaultMessage="Deployed Applications"
+            />
+          </h5>
+          <Button variant="primary" onClick={() => setIsInstallModalOpen(true)}>
+            <Icon icon="plus" className="me-2" />
+            <FormattedMessage
+              id="components.fleet.devices.tabs.applications-tab.ApplicationsTab.installApplication"
+              defaultMessage="Install Application"
+            />
+          </Button>
+        </div>
+
+        {mockInstalledApps.length > 0 && (
+          <div className="d-flex flex-column gap-2 mt-3">
+            {mockInstalledApps.map((installed) => (
+              <div
+                key={installed.id}
+                className="border rounded p-3 bg-light d-flex align-items-center gap-3"
+              >
+                <Icon icon="applications" className="text-primary" />
+                <div className="flex-grow-1">
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="fw-bold">{installed.applicationName}</span>
+                    <Badge bg="success" className="fw-normal">
+                      <FormattedMessage
+                        id="components.fleet.devices.tabs.applications-tab.ApplicationsTab.installedBadge"
+                        defaultMessage="Installed"
+                      />
+                    </Badge>
+                  </div>
+                  <div className="text-secondary small">
+                    <Icon
+                      icon={
+                        installed.sourceType === "tag" ? "tag" : "containers"
+                      }
+                      className="me-1"
+                    />
+                    {installed.sourceLabel}
+                    <span className="mx-2">·</span>
+                    <code className="text-primary fw-semibold">
+                      {installed.configHash}
+                    </code>
+                    {installed.edited && (
+                      <Badge
+                        bg="warning"
+                        text="dark"
+                        className="ms-2 fw-normal"
+                      >
+                        <FormattedMessage
+                          id="components.fleet.devices.tabs.applications-tab.ApplicationsTab.editedBadge"
+                          defaultMessage="Edited"
+                        />
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="text-muted small">{installed.installedAt}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <DeployedApplicationsTable deviceRef={device} />
       </Card>
+
+      <InstallApplicationModal
+        show={isInstallModalOpen}
+        systemModelName={device.systemModel?.name}
+        isOnline={isOnline}
+        onClose={() => setIsInstallModalOpen(false)}
+        onInstalled={handleInstalled}
+      />
     </Tab>
   );
 };

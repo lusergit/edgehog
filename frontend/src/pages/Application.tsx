@@ -48,11 +48,15 @@ import TagsTable, {
   TagRecord,
 } from "@/components/apps/tags/tags-table/TagsTable";
 import CreateTagModal, {
-  DeviceGroupOption,
   ConfigurationOption,
 } from "@/components/apps/tags/create-tag-modal/CreateTagModal";
 import DeleteTagModal from "@/components/apps/tags/delete-tag-modal/DeleteTagModal";
 import Icon from "@/components/ui/icon/Icon";
+import {
+  defaultDeviceGroups,
+  initialMockConfigurations,
+  initialMockTags,
+} from "@/mocks/applicationInfo";
 
 const GET_APPLICATION_QUERY = graphql`
   query Application_getApplication_Query($applicationId: ID!) {
@@ -65,62 +69,6 @@ const GET_APPLICATION_QUERY = graphql`
 `;
 
 const TAB_KEYS = ["tags-tab", "configurations-tab"];
-
-const initialMockConfigurations: ConfigurationRecord[] = [
-  {
-    id: "cfg-1",
-    hash: "cfg-7f3a9b12",
-    containersSummary: "web-gateway (nginx:1.25), backend-api (node:20)",
-    containersCount: 2,
-    systemModelsSummary: "SECO SM-C12, Gateway 500",
-    createdAt: "2026-08-01 10:30",
-  },
-  {
-    id: "cfg-2",
-    hash: "cfg-4e8c10a3",
-    containersSummary:
-      "web-gateway (nginx:1.25), backend-api (node:20.1), redis-cache (redis:7)",
-    containersCount: 3,
-    systemModelsSummary: "SECO SM-C12",
-    createdAt: "2026-08-08 14:15",
-  },
-  {
-    id: "cfg-3",
-    hash: "cfg-9b2f61e8",
-    containersSummary: "edge-agent (edgehog/agent:v2)",
-    containersCount: 1,
-    systemModelsSummary: "All System Models",
-    createdAt: "2026-08-09 16:45",
-  },
-];
-
-const initialMockTags: TagRecord[] = [
-  {
-    id: "tag-1",
-    name: "v1.0.0",
-    isPreRelease: false,
-    configurationHash: "cfg-7f3a9b12",
-    deviceGroupId: "group-prod",
-    deviceGroupName: "Production Fleet",
-    createdAt: "2026-08-02 09:00",
-  },
-  {
-    id: "tag-2",
-    name: "v1.1.0-beta.1",
-    isPreRelease: true,
-    configurationHash: "cfg-4e8c10a3",
-    deviceGroupId: "group-beta",
-    deviceGroupName: "Beta Testing Group",
-    createdAt: "2026-08-08 15:00",
-  },
-];
-
-const defaultDeviceGroups: DeviceGroupOption[] = [
-  { id: "group-prod", name: "Production Fleet" },
-  { id: "group-beta", name: "Beta Testing Group" },
-  { id: "group-factory", name: "Factory Floor Devices" },
-  { id: "group-staging", name: "Staging Devices" },
-];
 
 interface ApplicationContentProps {
   application: NonNullable<
