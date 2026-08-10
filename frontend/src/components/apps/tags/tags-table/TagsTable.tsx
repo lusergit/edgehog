@@ -87,7 +87,7 @@ const TagsTable = ({
         <Button variant="primary" onClick={onCreateTag}>
           <Icon icon="plus" className="me-2" />
           <FormattedMessage
-            id="components.apps.tags.TagsTable.createTag"
+            id="components.apps.tags.tags-table.TagsTable.createTag"
             defaultMessage="Create Tag"
           />
         </Button>
@@ -117,37 +117,37 @@ const TagsTable = ({
               <tr>
                 <th>
                   <FormattedMessage
-                    id="components.apps.tags.TagsTable.tagName"
+                    id="components.apps.tags.tags-table.TagsTable.tagName"
                     defaultMessage="Tag Name (SemVer)"
                   />
                 </th>
                 <th>
                   <FormattedMessage
-                    id="components.apps.tags.TagsTable.releaseType"
+                    id="components.apps.tags.tags-table.TagsTable.releaseType"
                     defaultMessage="Release Type"
                   />
                 </th>
                 <th>
                   <FormattedMessage
-                    id="components.apps.tags.TagsTable.targetGroup"
+                    id="components.apps.tags.tags-table.TagsTable.targetGroup"
                     defaultMessage="Target Device Group"
                   />
                 </th>
                 <th>
                   <FormattedMessage
-                    id="components.apps.tags.TagsTable.configuration"
+                    id="components.apps.tags.tags-table.TagsTable.configuration"
                     defaultMessage="Configuration Hash"
                   />
                 </th>
                 <th>
                   <FormattedMessage
-                    id="components.apps.tags.TagsTable.createdAt"
+                    id="components.apps.tags.tags-table.TagsTable.createdAt"
                     defaultMessage="Created At"
                   />
                 </th>
                 <th className="text-end">
                   <FormattedMessage
-                    id="components.apps.tags.TagsTable.actions"
+                    id="components.apps.tags.tags-table.TagsTable.actions"
                     defaultMessage="Actions"
                   />
                 </th>

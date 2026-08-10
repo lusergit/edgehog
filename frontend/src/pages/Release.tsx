@@ -294,8 +294,12 @@ const ReleaseContent = ({ release }: ReleaseContentProps) => {
           >
             <ContainersLayoutContainer releaseRef={release} />
             <div className="mt-4">
-              <h5 className="fw-bold text-dark mb-3">Container Detailed Specifications</h5>
-              <ConfigurationContainerInspector containers={mockContainersForConfig} />
+              <h5 className="fw-bold text-dark mb-3">
+                Container Detailed Specifications
+              </h5>
+              <ConfigurationContainerInspector
+                containers={mockContainersForConfig}
+              />
             </div>
           </Tab>
 

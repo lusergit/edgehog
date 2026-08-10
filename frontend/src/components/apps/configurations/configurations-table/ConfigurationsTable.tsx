@@ -94,7 +94,7 @@ const ConfigurationsTable = ({
         <Button variant="primary" onClick={onCreateConfiguration}>
           <Icon icon="plus" className="me-2" />
           <FormattedMessage
-            id="components.apps.configurations.ConfigurationsTable.createConfiguration"
+            id="components.apps.configurations.configurations-table.ConfigurationsTable.createConfiguration"
             defaultMessage="Create Configuration"
           />
         </Button>
@@ -128,37 +128,37 @@ const ConfigurationsTable = ({
               <tr>
                 <th>
                   <FormattedMessage
-                    id="components.apps.configurations.ConfigurationsTable.hash"
+                    id="components.apps.configurations.configurations-table.ConfigurationsTable.hash"
                     defaultMessage="Configuration Hash"
                   />
                 </th>
                 <th>
                   <FormattedMessage
-                    id="components.apps.configurations.ConfigurationsTable.containers"
+                    id="components.apps.configurations.configurations-table.ConfigurationsTable.containers"
                     defaultMessage="Containers"
                   />
                 </th>
                 <th>
                   <FormattedMessage
-                    id="components.apps.configurations.ConfigurationsTable.supportedModels"
+                    id="components.apps.configurations.configurations-table.ConfigurationsTable.supportedModels"
                     defaultMessage="System Models"
                   />
                 </th>
                 <th>
                   <FormattedMessage
-                    id="components.apps.configurations.ConfigurationsTable.associatedTags"
+                    id="components.apps.configurations.configurations-table.ConfigurationsTable.associatedTags"
                     defaultMessage="Associated Tags"
                   />
                 </th>
                 <th>
                   <FormattedMessage
-                    id="components.apps.configurations.ConfigurationsTable.createdAt"
+                    id="components.apps.configurations.configurations-table.ConfigurationsTable.createdAt"
                     defaultMessage="Created At"
                   />
                 </th>
                 <th className="text-end">
                   <FormattedMessage
-                    id="components.apps.configurations.ConfigurationsTable.actions"
+                    id="components.apps.configurations.configurations-table.ConfigurationsTable.actions"
                     defaultMessage="Actions"
                   />
                 </th>

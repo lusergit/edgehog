@@ -80,12 +80,16 @@ const ConfigurationContainerInspector = ({
                   active={isSelected}
                   onClick={() => setSelectedIndex(idx)}
                   className={`d-flex flex-column align-items-start p-2 text-start rounded transition-all ${
-                    isSelected ? "bg-primary text-white" : "text-dark hover-bg-light"
+                    isSelected
+                      ? "bg-primary text-white"
+                      : "text-dark hover-bg-light"
                   }`}
                   style={{ cursor: "pointer" }}
                 >
                   <div className="d-flex align-items-center justify-content-between w-100 mb-1">
-                    <span className="fw-semibold text-truncate">{container.name}</span>
+                    <span className="fw-semibold text-truncate">
+                      {container.name}
+                    </span>
                     <Badge
                       bg={isSelected ? "light" : "secondary"}
                       text={isSelected ? "dark" : "white"}
@@ -119,7 +123,10 @@ const ConfigurationContainerInspector = ({
                 <h4 className="mb-0 fw-bold">{selectedContainer.name}</h4>
               </div>
               <span className="text-muted font-monospace small">
-                Image: <span className="text-dark fw-semibold">{selectedContainer.image}</span>
+                Image:{" "}
+                <span className="text-dark fw-semibold">
+                  {selectedContainer.image}
+                </span>
               </span>
             </div>
             <div className="d-flex gap-2">
@@ -142,27 +149,41 @@ const ConfigurationContainerInspector = ({
             <Table bordered hover size="sm" className="align-middle">
               <tbody>
                 <tr>
-                  <td className="bg-light fw-semibold text-secondary" style={{ width: "200px" }}>
+                  <td
+                    className="bg-light fw-semibold text-secondary"
+                    style={{ width: "200px" }}
+                  >
                     Image Reference
                   </td>
-                  <td className="font-monospace text-primary">{selectedContainer.image}</td>
+                  <td className="font-monospace text-primary">
+                    {selectedContainer.image}
+                  </td>
                 </tr>
-                {selectedContainer.dependsOn && selectedContainer.dependsOn.length > 0 && (
-                  <tr>
-                    <td className="bg-light fw-semibold text-secondary">Depends On</td>
-                    <td>
-                      <div className="d-flex gap-1">
-                        {selectedContainer.dependsOn.map((dep) => (
-                          <Badge key={dep} bg="secondary" className="font-monospace">
-                            {dep}
-                          </Badge>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                )}
+                {selectedContainer.dependsOn &&
+                  selectedContainer.dependsOn.length > 0 && (
+                    <tr>
+                      <td className="bg-light fw-semibold text-secondary">
+                        Depends On
+                      </td>
+                      <td>
+                        <div className="d-flex gap-1">
+                          {selectedContainer.dependsOn.map((dep) => (
+                            <Badge
+                              key={dep}
+                              bg="secondary"
+                              className="font-monospace"
+                            >
+                              {dep}
+                            </Badge>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                 <tr>
-                  <td className="bg-light fw-semibold text-secondary">Restart Policy</td>
+                  <td className="bg-light fw-semibold text-secondary">
+                    Restart Policy
+                  </td>
                   <td>{selectedContainer.restartPolicy || "always"}</td>
                 </tr>
               </tbody>
@@ -187,7 +208,9 @@ const ConfigurationContainerInspector = ({
                 ))}
               </div>
             ) : (
-              <p className="text-muted small fst-italic">No port bindings specified</p>
+              <p className="text-muted small fst-italic">
+                No port bindings specified
+              </p>
             )}
           </div>
 
@@ -207,44 +230,51 @@ const ConfigurationContainerInspector = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {Object.entries(selectedContainer.environment).map(([k, v]) => (
-                      <tr key={k}>
-                        <td className="font-monospace fw-bold text-dark">{k}</td>
-                        <td className="font-monospace text-secondary">{v}</td>
+                    {Object.entries(selectedContainer.environment).map(
+                      ([k, v]) => (
+                        <tr key={k}>
+                          <td className="font-monospace fw-bold text-dark">
+                            {k}
+                          </td>
+                          <td className="font-monospace text-secondary">{v}</td>
+                        </tr>
+                      ),
+                    )}
+                  </tbody>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-muted small fst-italic">
+                No environment variables set
+              </p>
+            )}
+          </div>
+
+          {/* Section 4: Volumes */}
+          {selectedContainer.volumes &&
+            selectedContainer.volumes.length > 0 && (
+              <div className="mb-4">
+                <h6 className="text-uppercase text-muted fw-bold small mb-3">
+                  Volume Mounts
+                </h6>
+                <Table bordered size="sm" className="align-middle">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Target Path</th>
+                      <th>Driver</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedContainer.volumes.map((vol, idx) => (
+                      <tr key={idx}>
+                        <td className="font-monospace">{vol.target}</td>
+                        <td>{vol.driver || "local"}</td>
                       </tr>
                     ))}
                   </tbody>
                 </Table>
               </div>
-            ) : (
-              <p className="text-muted small fst-italic">No environment variables set</p>
             )}
-          </div>
-
-          {/* Section 4: Volumes */}
-          {selectedContainer.volumes && selectedContainer.volumes.length > 0 && (
-            <div className="mb-4">
-              <h6 className="text-uppercase text-muted fw-bold small mb-3">
-                Volume Mounts
-              </h6>
-              <Table bordered size="sm" className="align-middle">
-                <thead className="table-light">
-                  <tr>
-                    <th>Target Path</th>
-                    <th>Driver</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedContainer.volumes.map((vol, idx) => (
-                    <tr key={idx}>
-                      <td className="font-monospace">{vol.target}</td>
-                      <td>{vol.driver || "local"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
-          )}
 
           {/* Section 5: Resource Limits */}
           <div>
@@ -255,13 +285,17 @@ const ConfigurationContainerInspector = ({
               <Col md={6}>
                 <div className="p-3 border rounded bg-light">
                   <div className="text-muted small">Memory Limit</div>
-                  <div className="fw-bold">{selectedContainer.memoryLimit || "Unlimited (Host Memory)"}</div>
+                  <div className="fw-bold">
+                    {selectedContainer.memoryLimit || "Unlimited (Host Memory)"}
+                  </div>
                 </div>
               </Col>
               <Col md={6}>
                 <div className="p-3 border rounded bg-light">
                   <div className="text-muted small">CPU Quota</div>
-                  <div className="fw-bold">{selectedContainer.cpuQuota || "Unlimited (Host CPU)"}</div>
+                  <div className="fw-bold">
+                    {selectedContainer.cpuQuota || "Unlimited (Host CPU)"}
+                  </div>
                 </div>
               </Col>
             </Row>

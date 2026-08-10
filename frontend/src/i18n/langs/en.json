@@ -1,4 +1,25 @@
 {
+  "components.apps.configurations.configurations-table.ConfigurationsTable.actions": {
+    "defaultMessage": "Actions"
+  },
+  "components.apps.configurations.configurations-table.ConfigurationsTable.associatedTags": {
+    "defaultMessage": "Associated Tags"
+  },
+  "components.apps.configurations.configurations-table.ConfigurationsTable.containers": {
+    "defaultMessage": "Containers"
+  },
+  "components.apps.configurations.configurations-table.ConfigurationsTable.createConfiguration": {
+    "defaultMessage": "Create Configuration"
+  },
+  "components.apps.configurations.configurations-table.ConfigurationsTable.createdAt": {
+    "defaultMessage": "Created At"
+  },
+  "components.apps.configurations.configurations-table.ConfigurationsTable.hash": {
+    "defaultMessage": "Configuration Hash"
+  },
+  "components.apps.configurations.configurations-table.ConfigurationsTable.supportedModels": {
+    "defaultMessage": "System Models"
+  },
   "components.apps.containers.container-details.ContainerDetails.bindsLabel": {
     "defaultMessage": "Binds"
   },
@@ -439,42 +460,6 @@
   "components.apps.deployments.edit-deployment-campaign-modal.EditDeploymentCampaignModal.title": {
     "defaultMessage": "Edit Deployment Campaign"
   },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.deployButton": {
-    "defaultMessage": "Deploy"
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.deployErrorFeedback": {
-    "defaultMessage": "Could not deploy the Application, please try again."
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.deviceOfflineError": {
-    "defaultMessage": "The device is disconnected. You cannot deploy an application while it is offline."
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.noApplicationsAvailable": {
-    "defaultMessage": "No applications available"
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.noApplicationsFoundMatching": {
-    "defaultMessage": "No applications found matching \"{inputValue}\""
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.noReleasesAvailable": {
-    "defaultMessage": "No releases available for this application"
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.noReleasesFoundMatching": {
-    "defaultMessage": "No releases found matching \"{inputValue}\""
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.searchPlaceholder": {
-    "defaultMessage": "Search or select an application..."
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.selectARelease": {
-    "defaultMessage": "Select a release"
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.selectApplication": {
-    "defaultMessage": "Select Application"
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.selectApplicationFirst": {
-    "defaultMessage": "Please select an application first"
-  },
-  "components.apps.releases.add-available-applications.AddAvailableApplications.selectRelease": {
-    "defaultMessage": "Select Release"
-  },
   "components.apps.releases.application-devices-table.ApplicationDevicesTable.applicationStateTitle": {
     "defaultMessage": "Application State",
     "description": "Title for the Application State column of the application devices table"
@@ -603,6 +588,42 @@
   "components.apps.releases.releases-table.ReleasesTable.versionTitle": {
     "defaultMessage": "Release Version",
     "description": "Title for the Release Version column of the releases table"
+  },
+  "components.apps.tags.create-tag-modal.CreateTagModal.configLabel": {
+    "defaultMessage": "Target Configuration"
+  },
+  "components.apps.tags.create-tag-modal.CreateTagModal.createTitle": {
+    "defaultMessage": "Create Tag"
+  },
+  "components.apps.tags.create-tag-modal.CreateTagModal.editTitle": {
+    "defaultMessage": "Edit Tag"
+  },
+  "components.apps.tags.create-tag-modal.CreateTagModal.groupLabel": {
+    "defaultMessage": "Target Device Group"
+  },
+  "components.apps.tags.create-tag-modal.CreateTagModal.nameLabel": {
+    "defaultMessage": "Tag Name (SemVer)"
+  },
+  "components.apps.tags.tags-table.TagsTable.actions": {
+    "defaultMessage": "Actions"
+  },
+  "components.apps.tags.tags-table.TagsTable.configuration": {
+    "defaultMessage": "Configuration Hash"
+  },
+  "components.apps.tags.tags-table.TagsTable.createTag": {
+    "defaultMessage": "Create Tag"
+  },
+  "components.apps.tags.tags-table.TagsTable.createdAt": {
+    "defaultMessage": "Created At"
+  },
+  "components.apps.tags.tags-table.TagsTable.releaseType": {
+    "defaultMessage": "Release Type"
+  },
+  "components.apps.tags.tags-table.TagsTable.tagName": {
+    "defaultMessage": "Tag Name (SemVer)"
+  },
+  "components.apps.tags.tags-table.TagsTable.targetGroup": {
+    "defaultMessage": "Target Device Group"
   },
   "components.campaigns.campaign-outcome.CampaignOutcome.Failure": {
     "defaultMessage": "Failure"
@@ -1248,11 +1269,80 @@
   "components.fleet.devices.tabs.applications-tab.ApplicationsTab.DeployedApplications": {
     "defaultMessage": "Deployed Applications"
   },
-  "components.fleet.devices.tabs.applications-tab.ApplicationsTab.InstallNewApp": {
-    "defaultMessage": "Install Applications"
+  "components.fleet.devices.tabs.applications-tab.ApplicationsTab.editedBadge": {
+    "defaultMessage": "Edited"
+  },
+  "components.fleet.devices.tabs.applications-tab.ApplicationsTab.installApplication": {
+    "defaultMessage": "Install Application"
+  },
+  "components.fleet.devices.tabs.applications-tab.ApplicationsTab.installedBadge": {
+    "defaultMessage": "Installed"
   },
   "components.fleet.devices.tabs.applications-tab.ApplicationsTab.title": {
     "defaultMessage": "Applications"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.applicationLabel": {
+    "defaultMessage": "Application"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.applicationPlaceholder": {
+    "defaultMessage": "Search or select an application..."
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.cancelButton": {
+    "defaultMessage": "Cancel"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.chooseConfigurationPlaceholder": {
+    "defaultMessage": "Choose a configuration..."
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.chooseTagPlaceholder": {
+    "defaultMessage": "Choose a tag..."
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.configSummaryLabel": {
+    "defaultMessage": "Configuration"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.configurationLabel": {
+    "defaultMessage": "Select Configuration"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.configurationOption": {
+    "defaultMessage": "Configuration"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.containersCountLabel": {
+    "defaultMessage": "containers"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.editConfigurationLabel": {
+    "defaultMessage": "I want to make changes to this configuration"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.editContainersTitle": {
+    "defaultMessage": "Edit Containers"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.editedBadge": {
+    "defaultMessage": "{count, plural, one {# container edited} other {# containers edited}}"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.editedContainerBadge": {
+    "defaultMessage": "Edited"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.imageLabel": {
+    "defaultMessage": "Image"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.installButton": {
+    "defaultMessage": "Install"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.noContainersMsg": {
+    "defaultMessage": "No containers available for the selected configuration."
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.offlineWarning": {
+    "defaultMessage": "The device is disconnected. Installation is not possible while the device is offline."
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.sourceLabel": {
+    "defaultMessage": "Source"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.tagLabel": {
+    "defaultMessage": "Select Tag"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.tagOption": {
+    "defaultMessage": "Tag"
+  },
+  "components.fleet.devices.tabs.applications-tab.install-application-modal.InstallApplicationModal.title": {
+    "defaultMessage": "Install Application"
   },
   "components.fleet.devices.tabs.base-image-tab.BaseImageTab.buildId": {
     "defaultMessage": "Build identifier"
@@ -1500,9 +1590,6 @@
   "components.layout.sidebar.groups.apps-sidebar-group.AppsSidebarGroup.campaignsLabel": {
     "defaultMessage": "Application Campaigns"
   },
-  "components.layout.sidebar.groups.apps-sidebar-group.AppsSidebarGroup.containersLabel": {
-    "defaultMessage": "Containers"
-  },
   "components.layout.sidebar.groups.apps-sidebar-group.AppsSidebarGroup.deploymentsLabel": {
     "defaultMessage": "Deployments"
   },
@@ -1548,20 +1635,20 @@
   "components.layout.sidebar.groups.ota-sidebar-group.OtaSidebarGroup.updateCampaignsLabel": {
     "defaultMessage": "Update Campaigns"
   },
-  "components.layout.sidebar.sidebar-footer.SidebarFooter.logoutLabel": {
-    "defaultMessage": "Logout"
+  "components.layout.sidebar.sidebar-footer.SidebarFooter.documentationLabel": {
+    "defaultMessage": "Documentation"
   },
   "components.layout.sidebar.sidebar-footer.SidebarFooter.infoLabel": {
     "defaultMessage": "About"
   },
-  "components.layout.sidebar.sidebar-footer.SidebarFooter.versionLabel": {
-    "defaultMessage": "Version {appVersion}"
+  "components.layout.sidebar.sidebar-footer.SidebarFooter.logoutLabel": {
+    "defaultMessage": "Logout"
   },
   "components.layout.sidebar.sidebar-footer.SidebarFooter.sourceCodeLabel": {
     "defaultMessage": "Source code"
   },
-  "components.layout.sidebar.sidebar-footer.SidebarFooter.documentationLabel": {
-    "defaultMessage": "Documentation"
+  "components.layout.sidebar.sidebar-footer.SidebarFooter.versionLabel": {
+    "defaultMessage": "Version {appVersion}"
   },
   "components.ota.operation-table.OperationTable.baseImage": {
     "defaultMessage": "Base Image"
@@ -2192,6 +2279,9 @@
   "forms.CreateRelease.addDependenciesButton": {
     "defaultMessage": "Add Dependencies"
   },
+  "forms.CreateRelease.configHashLabel": {
+    "defaultMessage": "Configuration Hash"
+  },
   "forms.CreateRelease.containerDependenciesLabel": {
     "defaultMessage": "Container Dependencies"
   },
@@ -2209,9 +2299,6 @@
   },
   "forms.CreateRelease.supportedSystemModelsLabels": {
     "defaultMessage": "Supported System Models"
-  },
-  "forms.CreateRelease.versionLabel": {
-    "defaultMessage": "Version"
   },
   "forms.CreateRepository.descriptionLabel": {
     "defaultMessage": "Description"
@@ -3270,17 +3357,20 @@
   "pages.Application.applicationNotFound.title": {
     "defaultMessage": "Application not found."
   },
-  "pages.Application.createButton": {
-    "defaultMessage": "Create Release"
+  "pages.Application.configurations": {
+    "defaultMessage": "Configurations"
+  },
+  "pages.Application.createConfigButton": {
+    "defaultMessage": "Create Configuration"
+  },
+  "pages.Application.createTagButton": {
+    "defaultMessage": "Create Tag"
   },
   "pages.Application.description": {
     "defaultMessage": "Description"
   },
-  "pages.Application.devices": {
-    "defaultMessage": "Devices"
-  },
-  "pages.Application.releases": {
-    "defaultMessage": "Releases"
+  "pages.Application.tags": {
+    "defaultMessage": "Tags"
   },
   "pages.ApplicationCreate.creationErrorFeedback": {
     "defaultMessage": "Could not create the application, please try again."
@@ -3829,7 +3919,7 @@
     "defaultMessage": "Could not create the release, please try again."
   },
   "pages.ReleaseCreate.title": {
-    "defaultMessage": "Create Release for {applicationName}"
+    "defaultMessage": "Create Configuration for {applicationName}"
   },
   "pages.Repositories.createButton": {
     "defaultMessage": "Create Repository"

@@ -18,7 +18,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Modal, Button, Form, Alert } from "react-bootstrap";
 import { FormattedMessage } from "react-intl";
 import semverValid from "semver/functions/valid";
@@ -58,7 +58,7 @@ const CreateTagModal = ({
   const [deviceGroupId, setDeviceGroupId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const resetFormFromProps = () => {
     if (tagToEdit) {
       setName(tagToEdit.name);
       setIsPreRelease(tagToEdit.isPreRelease);
@@ -71,7 +71,7 @@ const CreateTagModal = ({
       setDeviceGroupId(deviceGroups[0]?.id || "");
     }
     setError(null);
-  }, [tagToEdit, show, configurations, deviceGroups]);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,18 +118,18 @@ const CreateTagModal = ({
   };
 
   return (
-    <Modal show={show} onHide={onClose} centered>
+    <Modal show={show} onEnter={resetFormFromProps} onHide={onClose} centered>
       <Form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>
             {tagToEdit ? (
               <FormattedMessage
-                id="components.apps.tags.CreateTagModal.editTitle"
+                id="components.apps.tags.create-tag-modal.CreateTagModal.editTitle"
                 defaultMessage="Edit Tag"
               />
             ) : (
               <FormattedMessage
-                id="components.apps.tags.CreateTagModal.createTitle"
+                id="components.apps.tags.create-tag-modal.CreateTagModal.createTitle"
                 defaultMessage="Create Tag"
               />
             )}
@@ -141,7 +141,7 @@ const CreateTagModal = ({
           <Form.Group className="mb-3" controlId="tagName">
             <Form.Label className="fw-semibold">
               <FormattedMessage
-                id="components.apps.tags.CreateTagModal.nameLabel"
+                id="components.apps.tags.create-tag-modal.CreateTagModal.nameLabel"
                 defaultMessage="Tag Name (SemVer)"
               />
             </Form.Label>
@@ -160,7 +160,7 @@ const CreateTagModal = ({
           <Form.Group className="mb-3" controlId="configurationHash">
             <Form.Label className="fw-semibold">
               <FormattedMessage
-                id="components.apps.tags.CreateTagModal.configLabel"
+                id="components.apps.tags.create-tag-modal.CreateTagModal.configLabel"
                 defaultMessage="Target Configuration"
               />
             </Form.Label>
@@ -184,7 +184,7 @@ const CreateTagModal = ({
           <Form.Group className="mb-3" controlId="deviceGroupId">
             <Form.Label className="fw-semibold">
               <FormattedMessage
-                id="components.apps.tags.CreateTagModal.groupLabel"
+                id="components.apps.tags.create-tag-modal.CreateTagModal.groupLabel"
                 defaultMessage="Target Device Group"
               />
             </Form.Label>
