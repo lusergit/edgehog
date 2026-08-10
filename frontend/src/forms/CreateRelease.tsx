@@ -49,8 +49,11 @@ type ReleaseSubmitData = {
   requiredSystemModels?: ReleaseCreateRequiredSystemModelsInput[];
 };
 
+const generateDefaultHash = () =>
+  `cfg-${Math.random().toString(16).substring(2, 10)}`;
+
 const initialData: ReleaseFormData = {
-  version: "",
+  version: generateDefaultHash(),
   requiredSystemModels: [],
   containers: [],
   containerDependencies: [],
@@ -73,7 +76,7 @@ const transformOutputData = (data: ReleaseFormData): ReleaseSubmitData => {
   );
 
   const release: ReleaseSubmitData = {
-    version: data.version,
+    version: data.version || generateDefaultHash(),
     containers: data.containers,
     containerDependencies: releaseContainers,
     requiredSystemModels: data.requiredSystemModels,
@@ -158,16 +161,21 @@ const CreateRelease = ({
           id="version"
           label={
             <FormattedMessage
-              id="forms.CreateRelease.versionLabel"
-              defaultMessage="Version"
+              id="forms.CreateRelease.configHashLabel"
+              defaultMessage="Configuration Hash"
             />
           }
         >
           <Form.Control
             {...register("version")}
             isInvalid={!!errors.version}
-            placeholder="e.g., 1.0.0"
+            className="font-monospace"
+            placeholder="e.g., cfg-8a1f3c9e"
           />
+          <Form.Text className="text-muted">
+            Configurations are identified by a unique hash. You can use the
+            auto-generated hash or specify a custom hash identifier.
+          </Form.Text>
           <FormFeedback feedback={errors.version?.message} />
         </FormRow>
 

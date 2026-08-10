@@ -182,6 +182,66 @@ const ReleaseDevicesLayoutContainer = ({
   );
 };
 
+import ConfigurationContainerInspector, {
+  MockContainerSpec,
+} from "@/components/apps/configurations/configuration-container-inspector/ConfigurationContainerInspector";
+
+const mockContainersForConfig: MockContainerSpec[] = [
+  {
+    id: "cont-1",
+    name: "web-gateway",
+    image: "nginx:1.25-alpine",
+    ports: ["80:80/tcp", "443:443/tcp"],
+    environment: {
+      NGINX_HOST: "edgehog.local",
+      CLIENT_MAX_BODY_SIZE: "50m",
+      WORKER_PROCESSES: "auto",
+    },
+    restartPolicy: "always",
+    volumes: [
+      { target: "/etc/nginx/nginx.conf", driver: "bind" },
+      { target: "/var/log/nginx", driver: "local" },
+    ],
+    memoryLimit: "512 MB",
+    cpuQuota: "50000 µs",
+    privileged: false,
+  },
+  {
+    id: "cont-2",
+    name: "backend-api",
+    image: "edgehog/backend:v0.13.1",
+    ports: ["4000:4000/tcp"],
+    environment: {
+      NODE_ENV: "production",
+      PORT: "4000",
+      DB_HOST: "redis-cache",
+      DB_PORT: "6379",
+      LOG_LEVEL: "info",
+    },
+    restartPolicy: "unless-stopped",
+    dependsOn: ["redis-cache"],
+    volumes: [{ target: "/app/uploads", driver: "local" }],
+    memoryLimit: "1024 MB",
+    cpuQuota: "100000 µs",
+    privileged: false,
+  },
+  {
+    id: "cont-3",
+    name: "redis-cache",
+    image: "redis:7-alpine",
+    ports: ["6379:6379/tcp"],
+    environment: {
+      ALLOW_EMPTY_PASSWORD: "yes",
+      MAXMEMORY: "256mb",
+    },
+    restartPolicy: "always",
+    volumes: [{ target: "/data", driver: "local" }],
+    memoryLimit: "256 MB",
+    cpuQuota: "25000 µs",
+    privileged: false,
+  },
+];
+
 interface ReleaseContentProps {
   release: NonNullable<Release_getRelease_Query$data["release"]>;
 }
@@ -198,7 +258,7 @@ const ReleaseContent = ({ release }: ReleaseContentProps) => {
   return (
     <Page>
       <Page.Header
-        title={`${release.application?.name ?? ""} (v${release.version})`}
+        title={`${release.application?.name ?? "Application"} (${release.version ?? "Configuration"})`}
       />
       <Page.Main>
         <Alert
@@ -233,6 +293,10 @@ const ReleaseContent = ({ release }: ReleaseContentProps) => {
             })}
           >
             <ContainersLayoutContainer releaseRef={release} />
+            <div className="mt-4">
+              <h5 className="fw-bold text-dark mb-3">Container Detailed Specifications</h5>
+              <ConfigurationContainerInspector containers={mockContainersForConfig} />
+            </div>
           </Tab>
 
           <SystemModelsTab release={release} />
