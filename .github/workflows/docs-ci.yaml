@@ -91,6 +91,30 @@ jobs:
           astarte-interfaces: edgehog-astarte-interfaces
           version: ${{ steps.compute-version.outputs.version }}
 
+      - name: Compute latest version
+        id: latest_version
+        run: |
+          VERSION=$(git tag -l --sort=-v:refname \
+            | sed 's/-.*$//g' \
+            | awk -F . '{ print $1"."$2 }' \
+            | awk '!NF || !seen[$0]++' \
+            | head -n 1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Link latest to newest version
+        workin-directory: docs
+        run: |
+          VERSION="${{ steps.latest_version.outputs.version }}"
+          if [ -z "$VERSION" ]; then
+            echo "No version found, aborting." >&2
+            exit 1
+          fi
+          if [ ! -d "$VERSION" ]; then
+            echo "Folder '$VERSION' does not exist, aborting." >&2
+            exit 1
+          fi
+          ln -srf "$VERSION" latest
+
       - name: Commit files
         if: ${{ inputs.publish }}
         working-directory: docs
