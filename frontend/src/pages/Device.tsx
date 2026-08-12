@@ -42,6 +42,7 @@ import Spinner from "@/components/ui/spinner/Spinner";
 import Stack from "@/components/ui/stack/Stack";
 import Tabs from "@/components/ui/tabs/Tabs";
 import DeviceInfoCard from "@/components/fleet/devices/device-info-card/DeviceInfoCard";
+import DeviceIdentificationTab from "@/components/fleet/devices/tabs/identification-tab/IdentificationTab";
 import DeviceHardwareInfoTab from "@/components/fleet/devices/tabs/hardware-info-tab/HardwareInfoTab";
 import DeviceOSInfoTab from "@/components/fleet/devices/tabs/os-info-tab/OSInfoTab";
 import DeviceRuntimeInfoTab from "@/components/fleet/devices/tabs/runtime-info-tab/RuntimeInfoTab";
@@ -65,6 +66,7 @@ const GET_DEVICE_QUERY = graphql`
     device(id: $id) {
       name
       ...DeviceInfoCard_device
+      ...IdentificationTab_device
       ...HardwareInfoTab_hardwareInfo
       ...BaseImageTab_baseImage
       ...OSInfoTab_osInfo
@@ -97,6 +99,7 @@ const GET_TAGS_QUERY = graphql`
 `;
 
 const TAB_KEYS = [
+  "device-identification-tab",
   "device-hardware-info-tab",
   "device-os-info-tab",
   "device-runtime-info-tab",
@@ -194,7 +197,6 @@ const DeviceContent = ({
             deviceRef={device}
             tags={tags}
             refreshTags={refreshTags}
-            isForwarderSupported={isForwarderEnabled}
             onError={setErrorFeedback}
           />
           <Tabs
@@ -211,6 +213,10 @@ const DeviceContent = ({
               )
             }
           >
+            <DeviceIdentificationTab
+              deviceRef={device}
+              isForwarderSupported={isForwarderEnabled}
+            />
             <DeviceHardwareInfoTab deviceRef={device} />
             <DeviceOSInfoTab deviceRef={device} />
             <DeviceRuntimeInfoTab deviceRef={device} />
