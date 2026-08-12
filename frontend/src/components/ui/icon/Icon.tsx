@@ -76,6 +76,10 @@ import {
   HardDriveDownload,
   Grid2x2Check,
   EllipsisVertical,
+  SquareTerminal,
+  Lightbulb,
+  Zap,
+  Sun,
   type LucideProps,
 } from "lucide-react";
 
@@ -137,6 +141,10 @@ const icons = {
   deployments: HardDriveDownload,
   columnVisibility: Grid2x2Check,
   details: EllipsisVertical,
+  terminal: SquareTerminal,
+  lightbulb: Lightbulb,
+  zap: Zap,
+  sun: Sun,
 } as const;
 
 export type IconName = keyof typeof icons;
