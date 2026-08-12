@@ -21,7 +21,6 @@
 import { Suspense } from "react";
 import { it, expect, vi, beforeAll } from "vitest";
 import { act, screen, fireEvent, waitFor } from "@testing-library/react";
-import selectEvent from "react-select-event";
 import { createMockEnvironment } from "relay-test-utils";
 import { graphql, useLazyLoadQuery } from "react-relay/hooks";
 
@@ -57,7 +56,8 @@ type DevicePayload = {
   serialNumber: string;
   partNumber: string;
   online: boolean;
-  capabilities: string[];
+  lastConnection: string | null;
+  lastDisconnection: string | null;
   systemModel: {
     name: string;
     hardwareType: {
@@ -80,10 +80,10 @@ type DevicePayload = {
 
 const createDevicePayload = ({
   online = true,
-  capabilities = ["LED_BEHAVIORS", "REMOTE_TERMINAL"],
+  lastConnection = "2021-11-08T15:43:34.706Z",
 }: {
   online?: boolean;
-  capabilities?: string[];
+  lastConnection?: string | null;
 } = {}): DevicePayload => ({
   id: "device-1",
   name: "Test Device",
@@ -91,7 +91,8 @@ const createDevicePayload = ({
   serialNumber: "SN-123",
   partNumber: "PN-456",
   online,
-  capabilities,
+  lastConnection,
+  lastDisconnection: online ? null : "2021-11-08T15:43:34.706Z",
   systemModel: {
     name: "Test System Model",
     hardwareType: {
@@ -118,13 +119,11 @@ const createDevicePayload = ({
 
 type RenderCardParams = {
   device?: DevicePayload;
-  isForwarderSupported?: boolean;
   tags?: { label: string; value: string }[];
 };
 
 const renderCard = ({
   device = createDevicePayload(),
-  isForwarderSupported = true,
   tags = [{ label: "existing-tag", value: "existing-tag" }],
 }: RenderCardParams = {}) => {
   const relayEnvironment = createMockEnvironment();
@@ -145,7 +144,6 @@ const renderCard = ({
         deviceRef={data.device}
         tags={tags}
         refreshTags={refreshTags}
-        isForwarderSupported={isForwarderSupported}
         onError={onError}
       />
     );
@@ -175,7 +173,7 @@ const renderCard = ({
 it("renders the device details", async () => {
   renderCard();
 
-  expect(await screen.findByDisplayValue("Test Device")).toBeVisible();
+  expect(await screen.findByText("Test Device")).toBeVisible();
   expect(screen.getByText("device-1")).toBeVisible();
   expect(screen.getByText("SN-123")).toBeVisible();
   expect(screen.getByText("PN-456")).toBeVisible();
@@ -183,56 +181,38 @@ it("renders the device details", async () => {
   expect(screen.getByText("Test Hardware Type")).toBeVisible();
   expect(screen.getByText("Group One")).toBeVisible();
   expect(screen.getByText("Online")).toBeVisible();
-  expect(screen.getByText("Now")).toBeVisible();
+  expect(screen.getByText("tag-one")).toBeVisible();
 });
 
-it("shows the LED behaviors and remote terminal rows when supported", async () => {
-  renderCard();
-
-  await screen.findByDisplayValue("Test Device");
-  expect(screen.getByText("Check my Device")).toBeVisible();
-  expect(screen.getByRole("button", { name: "Open" })).toBeVisible();
-});
-
-it("hides the remote terminal row when the capability or forwarder support is missing", async () => {
+it("shows the connection state and last time online when offline", async () => {
   renderCard({
-    device: createDevicePayload({ capabilities: ["LED_BEHAVIORS"] }),
-    isForwarderSupported: false,
+    device: createDevicePayload({
+      online: false,
+      lastConnection: "2021-11-08T15:43:34.706Z",
+    }),
   });
 
-  await screen.findByDisplayValue("Test Device");
-  expect(screen.getByText("Check my Device")).toBeVisible();
-  expect(
-    screen.queryByRole("button", { name: "Open" }),
-  ).not.toBeInTheDocument();
-  expect(screen.queryByText("Remote Terminal")).not.toBeInTheDocument();
+  expect(await screen.findByText("Offline")).toBeVisible();
+  expect(screen.getByText(/Last seen/)).toBeVisible();
 });
 
-it("disables the remote terminal button while the device is offline", async () => {
-  renderCard({
-    device: createDevicePayload({ online: false }),
-  });
-
-  await screen.findByDisplayValue("Test Device");
-  expect(screen.getByRole("button", { name: "Open" })).toBeDisabled();
-});
-
-it("updates the device name by committing the update mutation", async () => {
+it("updates the device name after editing", async () => {
   const { relayEnvironment } = renderCard();
 
-  await screen.findByDisplayValue("Test Device");
+  await screen.findByText("Test Device");
 
-  fireEvent.change(screen.getByLabelText("Name"), {
-    target: { value: "New Device Name" },
-  });
+  fireEvent.click(screen.getByRole("button", { name: "Edit device name" }));
+
+  const input = await screen.findByDisplayValue("Test Device");
+  fireEvent.change(input, { target: { value: "New Device Name" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save device name" }));
 
   await waitFor(() => {
     const operation = relayEnvironment.mock
       .getAllOperations()
       .find(
         (op) =>
-          op.request.node.params.name ===
-          "DeviceInfoCard_updateDevice_Mutation",
+          op.request.node.params.name === "DeviceName_updateDevice_Mutation",
       );
     expect(operation?.request.variables).toEqual({
       deviceId: "device-1",
@@ -241,24 +221,49 @@ it("updates the device name by committing the update mutation", async () => {
   });
 });
 
-it("adds a tag to the device by committing the add tags mutation", async () => {
+it("cancels the device name edit without committing", async () => {
+  const { relayEnvironment } = renderCard();
+
+  await screen.findByText("Test Device");
+
+  fireEvent.click(screen.getByRole("button", { name: "Edit device name" }));
+  fireEvent.change(await screen.findByDisplayValue("Test Device"), {
+    target: { value: "Discarded Name" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+  expect(screen.getByText("Test Device")).toBeVisible();
+  expect(
+    relayEnvironment.mock
+      .getAllOperations()
+      .some(
+        (op) =>
+          op.request.node.params.name === "DeviceName_updateDevice_Mutation",
+      ),
+  ).toBe(false);
+});
+
+it("adds a tag through the add button", async () => {
   const { relayEnvironment, refreshTags } = renderCard();
 
-  await screen.findByDisplayValue("Test Device");
+  await screen.findByText("Test Device");
 
-  await selectEvent.select(screen.getAllByRole("combobox")[0], "existing-tag");
+  fireEvent.click(screen.getByRole("button", { name: "Add tag" }));
+
+  const input = await screen.findByDisplayValue("");
+  fireEvent.change(input, { target: { value: "new-tag" } });
+  fireEvent.keyDown(input, { key: "Enter" });
 
   await waitFor(() => {
     const operation = relayEnvironment.mock
       .getAllOperations()
       .find(
         (op) =>
-          op.request.node.params.name ===
-          "DeviceInfoCard_addDeviceTags_Mutation",
+          op.request.node.params.name === "DeviceTags_addDeviceTags_Mutation",
       );
     expect(operation?.request.variables).toEqual({
       deviceId: "device-1",
-      input: { tags: ["existing-tag"] },
+      input: { tags: ["new-tag"] },
     });
   });
 
@@ -268,22 +273,8 @@ it("adds a tag to the device by committing the add tags mutation", async () => {
         addDeviceTags: {
           result: {
             id: "device-1",
-            tags: {
-              edges: [
-                {
-                  node: { id: "tag-1", name: "tag-one" },
-                },
-                {
-                  node: { id: "tag-2", name: "existing-tag" },
-                },
-              ],
-            },
-            deviceGroups: [
-              {
-                id: "group-1",
-                name: "Group One",
-              },
-            ],
+            tags: { edges: [] },
+            deviceGroups: [],
           },
         },
       },
@@ -293,39 +284,12 @@ it("adds a tag to the device by committing the add tags mutation", async () => {
   expect(refreshTags).toHaveBeenCalled();
 });
 
-it("opens the remote terminal when the open button is clicked and session is established", async () => {
+it("removes a tag through the tag remove button", async () => {
   const { relayEnvironment } = renderCard();
 
-  await screen.findByDisplayValue("Test Device");
+  await screen.findByText("Test Device");
 
-  const openButton = screen.getByRole("button", { name: "Open" });
-  fireEvent.click(openButton);
-
-  await waitFor(() => {
-    const operation = relayEnvironment.mock
-      .getAllOperations()
-      .find(
-        (op) =>
-          op.request.node.params.name ===
-          "DeviceInfoCard_requestForwarderSession_Mutation",
-      );
-    expect(operation?.request.variables).toEqual({
-      input: { deviceId: "device-1" },
-    });
-  });
-
-  act(() => {
-    const operation = relayEnvironment.mock.findOperation(
-      (op) =>
-        op.request.node.params.name ===
-        "DeviceInfoCard_requestForwarderSession_Mutation",
-    );
-    relayEnvironment.mock.resolve(operation, {
-      data: {
-        requestForwarderSession: "session-token-123",
-      },
-    });
-  });
+  fireEvent.click(screen.getByRole("button", { name: "Remove tag-one tag" }));
 
   await waitFor(() => {
     const operation = relayEnvironment.mock
@@ -333,74 +297,11 @@ it("opens the remote terminal when the open button is clicked and session is est
       .find(
         (op) =>
           op.request.node.params.name ===
-          "DeviceInfoCard_getForwarderSession_Query",
+          "DeviceTags_removeDeviceTags_Mutation",
       );
     expect(operation?.request.variables).toEqual({
       deviceId: "device-1",
-      sessionToken: "session-token-123",
+      input: { tags: ["tag-one"] },
     });
-  });
-
-  act(() => {
-    const operation = relayEnvironment.mock.findOperation(
-      (op) =>
-        op.request.node.params.name ===
-        "DeviceInfoCard_getForwarderSession_Query",
-    );
-    relayEnvironment.mock.resolve(operation, {
-      data: {
-        forwarderSession: {
-          status: "CONNECTED",
-          secure: true,
-          forwarderHostname: "forwarder.example.com",
-          forwarderPort: 4001,
-          token: "signed-jwt-token",
-        },
-      },
-    });
-  });
-
-  await waitFor(() => {
-    expect(openRemoteTerminal).toHaveBeenCalledWith({
-      forwarderVersion: expect.any(String),
-      forwarderHostname: "forwarder.example.com",
-      forwarderPort: 4001,
-      secure: true,
-      sessionToken: "session-token-123",
-      token: "signed-jwt-token",
-    });
-  });
-});
-
-it("shows error feedback if requesting forwarder session fails", async () => {
-  const { relayEnvironment, onError } = renderCard();
-
-  await screen.findByDisplayValue("Test Device");
-
-  const openButton = screen.getByRole("button", { name: "Open" });
-  fireEvent.click(openButton);
-
-  await waitFor(() => {
-    const operation = relayEnvironment.mock
-      .getAllOperations()
-      .find(
-        (op) =>
-          op.request.node.params.name ===
-          "DeviceInfoCard_requestForwarderSession_Mutation",
-      );
-    expect(operation).toBeDefined();
-  });
-
-  act(() => {
-    const operation = relayEnvironment.mock.findOperation(
-      (op) =>
-        op.request.node.params.name ===
-        "DeviceInfoCard_requestForwarderSession_Mutation",
-    );
-    relayEnvironment.mock.reject(operation, new Error("Failed"));
-  });
-
-  await waitFor(() => {
-    expect(onError).toHaveBeenCalled();
   });
 });
