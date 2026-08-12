@@ -1213,52 +1213,33 @@
   "components.fleet.devices.connection-status.ConnectionStatus.statusDisconnected": {
     "defaultMessage": "Offline"
   },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.checkMyDevice": {
-    "defaultMessage": "Check my Device"
-  },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.connectionStatus": {
-    "defaultMessage": "Connection"
-  },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.deviceId": {
-    "defaultMessage": "Device ID"
+  "components.fleet.devices.device-connection.DeviceConnection.lastSeen": {
+    "defaultMessage": "Last seen {date}"
   },
   "components.fleet.devices.device-info-card.DeviceInfoCard.groups": {
     "defaultMessage": "Groups"
   },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.hardwareType": {
-    "defaultMessage": "Hardware Type"
+  "components.fleet.devices.device-name.DeviceName.cancelButton": {
+    "defaultMessage": "Cancel"
   },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.lastSeen": {
-    "defaultMessage": "Last seen"
+  "components.fleet.devices.device-name.DeviceName.editButton": {
+    "defaultMessage": "Edit device name"
   },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.name": {
-    "defaultMessage": "Name"
+  "components.fleet.devices.device-name.DeviceName.saveButton": {
+    "defaultMessage": "Save device name"
   },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.openRemoteTerminalErrorFeedback": {
-    "defaultMessage": "Could not access the remote terminal, please try again.",
-    "description": "Feedback for unknown error while opening a remote terminal session"
-  },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.partNumber": {
-    "defaultMessage": "Part Number"
-  },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.remoteTerminal.label": {
-    "defaultMessage": "Remote Terminal"
-  },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.remoteTerminal.openTerminalButton": {
-    "defaultMessage": "Open"
-  },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.serialNumber": {
-    "defaultMessage": "Serial Number"
-  },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.systemModel": {
-    "defaultMessage": "System Model"
-  },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.tags": {
-    "defaultMessage": "Tags"
-  },
-  "components.fleet.devices.device-info-card.DeviceInfoCard.updateDeviceErrorFeedback": {
+  "components.fleet.devices.device-name.DeviceName.updateDeviceErrorFeedback": {
     "defaultMessage": "Could not update the device, please try again.",
     "description": "Feedback for unknown error while updating a device"
+  },
+  "components.fleet.devices.device-tags.DeviceTags.addTag": {
+    "defaultMessage": "Add tag"
+  },
+  "components.fleet.devices.device-tags.DeviceTags.removeTag": {
+    "defaultMessage": "Remove {tag} tag"
+  },
+  "components.fleet.devices.device-tags.DeviceTags.tagInputPlaceholder": {
+    "defaultMessage": "New tag"
   },
   "components.fleet.devices.devices-table.DevicesTable.deviceIdTitle": {
     "defaultMessage": "Device ID",
@@ -1292,26 +1273,33 @@
   "components.fleet.devices.last-seen.LastSeen.now": {
     "defaultMessage": "Now"
   },
-  "components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.behavior.blinkLED": {
+  "components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.behavior.blinkLED": {
     "defaultMessage": "Blink LED"
   },
-  "components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.behavior.doubleBlinkLED": {
+  "components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.behavior.doubleBlinkLED": {
     "defaultMessage": "Double blink LED"
   },
-  "components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.behavior.slowBlinkLED": {
+  "components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.behavior.slowBlinkLED": {
     "defaultMessage": "Slow blink LED"
   },
-  "components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.genericErrorFeedback": {
+  "components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.genericErrorFeedback": {
     "defaultMessage": "The request could not reach the server, please try again."
   },
-  "components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.identify": {
-    "defaultMessage": "Identify"
+  "components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.identify": {
+    "defaultMessage": "Identify device"
   },
-  "components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.tooltip": {
+  "components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.tooltip": {
     "defaultMessage": "The device LED will blink for 60s."
   },
   "components.fleet.devices.network-interfaces-table.NetworkInterfacesTable.macAddressTitle": {
     "defaultMessage": "MAC Address"
+  },
+  "components.fleet.devices.remote-terminal.RemoteTerminal.openRemoteTerminalErrorFeedback": {
+    "defaultMessage": "Could not access the remote terminal, please try again.",
+    "description": "Feedback for unknown error while opening a remote terminal session"
+  },
+  "components.fleet.devices.remote-terminal.RemoteTerminal.openTerminalButton": {
+    "defaultMessage": "Open terminal"
   },
   "components.fleet.devices.network-interfaces-table.NetworkInterfacesTable.nameTitle": {
     "defaultMessage": "Name"
@@ -1357,6 +1345,9 @@
   },
   "components.fleet.devices.tabs.applications-tab.ApplicationsTab.title": {
     "defaultMessage": "Applications"
+  },
+  "components.fleet.devices.tabs.identification-tab.IdentificationTab.title": {
+    "defaultMessage": "Identification"
   },
   "components.fleet.devices.tabs.base-image-tab.BaseImageTab.buildId": {
     "defaultMessage": "Build identifier"
