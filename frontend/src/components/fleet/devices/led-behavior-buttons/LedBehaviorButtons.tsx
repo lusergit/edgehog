@@ -1,22 +1,20 @@
-/*
- * This file is part of Edgehog.
- *
- * Copyright 2022-2026 SECO Mind Srl
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
+// This file is part of Edgehog.
+//
+// Copyright 2022-2026 SECO Mind Srl
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useState } from "react";
 import { graphql, useMutation } from "react-relay/hooks";
@@ -24,7 +22,6 @@ import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 import type { MessageDescriptor } from "react-intl";
 
 import ButtonGroup from "react-bootstrap/ButtonGroup";
-import Dropdown from "react-bootstrap/Dropdown";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
@@ -32,10 +29,10 @@ import Button from "@/components/ui/button/Button";
 import Icon from "@/components/ui/icon/Icon";
 import Spinner from "@/components/ui/spinner/Spinner";
 
-import type { LedBehaviorDropdown_setLedBehavior_Mutation } from "@/api/__generated__/LedBehaviorDropdown_setLedBehavior_Mutation.graphql";
+import type { LedBehaviorButtons_setLedBehavior_Mutation } from "@/api/__generated__/LedBehaviorButtons_setLedBehavior_Mutation.graphql";
 
 const SET_LED_BEHAVIOR_MUTATION = graphql`
-  mutation LedBehaviorDropdown_setLedBehavior_Mutation(
+  mutation LedBehaviorButtons_setLedBehavior_Mutation(
     $deviceId: ID!
     $input: SetDeviceLedBehaviorInput!
   ) {
@@ -59,18 +56,27 @@ const supportedBehaviorMessages: Record<
   MessageDescriptor
 > = defineMessages({
   BLINK: {
-    id: "components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.behavior.blinkLED",
+    id: "components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.behavior.blinkLED",
     defaultMessage: "Blink LED",
   },
   DOUBLE_BLINK: {
-    id: "components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.behavior.doubleBlinkLED",
+    id: "components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.behavior.doubleBlinkLED",
     defaultMessage: "Double blink LED",
   },
   SLOW_BLINK: {
-    id: "components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.behavior.slowBlinkLED",
+    id: "components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.behavior.slowBlinkLED",
     defaultMessage: "Slow blink LED",
   },
 });
+
+const supportedBehaviorIcons: Record<
+  SupportedLedBehavior,
+  "lightbulb" | "zap" | "sun"
+> = {
+  BLINK: "lightbulb",
+  DOUBLE_BLINK: "zap",
+  SLOW_BLINK: "sun",
+};
 
 function isSupportedLedBehavior(value: unknown): value is SupportedLedBehavior {
   return (
@@ -85,11 +91,11 @@ interface Props {
   onError: (error: React.ReactNode) => void;
 }
 
-const LedBehaviorDropdown = ({ deviceId, disabled, onError }: Props) => {
+const LedBehaviorButtons = ({ deviceId, disabled, onError }: Props) => {
   const intl = useIntl();
 
   const [setLedBehavior, isSettingLedBehavior] =
-    useMutation<LedBehaviorDropdown_setLedBehavior_Mutation>(
+    useMutation<LedBehaviorButtons_setLedBehavior_Mutation>(
       SET_LED_BEHAVIOR_MUTATION,
     );
 
@@ -135,7 +141,7 @@ const LedBehaviorDropdown = ({ deviceId, disabled, onError }: Props) => {
         onError() {
           onError(
             <FormattedMessage
-              id="components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.genericErrorFeedback"
+              id="components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.genericErrorFeedback"
               defaultMessage="The request could not reach the server, please try again."
             />,
           );
@@ -145,49 +151,50 @@ const LedBehaviorDropdown = ({ deviceId, disabled, onError }: Props) => {
     [setLedBehavior, deviceId, onError, setCurrentBehavior],
   );
 
-  if (currentBehavior) {
-    return (
-      <Button variant="success" disabled>
-        <Icon icon="check" className="me-2" />
-        {intl.formatMessage(supportedBehaviorMessages[currentBehavior])}
-      </Button>
-    );
-  }
-
   return (
     <OverlayTrigger
       overlay={
         <Tooltip>
           <FormattedMessage
-            id="components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.tooltip"
+            id="components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.tooltip"
             defaultMessage="The device LED will blink for 60s."
           />
         </Tooltip>
       }
     >
-      <Dropdown as={ButtonGroup} onSelect={handleSetLedBehavior}>
-        <Dropdown.Toggle
-          variant="secondary"
-          disabled={disabled || isSettingLedBehavior}
-        >
-          {isSettingLedBehavior && (
-            <Spinner as="span" size="sm" className="me-2" aria-hidden="true" />
-          )}
-          <FormattedMessage
-            id="components.fleet.devices.led-behavior-dropdown.LedBehaviorDropdown.identify"
-            defaultMessage="Identify"
-          />
-        </Dropdown.Toggle>
-        <Dropdown.Menu>
-          {SUPPORTED_LED_BEHAVIORS.map((behavior) => (
-            <Dropdown.Item eventKey={behavior} key={behavior}>
+      <ButtonGroup
+        aria-label={intl.formatMessage({
+          id: "components.fleet.devices.led-behavior-buttons.LedBehaviorButtons.identify",
+          defaultMessage: "Identify device",
+        })}
+      >
+        {SUPPORTED_LED_BEHAVIORS.map((behavior) => {
+          const isActive = currentBehavior === behavior;
+          return (
+            <Button
+              key={behavior}
+              variant={isActive ? "success" : "secondary"}
+              disabled={disabled || isSettingLedBehavior}
+              onClick={() => handleSetLedBehavior(behavior)}
+              aria-pressed={isActive}
+            >
+              {isActive && <Icon icon="check" className="me-2" />}
+              {isSettingLedBehavior && !isActive && (
+                <Spinner
+                  as="span"
+                  size="sm"
+                  className="me-2"
+                  aria-hidden="true"
+                />
+              )}
+              <Icon icon={supportedBehaviorIcons[behavior]} className="me-2" />
               {intl.formatMessage(supportedBehaviorMessages[behavior])}
-            </Dropdown.Item>
-          ))}
-        </Dropdown.Menu>
-      </Dropdown>
+            </Button>
+          );
+        })}
+      </ButtonGroup>
     </OverlayTrigger>
   );
 };
 
-export default LedBehaviorDropdown;
+export default LedBehaviorButtons;
