@@ -28,7 +28,7 @@ import {
 } from "react-relay/hooks";
 import type { PayloadError } from "relay-runtime";
 import { Card } from "react-bootstrap";
-import { FormattedMessage } from "react-intl";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import { forwarderVersion } from "@/api";
 import type { DeviceInfoCard_device$key } from "@/api/__generated__/DeviceInfoCard_device.graphql";
@@ -284,9 +284,21 @@ const DeviceInfoCard = ({
 }: DeviceInfoCardProps) => {
   const { deviceId = "" } = useParams();
   const relayEnvironment = useRelayEnvironment();
+  const intl = useIntl();
   const [isOpeningRemoteTerminal, setIsOpeningRemoteTerminal] = useState(false);
+  const [remoteTerminalPort, setRemoteTerminalPort] = useState(
+    TTYD_PORT.toString(),
+  );
+  const [isRemoteTerminalSecure, setIsRemoteTerminalSecure] = useState(false);
   const [remoteTerminalErrorFeedback, setRemoteTerminalErrorFeedback] =
     useState<ReactNode>(null);
+
+  const parsedPort = Number(remoteTerminalPort);
+  const isValidPort =
+    remoteTerminalPort.trim() !== "" &&
+    Number.isInteger(parsedPort) &&
+    parsedPort >= 1 &&
+    parsedPort <= 65535;
 
   const device = useFragment(DEVICE_INFO_CARD_FRAGMENT, deviceRef);
 
@@ -319,7 +331,7 @@ const DeviceInfoCard = ({
     );
 
   const handleOpenRemoteTerminal = useCallback(
-    async (sessionToken: string) => {
+    async (sessionToken: string, targetPort: number, isSecure: boolean) => {
       const data = await fetchQuery<DeviceInfoCard_getForwarderSession_Query>(
         relayEnvironment,
         GET_FORWARDER_SESSION_QUERY,
@@ -338,15 +350,16 @@ const DeviceInfoCard = ({
       }
 
       const forwarderProtocol = secure ? "https" : "http";
+      const targetProtocol = isSecure ? "https" : "http";
 
       if (semver.satisfies(forwarderVersion, "0.1.x")) {
         window.open(
-          `${forwarderProtocol}://${forwarderHostname}:${forwarderPort}/${sessionToken}/http/${TTYD_PORT}`,
+          `${forwarderProtocol}://${forwarderHostname}:${forwarderPort}/${sessionToken}/${targetProtocol}/${targetPort}`,
           "_blank",
         );
       } else if (semver.satisfies(forwarderVersion, "0.2.x")) {
         window.open(
-          `${forwarderProtocol}://${forwarderHostname}:${forwarderPort}/?session=${sessionToken}&protocol=http&port=${TTYD_PORT}`,
+          `${forwarderProtocol}://${forwarderHostname}:${forwarderPort}/?session=${sessionToken}&protocol=${targetProtocol}&port=${targetPort}`,
           "_blank",
         );
       }
@@ -355,6 +368,10 @@ const DeviceInfoCard = ({
   );
 
   const handleRequestForwarderSession = useCallback(() => {
+    if (!isValidPort) {
+      return;
+    }
+
     requestForwarderSession({
       variables: { input: { deviceId } },
       onCompleted(data, errors) {
@@ -367,7 +384,11 @@ const DeviceInfoCard = ({
         setIsOpeningRemoteTerminal(true);
         timeoutPromise(
           retryWithExponentialBackoff(() =>
-            handleOpenRemoteTerminal(sessionToken),
+            handleOpenRemoteTerminal(
+              sessionToken,
+              parsedPort,
+              isRemoteTerminalSecure,
+            ),
           ),
           10_000,
         )
@@ -395,9 +416,12 @@ const DeviceInfoCard = ({
       },
     });
   }, [
+    isValidPort,
     requestForwarderSession,
-    handleOpenRemoteTerminal,
     deviceId,
+    handleOpenRemoteTerminal,
+    parsedPort,
+    isRemoteTerminalSecure,
     handleAPIErrors,
     onError,
   ]);
@@ -762,24 +786,72 @@ const DeviceInfoCard = ({
                   {...FORM_ROW}
                 >
                   <>
-                    <Button
-                      variant="secondary"
-                      onClick={handleRequestForwarderSession}
-                      disabled={
-                        !device.online ||
-                        isRequestingForwarderSession ||
-                        isOpeningRemoteTerminal
-                      }
+                    <Stack
+                      direction="horizontal"
+                      gap={3}
+                      className="align-items-center flex-wrap"
                     >
-                      {(isRequestingForwarderSession ||
-                        isOpeningRemoteTerminal) && (
-                        <Spinner size="sm" className="me-2" />
-                      )}
-                      <FormattedMessage
-                        id="components.fleet.devices.device-info-card.DeviceInfoCard.remoteTerminal.openTerminalButton"
-                        defaultMessage="Open"
+                      <div style={{ maxWidth: "120px" }}>
+                        <Form.Control
+                          type="number"
+                          min={1}
+                          max={65535}
+                          value={remoteTerminalPort}
+                          onChange={(e) =>
+                            setRemoteTerminalPort(e.target.value)
+                          }
+                          isInvalid={!isValidPort}
+                          disabled={
+                            !device.online ||
+                            isRequestingForwarderSession ||
+                            isOpeningRemoteTerminal
+                          }
+                          placeholder={TTYD_PORT.toString()}
+                          aria-label={intl.formatMessage({
+                            id: "components.fleet.devices.device-info-card.DeviceInfoCard.remoteTerminal.portAriaLabel",
+                            defaultMessage: "Port",
+                          })}
+                        />
+                      </div>
+                      <Form.Check
+                        type="checkbox"
+                        id="form-device-remote-terminal-secure"
+                        label={
+                          <FormattedMessage
+                            id="components.fleet.devices.device-info-card.DeviceInfoCard.remoteTerminal.secure"
+                            defaultMessage="Secure (HTTPS)"
+                          />
+                        }
+                        checked={isRemoteTerminalSecure}
+                        onChange={(e) =>
+                          setIsRemoteTerminalSecure(e.target.checked)
+                        }
+                        disabled={
+                          !device.online ||
+                          isRequestingForwarderSession ||
+                          isOpeningRemoteTerminal
+                        }
                       />
-                    </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={handleRequestForwarderSession}
+                        disabled={
+                          !device.online ||
+                          !isValidPort ||
+                          isRequestingForwarderSession ||
+                          isOpeningRemoteTerminal
+                        }
+                      >
+                        {(isRequestingForwarderSession ||
+                          isOpeningRemoteTerminal) && (
+                          <Spinner size="sm" className="me-2" />
+                        )}
+                        <FormattedMessage
+                          id="components.fleet.devices.device-info-card.DeviceInfoCard.remoteTerminal.openTerminalButton"
+                          defaultMessage="Open"
+                        />
+                      </Button>
+                    </Stack>
                     <Alert
                       show={!!remoteTerminalErrorFeedback}
                       variant="danger"
