@@ -1259,6 +1259,12 @@
   "components.fleet.devices.device-info-card.DeviceInfoCard.remoteTerminal.openTerminalButton": {
     "defaultMessage": "Open"
   },
+  "components.fleet.devices.device-info-card.DeviceInfoCard.remoteTerminal.portAriaLabel": {
+    "defaultMessage": "Port"
+  },
+  "components.fleet.devices.device-info-card.DeviceInfoCard.remoteTerminal.secure": {
+    "defaultMessage": "Secure (HTTPS)"
+  },
   "components.fleet.devices.device-info-card.DeviceInfoCard.serialNumber": {
     "defaultMessage": "Serial Number"
   },
