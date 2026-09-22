@@ -283,3 +283,174 @@ it("adds a tag to the device by committing the add tags mutation", async () => {
 
   expect(refreshTags).toHaveBeenCalled();
 });
+
+it("shows the port input with default 7681 and secure checkbox unchecked", async () => {
+  renderCard();
+
+  await screen.findByDisplayValue("Test Device");
+  const portInput = screen.getByLabelText("Port");
+  const secureCheckbox = screen.getByLabelText("Secure (HTTPS)");
+
+  expect(portInput).toBeVisible();
+  expect(portInput).toHaveValue(7681);
+  expect(secureCheckbox).toBeVisible();
+  expect(secureCheckbox).not.toBeChecked();
+});
+
+it("disables the remote terminal button when an invalid port is entered", async () => {
+  renderCard();
+  await screen.findByDisplayValue("Test Device");
+
+  const portInput = screen.getByLabelText("Port");
+  const openButton = screen.getByRole("button", { name: "Open" });
+
+  expect(openButton).toBeEnabled();
+
+  // Empty port
+  fireEvent.change(portInput, { target: { value: "" } });
+  expect(openButton).toBeDisabled();
+  expect(portInput).toHaveClass("is-invalid");
+
+  // Port 0
+  fireEvent.change(portInput, { target: { value: "0" } });
+  expect(openButton).toBeDisabled();
+  expect(portInput).toHaveClass("is-invalid");
+
+  // Port > 65535
+  fireEvent.change(portInput, { target: { value: "70000" } });
+  expect(openButton).toBeDisabled();
+  expect(portInput).toHaveClass("is-invalid");
+
+  // Valid port
+  fireEvent.change(portInput, { target: { value: "8080" } });
+  expect(openButton).toBeEnabled();
+  expect(portInput).not.toHaveClass("is-invalid");
+});
+
+it("opens remote terminal with default port and protocol", async () => {
+  const windowOpenSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+  const { relayEnvironment } = renderCard();
+
+  await screen.findByDisplayValue("Test Device");
+
+  fireEvent.click(screen.getByRole("button", { name: "Open" }));
+
+  await waitFor(() => {
+    const operation = relayEnvironment.mock
+      .getAllOperations()
+      .find(
+        (op) =>
+          op.request.node.params.name ===
+          "DeviceInfoCard_requestForwarderSession_Mutation",
+      );
+    expect(operation).toBeDefined();
+  });
+
+  act(() => {
+    relayEnvironment.mock.resolveMostRecentOperation({
+      data: {
+        requestForwarderSession: "token-abc-123",
+      },
+    });
+  });
+
+  await waitFor(() => {
+    const operation = relayEnvironment.mock
+      .getAllOperations()
+      .find(
+        (op) =>
+          op.request.node.params.name ===
+          "DeviceInfoCard_getForwarderSession_Query",
+      );
+    expect(operation).toBeDefined();
+  });
+
+  act(() => {
+    relayEnvironment.mock.resolveMostRecentOperation({
+      data: {
+        forwarderSession: {
+          status: "CONNECTED",
+          secure: false,
+          forwarderHostname: "forwarder.local",
+          forwarderPort: 4001,
+        },
+      },
+    });
+  });
+
+  await waitFor(() => {
+    expect(windowOpenSpy).toHaveBeenCalledWith(
+      "http://forwarder.local:4001/token-abc-123/http/7681",
+      "_blank",
+    );
+  });
+
+  windowOpenSpy.mockRestore();
+});
+
+it("opens remote terminal with custom port and https protocol", async () => {
+  const windowOpenSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+  const { relayEnvironment } = renderCard();
+
+  await screen.findByDisplayValue("Test Device");
+
+  const portInput = screen.getByLabelText("Port");
+  const secureCheckbox = screen.getByLabelText("Secure (HTTPS)");
+
+  fireEvent.change(portInput, { target: { value: "8443" } });
+  fireEvent.click(secureCheckbox);
+
+  fireEvent.click(screen.getByRole("button", { name: "Open" }));
+
+  await waitFor(() => {
+    const operation = relayEnvironment.mock
+      .getAllOperations()
+      .find(
+        (op) =>
+          op.request.node.params.name ===
+          "DeviceInfoCard_requestForwarderSession_Mutation",
+      );
+    expect(operation).toBeDefined();
+  });
+
+  act(() => {
+    relayEnvironment.mock.resolveMostRecentOperation({
+      data: {
+        requestForwarderSession: "token-xyz-456",
+      },
+    });
+  });
+
+  await waitFor(() => {
+    const operation = relayEnvironment.mock
+      .getAllOperations()
+      .find(
+        (op) =>
+          op.request.node.params.name ===
+          "DeviceInfoCard_getForwarderSession_Query",
+      );
+    expect(operation).toBeDefined();
+  });
+
+  act(() => {
+    relayEnvironment.mock.resolveMostRecentOperation({
+      data: {
+        forwarderSession: {
+          status: "CONNECTED",
+          secure: true,
+          forwarderHostname: "forwarder.local",
+          forwarderPort: 4001,
+        },
+      },
+    });
+  });
+
+  await waitFor(() => {
+    expect(windowOpenSpy).toHaveBeenCalledWith(
+      "https://forwarder.local:4001/token-xyz-456/https/8443",
+      "_blank",
+    );
+  });
+
+  windowOpenSpy.mockRestore();
+});
