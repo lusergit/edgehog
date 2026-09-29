@@ -39,7 +39,9 @@ import {
   isEnvJsonValid,
 } from "@/lib/environment";
 import { useNavigate, Route } from "@/Navigation";
-import { Modal, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import Modal from "@/components/ui/modal/Modal";
+import ToggleButton from "@/components/ui/toggle-button/ToggleButton";
+import { ToggleButtonGroup } from "@/components/ui/toggle-button/ToggleButton";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
