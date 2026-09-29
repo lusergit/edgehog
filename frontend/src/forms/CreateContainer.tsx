@@ -26,7 +26,10 @@ import {
   type UseFormReturn,
 } from "react-hook-form";
 import { FormattedMessage, useIntl } from "react-intl";
-import { Card, Col, Container, Row } from "react-bootstrap";
+import Card from "@/components/ui/card/Card";
+import Col from "@/components/ui/col/Col";
+import Container from "@/components/ui/container/Container";
+import Row from "@/components/ui/row/Row";
 
 import FilePermissionsInput from "@/components/ui/file-permissions/FilePermissionsInput";
 import ImageReferenceInput from "@/components/apps/containers/image-reference-input/ImageReferenceInput";
