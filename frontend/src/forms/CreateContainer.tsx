@@ -17,7 +17,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Controller,
   useFieldArray,
@@ -3297,7 +3297,8 @@ const CreateContainer = ({
 }: CreateContainerProps) => {
   const form = useForm<ContainerInputData>({
     mode: "onTouched",
-    resolver: zodResolver(containerSchema) as never,
+    defaultValues: initialData,
+    resolver: zodResolver(containerSchema),
   });
 
   const {
@@ -3310,8 +3311,12 @@ const CreateContainer = ({
   const canSubmit = !isLoading && (!isUpdate || isDirty);
   const canReset = isDirty && !isLoading;
 
+  const initialDataRef = useRef(initialData);
   useEffect(() => {
-    reset(initialData);
+    if (initialData && initialData !== initialDataRef.current) {
+      initialDataRef.current = initialData;
+      reset(initialData);
+    }
   }, [initialData, reset]);
 
   const { toggleSection, isSectionOpen } =
