@@ -28,13 +28,12 @@ import {
 } from "react-relay/hooks";
 import { SingleValue } from "react-select";
 import semver from "semver";
-import {
-  Button,
-  Modal,
-  Spinner,
-  ToggleButton,
-  ToggleButtonGroup,
-} from "react-bootstrap";
+import Button from "@/components/ui/button/Button";
+import Modal from "@/components/ui/modal/Modal";
+import Spinner from "@/components/ui/spinner/Spinner";
+import ToggleButton from "@/components/ui/toggle-button/ToggleButton";
+import { ToggleButtonGroup } from "@/components/ui/toggle-button/ToggleButton";
+
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
