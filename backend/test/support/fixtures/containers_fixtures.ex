@@ -53,9 +53,34 @@ defmodule Edgehog.ContainersFixtures do
   def unique_container_name, do: "container#{System.unique_integer()}"
 
   @doc """
-  Generate a unique image reference.
+  Generates a unique registry host
   """
-  def unique_image_reference, do: "image#{System.unique_integer()}"
+  def unique_image_registry_host, do: "image-host#{System.unique_integer()}"
+
+  @doc """
+  Generates a unique registry port
+  """
+  def unique_image_registry_port, do: System.unique_integer(:positive)
+
+  @doc """
+  Generates a unique repository
+  """
+  def unique_image_repository, do: "repo#{System.unique_integer()}"
+
+  @doc """
+  Generates a unique image
+  """
+  def unique_image_image, do: "image#{System.unique_integer()}"
+
+  @doc """
+  Generates a unique tag do
+  """
+  def unique_image_tag, do: "tag#{System.unique_integer()}"
+
+  @doc """
+  Generates a unique digest
+  """
+  def unique_image_digest, do: "sha256:#{System.unique_integer()}"
 
   @doc """
   Generate a unique volume target.
@@ -207,10 +232,21 @@ defmodule Edgehog.ContainersFixtures do
 
     params =
       Enum.into(opts, %{
-        reference: unique_image_reference()
+        image: unique_image_reference()
       })
 
     Ash.create!(Image, params, tenant: tenant)
+  end
+
+  def image_desc_fixture(opts) do
+    %Edgehog.Containers.Types.Image{
+      registry_host: unique_image_registry_host(),
+      registry_port: unique_image_registry_port(),
+      repository: unique_image_repository(),
+      image: unique_image_name(),
+      tag: unique_image_tag(),
+      digest: unique_image_digest()
+    }
   end
 
   def volume_fixture(opts \\ []) do

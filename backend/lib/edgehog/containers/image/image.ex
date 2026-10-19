@@ -25,6 +25,7 @@ defmodule Edgehog.Containers.Image do
     extensions: [AshGraphql.Resource]
 
   alias Edgehog.Containers.Container
+  alias Edgehog.Containers.Image.Changes
   alias Edgehog.Containers.ImageCredentials
   alias Edgehog.Containers.Validations
 
@@ -43,7 +44,22 @@ defmodule Edgehog.Containers.Image do
   end
 
   actions do
-    defaults [:read, :destroy, create: [:reference, :image_credentials_id]]
+    defaults [:read, :destroy]
+
+    create :create do
+      primary? true
+
+      accept [:image_credentials_id]
+
+      argument :registry_host, :string
+      argument :registry_port, :integer
+      argument :repository, :string
+      argument :image, :string, allow_nil?: false
+      argument :tag, :string
+      argument :digest, :string
+
+      change Changes.SetReference
+    end
 
     destroy :destroy_if_dangling do
       description "Destroys the image if it's dangling (not referenced by any container)"

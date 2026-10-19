@@ -36,10 +36,12 @@ defmodule Edgehog.Containers.Types.Image do
     subtype_of: :map,
     constraints: [
       fields: [
-        reference: [
-          type: :string,
-          allow_nil?: false
-        ],
+        registry_host: [type: :string],
+        registry_port: [type: :integer],
+        repository: [type: :string],
+        image: [type: :string, allow_nil?: false],
+        tag: [type: :string],
+        digest: [type: :string],
         image_credentials_id: [
           type: :uuid,
           allow_nil?: true
@@ -54,7 +56,8 @@ defmodule Edgehog.Containers.Types.Image do
         do: value,
         else: Map.put(value, :image_credentials_id, nil)
 
-    super(value, constraints)
+    with {:ok, value} <- validate_tag_or_digest(value),
+         do: super(value, constraints)
   end
 
   @impl Ash.Type
@@ -67,4 +70,25 @@ defmodule Edgehog.Containers.Types.Image do
 
   @impl AshGraphql.Type
   def graphql_type(_), do: :image_desc
+
+  defp validate_tag_or_digest(value) do
+    tag = Map.get(value, :tag)
+    digest = Map.get(value, :digest)
+
+    case {tag, digest} do
+      {nil, nil} ->
+        {:ok, value}
+
+      {nil, _} ->
+        {:ok, value}
+
+      {_, nil} ->
+        {:ok, value}
+
+      {_tag, _digest} ->
+        {:error,
+         fields: [:tag, :digest],
+         message: "You can either set a tag or the image digest, not both."}
+    end
+  end
 end
