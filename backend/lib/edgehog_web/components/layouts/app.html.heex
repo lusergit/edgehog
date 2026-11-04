@@ -1,57 +1,226 @@
 <div class="min-h-screen flex flex-col bg-base-200 text-base-content">
   <% branding = Branding.current() %>
-  <header
-    :if={assigns[:current_tenant]}
-    class="sticky top-0 z-30 border-b border-base-300 bg-base-100/95 backdrop-blur"
-  >
-    <div class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
-      <div class="flex items-center gap-6">
-        <a
-          href={"/tenants/#{@current_tenant.slug}/devices"}
-          class="flex items-center gap-2.5 text-sm font-semibold text-base-content"
-        >
-          <img src={branding.logo_url} alt={branding.app_name} class="h-6 w-6 object-contain" />
-          <span>{branding.app_name}</span>
-        </a>
+  <% active_section = Map.get(assigns, :active_section, :fleet) %>
+  <% active_nav_item = Map.get(assigns, :active_nav_item, :devices) %>
 
-        <nav class="hidden md:flex items-center gap-1" aria-label={gettext("Main navigation")}>
-          <a
-            href={"/tenants/#{@current_tenant.slug}/devices"}
-            class="btn btn-sm btn-soft btn-primary gap-1.5"
-          >
-            <.icon name="hero-cpu-chip" class="size-4" />
-            <span>{gettext("Devices")}</span>
-          </a>
-        </nav>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <.live_component
-          module={EdgehogWeb.ThemeSelectorComponent}
-          id="navbar-theme-selector"
-        />
-
-        <div class="hidden sm:flex badge badge-lg border-base-300 bg-base-200/70 gap-2 text-xs">
-          <span class="status status-success" />
-          <span class="font-medium text-base-content">{@current_tenant.name}</span>
-          <span class="font-mono text-base-content/55">{@current_tenant.slug}</span>
-        </div>
-
-        <form action="/session" method="post" class="inline">
-          <input type="hidden" name="_method" value="delete" />
-          <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
-          <button type="submit" class="btn btn-sm btn-outline border-base-300 gap-1.5">
-            <.icon name="hero-arrow-right-start-on-rectangle" class="size-3.5" />
-            <span>{gettext("Sign out")}</span>
-          </button>
-        </form>
-      </div>
+  <%= if assigns[:current_tenant] do %>
+    <div
+      id="tenant-badge-pill"
+      class="badge badge-lg border-base-300 bg-base-100/95 backdrop-blur fixed top-4 right-4 z-30 gap-2 shadow-xs text-xs"
+    >
+      <img src={branding.logo_url} alt={branding.app_name} class="size-4 object-contain" />
+      <span class="status status-success" />
+      <span class="font-medium text-base-content">{@current_tenant.name}</span>
+      <span class="font-mono text-base-content/55">{@current_tenant.slug}</span>
     </div>
-  </header>
+
+    <.left_dock>
+      <:item
+        id="fleet"
+        label={gettext("Fleet")}
+        icon="hero-server-stack"
+        navigate={"/tenants/#{@current_tenant.slug}/devices"}
+        active={active_section == :fleet}
+      />
+      <:item
+        id="files"
+        label={gettext("Files")}
+        icon="hero-folder"
+        navigate={"/tenants/#{@current_tenant.slug}/repositories"}
+        active={active_section == :files}
+      />
+      <:item
+        id="ota"
+        label={gettext("OTA Updates")}
+        icon="hero-cloud-arrow-up"
+        navigate={"/tenants/#{@current_tenant.slug}/base-image-collections"}
+        active={active_section == :ota}
+      />
+      <:item
+        id="apps"
+        label={gettext("Apps")}
+        icon="hero-cube"
+        navigate={"/tenants/#{@current_tenant.slug}/applications"}
+        active={active_section == :apps}
+      />
+      <:item
+        id="campaigns"
+        label={gettext("Campaigns")}
+        icon="hero-megaphone"
+        navigate={"/tenants/#{@current_tenant.slug}/update-campaigns"}
+        active={active_section == :campaigns}
+      />
+    </.left_dock>
+
+    <.bottom_dock section={active_section}>
+      <:item
+        :if={active_section == :fleet}
+        id="devices"
+        label={gettext("Devices")}
+        icon="hero-cpu-chip"
+        navigate={"/tenants/#{@current_tenant.slug}/devices"}
+        active={active_nav_item == :devices}
+      />
+      <:item
+        :if={active_section == :fleet}
+        id="device_groups"
+        label={gettext("Groups")}
+        icon="hero-user-group"
+        navigate={"/tenants/#{@current_tenant.slug}/device-groups"}
+        active={active_nav_item == :device_groups}
+      />
+      <:item
+        :if={active_section == :fleet}
+        id="channels"
+        label={gettext("Channels")}
+        icon="hero-signal"
+        navigate={"/tenants/#{@current_tenant.slug}/channels"}
+        active={active_nav_item == :channels}
+      />
+      <:item
+        :if={active_section == :fleet}
+        id="system_models"
+        label={gettext("System Models")}
+        icon="hero-device-tablet"
+        navigate={"/tenants/#{@current_tenant.slug}/system-models"}
+        active={active_nav_item == :system_models}
+      />
+      <:item
+        :if={active_section == :fleet}
+        id="hardware_types"
+        label={gettext("Hardware Types")}
+        icon="hero-server"
+        navigate={"/tenants/#{@current_tenant.slug}/hardware-types"}
+        active={active_nav_item == :hardware_types}
+      />
+
+      <:item
+        :if={active_section == :files}
+        id="repositories"
+        label={gettext("Repositories")}
+        icon="hero-folder-open"
+        navigate={"/tenants/#{@current_tenant.slug}/repositories"}
+        active={active_nav_item == :repositories}
+      />
+
+      <:item
+        :if={active_section == :ota}
+        id="base_image_collections"
+        label={gettext("Base Image Collections")}
+        icon="hero-circle-stack"
+        navigate={"/tenants/#{@current_tenant.slug}/base-image-collections"}
+        active={active_nav_item == :base_image_collections}
+      />
+
+      <:item
+        :if={active_section == :apps}
+        id="applications"
+        label={gettext("Applications")}
+        icon="hero-squares-2x2"
+        navigate={"/tenants/#{@current_tenant.slug}/applications"}
+        active={active_nav_item == :applications}
+      />
+      <:item
+        :if={active_section == :apps}
+        id="containers"
+        label={gettext("Containers")}
+        icon="hero-cube-transparent"
+        navigate={"/tenants/#{@current_tenant.slug}/containers"}
+        active={active_nav_item == :containers}
+      />
+      <:item
+        :if={active_section == :apps}
+        id="deployments"
+        label={gettext("Deployments")}
+        icon="hero-rocket-launch"
+        navigate={"/tenants/#{@current_tenant.slug}/deployments"}
+        active={active_nav_item == :deployments}
+      />
+      <:item
+        :if={active_section == :apps}
+        id="image_credentials"
+        label={gettext("Image Credentials")}
+        icon="hero-key"
+        navigate={"/tenants/#{@current_tenant.slug}/image-credentials"}
+        active={active_nav_item == :image_credentials}
+      />
+      <:item
+        :if={active_section == :apps}
+        id="volumes"
+        label={gettext("Volumes")}
+        icon="hero-circle-stack"
+        navigate={"/tenants/#{@current_tenant.slug}/volumes"}
+        active={active_nav_item == :volumes}
+      />
+      <:item
+        :if={active_section == :apps}
+        id="networks"
+        label={gettext("Networks")}
+        icon="hero-globe-alt"
+        navigate={"/tenants/#{@current_tenant.slug}/networks"}
+        active={active_nav_item == :networks}
+      />
+
+      <:item
+        :if={active_section == :campaigns}
+        id="update_campaigns"
+        label={gettext("Update Campaigns")}
+        icon="hero-cloud-arrow-up"
+        navigate={"/tenants/#{@current_tenant.slug}/update-campaigns"}
+        active={active_nav_item == :update_campaigns}
+      />
+      <:item
+        :if={active_section == :campaigns}
+        id="deployment_campaigns"
+        label={gettext("Application Campaigns")}
+        icon="hero-cube"
+        navigate={"/tenants/#{@current_tenant.slug}/deployment-campaigns"}
+        active={active_nav_item == :deployment_campaigns}
+      />
+      <:item
+        :if={active_section == :campaigns}
+        id="file_download_campaigns"
+        label={gettext("File Campaigns")}
+        icon="hero-folder-arrow-down"
+        navigate={"/tenants/#{@current_tenant.slug}/file-download-campaigns"}
+        active={active_nav_item == :file_download_campaigns}
+      />
+    </.bottom_dock>
+
+    <div
+      id="theme-selector-pill"
+      class="fixed bottom-5 left-4 z-30 hidden lg:flex items-center shadow-xs rounded-field"
+    >
+      <.live_component
+        module={EdgehogWeb.ThemeSelectorComponent}
+        id="navbar-theme-selector"
+      />
+    </div>
+
+    <form id="sign-out-pill" action="/session" method="post" class="fixed bottom-5 right-4 z-30">
+      <input type="hidden" name="_method" value="delete" />
+      <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+      <button
+        type="submit"
+        id="nav-sign-out-button"
+        class="btn btn-sm btn-outline border-base-300 bg-base-100/95 backdrop-blur shadow-xs gap-1.5"
+        title={gettext("Sign out")}
+      >
+        <.icon name="hero-arrow-right-start-on-rectangle" class="size-3.5" />
+        <span class="hidden sm:inline">{gettext("Sign out")}</span>
+      </button>
+    </form>
+  <% end %>
 
   <.flash_group flash={@flash} />
 
-  <main class="flex-1">
+  <main
+    id="app-main-content"
+    class={[
+      "flex-1 transition-all duration-300",
+      if(assigns[:current_tenant], do: "pt-16 pb-28 md:pl-32")
+    ]}
+  >
     {@inner_content}
   </main>
 </div>
