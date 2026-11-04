@@ -23,6 +23,7 @@ defmodule EdgehogWeb.DevicesLive.IndexTest do
 
   alias Edgehog.DevicesFixtures
   alias EdgehogWeb.Auth.Token
+  alias EdgehogWeb.LiveAuth
 
   defp generate_jwt(tenant_private_key, claims \\ nil) do
     jwk =
@@ -134,6 +135,121 @@ defmodule EdgehogWeb.DevicesLive.IndexTest do
       _ = render(devices_view)
       assert has_element?(devices_view, "#device-tags-#{device1.id}", "production")
       assert has_element?(devices_view, "#device-tags-#{device1.id}", "eu-west")
+    end
+
+    test "renders navigation left dock, contextual bottom dock, and floating corner controls",
+         %{
+           conn: conn,
+           tenant: tenant,
+           tenant_private_key: tenant_private_key
+         } do
+      jwt = generate_jwt(tenant_private_key)
+
+      conn =
+        post(conn, ~p"/session", %{
+          "session" => %{"tenant_slug" => tenant.slug, "auth_token" => jwt}
+        })
+
+      {:ok, devices_view, _html} = live(recycle(conn), ~p"/tenants/#{tenant.slug}/devices")
+
+      # Primary left dock renders all 5 sections with Fleet active and hero-server-stack icon
+      assert has_element?(devices_view, "#primary-nav-dock")
+      assert has_element?(devices_view, "#nav-section-fleet[data-active='true']", "Fleet")
+      assert has_element?(devices_view, "#nav-section-fleet span.hero-server-stack")
+      assert has_element?(devices_view, "#nav-section-files[data-active='false']", "Files")
+      assert has_element?(devices_view, "#nav-section-ota[data-active='false']", "OTA Updates")
+      assert has_element?(devices_view, "#nav-section-apps[data-active='false']", "Apps")
+
+      assert has_element?(
+               devices_view,
+               "#nav-section-campaigns[data-active='false']",
+               "Campaigns"
+             )
+
+      # Secondary contextual bottom dock renders Fleet sub-items with Devices active
+      assert has_element?(devices_view, "#secondary-nav-dock[data-section='fleet']")
+      assert has_element?(devices_view, "#nav-subitem-devices[data-active='true']", "Devices")
+
+      assert has_element?(
+               devices_view,
+               "#nav-subitem-device_groups[data-active='false']",
+               "Groups"
+             )
+
+      assert has_element?(
+               devices_view,
+               "#nav-subitem-channels[data-active='false']",
+               "Channels"
+             )
+
+      assert has_element?(
+               devices_view,
+               "#nav-subitem-system_models[data-active='false']",
+               "System Models"
+             )
+
+      assert has_element?(
+               devices_view,
+               "#nav-subitem-hardware_types[data-active='false']",
+               "Hardware Types"
+             )
+
+      # Floating corner pills: top-right tenant badge, bottom-left theme selector, bottom-right sign-out
+      assert has_element?(devices_view, "#tenant-badge-pill", tenant.slug)
+      assert has_element?(devices_view, "#theme-selector-pill #navbar-theme-selector")
+      assert has_element?(devices_view, "#sign-out-pill #nav-sign-out-button", "Sign out")
+
+      # Collapsible dock controls exist for smaller screens
+      assert has_element?(devices_view, "#nav-dock-collapse-button")
+      assert has_element?(devices_view, "#nav-dock-open-button")
+
+      # Verify route segment resolution for all top-level sections and sub-items
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/devices") == {:fleet, :devices}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/device-groups") ==
+               {:fleet, :device_groups}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/channels") ==
+               {:fleet, :channels}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/system-models") ==
+               {:fleet, :system_models}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/hardware-types") ==
+               {:fleet, :hardware_types}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/repositories") ==
+               {:files, :repositories}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/base-image-collections") ==
+               {:ota, :base_image_collections}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/applications") ==
+               {:apps, :applications}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/containers") ==
+               {:apps, :containers}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/deployments") ==
+               {:apps, :deployments}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/image-credentials") ==
+               {:apps, :image_credentials}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/volumes") ==
+               {:apps, :volumes}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/networks") ==
+               {:apps, :networks}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/update-campaigns") ==
+               {:campaigns, :update_campaigns}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/deployment-campaigns") ==
+               {:campaigns, :deployment_campaigns}
+
+      assert LiveAuth.resolve_active_navigation("/tenants/acme/file-download-campaigns") ==
+               {:campaigns, :file_download_campaigns}
     end
   end
 end
