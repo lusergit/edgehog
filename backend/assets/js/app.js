@@ -27,6 +27,19 @@ window.addEventListener("phx:set-theme", (e) => {
   }
 })
 
+// Left navigation dock collapse persistence across LiveView navigations
+window.addEventListener("phx:set-left-dock", (e) => {
+  const state = e.detail?.state
+  if (!state) return
+  if (state === "collapsed") {
+    localStorage.setItem("eh:left-dock", "collapsed")
+    document.documentElement.setAttribute("data-left-dock", "collapsed")
+  } else {
+    localStorage.removeItem("eh:left-dock")
+    document.documentElement.setAttribute("data-left-dock", "expanded")
+  }
+})
+
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#2563eb"}, shadowColor: "rgba(0, 0, 0, .25)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))

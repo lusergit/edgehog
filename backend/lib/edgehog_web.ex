@@ -84,9 +84,11 @@ defmodule EdgehogWeb do
     quote do
       use Gettext, backend: EdgehogWeb.Gettext
 
+      import EdgehogWeb.Components.BottomDock
       import EdgehogWeb.Components.FlashComponents
       import EdgehogWeb.Components.FormComponents
       import EdgehogWeb.Components.IconComponents
+      import EdgehogWeb.Components.LeftDock
       import Phoenix.HTML
 
       alias Phoenix.LiveView.JS

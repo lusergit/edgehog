@@ -47,7 +47,10 @@ defmodule EdgehogWeb.LiveAuth do
           {:cont,
            socket
            |> assign(:current_tenant, tenant)
-           |> assign(:current_actor, actor)}
+           |> assign(:current_actor, actor)
+           |> assign(:active_section, :fleet)
+           |> assign(:active_nav_item, :devices)
+           |> attach_navigation_hook()}
         else
           {:halt,
            socket
@@ -96,4 +99,52 @@ defmodule EdgehogWeb.LiveAuth do
   end
 
   defp verify_token_session(_tenant_slug, _auth_token), do: :error
+
+  defp attach_navigation_hook(socket) do
+    attach_hook(socket, :active_navigation, :handle_params, fn _params, uri, socket ->
+      {section, item} =
+        uri
+        |> URI.parse()
+        |> Map.get(:path)
+        |> resolve_active_navigation()
+
+      {:cont,
+       socket
+       |> assign(:active_section, section)
+       |> assign(:active_nav_item, item)}
+    end)
+  end
+
+  @doc """
+  Resolves `{active_section, active_nav_item}` from the current request path.
+  """
+  def resolve_active_navigation(path) when is_binary(path) do
+    case String.split(path, "/", trim: true) do
+      ["tenants", _slug, segment | _rest] -> segment_to_navigation(segment)
+      _ -> {:fleet, :devices}
+    end
+  end
+
+  def resolve_active_navigation(_), do: {:fleet, :devices}
+
+  defp segment_to_navigation("devices"), do: {:fleet, :devices}
+  defp segment_to_navigation("device-groups"), do: {:fleet, :device_groups}
+  defp segment_to_navigation("channels"), do: {:fleet, :channels}
+  defp segment_to_navigation("system-models"), do: {:fleet, :system_models}
+  defp segment_to_navigation("hardware-types"), do: {:fleet, :hardware_types}
+  defp segment_to_navigation("repositories"), do: {:files, :repositories}
+  defp segment_to_navigation("base-image-collections"), do: {:ota, :base_image_collections}
+  defp segment_to_navigation("applications"), do: {:apps, :applications}
+  defp segment_to_navigation("containers"), do: {:apps, :containers}
+  defp segment_to_navigation("deployments"), do: {:apps, :deployments}
+  defp segment_to_navigation("image-credentials"), do: {:apps, :image_credentials}
+  defp segment_to_navigation("volumes"), do: {:apps, :volumes}
+  defp segment_to_navigation("networks"), do: {:apps, :networks}
+  defp segment_to_navigation("update-campaigns"), do: {:campaigns, :update_campaigns}
+  defp segment_to_navigation("deployment-campaigns"), do: {:campaigns, :deployment_campaigns}
+
+  defp segment_to_navigation("file-download-campaigns"),
+    do: {:campaigns, :file_download_campaigns}
+
+  defp segment_to_navigation(_), do: {:fleet, :devices}
 end
