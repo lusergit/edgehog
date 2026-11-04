@@ -34,6 +34,12 @@
 
         applyTheme(storedTheme);
 
+        const storedDock = localStorage.getItem("eh:left-dock");
+        document.documentElement.setAttribute(
+          "data-left-dock",
+          storedDock === "collapsed" ? "collapsed" : "expanded"
+        );
+
         window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
           if (!localStorage.getItem("phx:theme")) applyTheme("system");
         });
