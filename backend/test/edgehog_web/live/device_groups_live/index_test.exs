@@ -318,5 +318,106 @@ defmodule EdgehogWeb.DeviceGroupsLive.IndexTest do
                "0 devices"
              )
     end
+
+    test "creates a device group via the slide-over drawer with live selector preview and tag chips",
+         %{
+           conn: conn,
+           tenant: tenant,
+           tenant_private_key: tenant_private_key
+         } do
+      jwt = generate_jwt(tenant_private_key)
+
+      _device =
+        [tenant: tenant, name: "Gateway EU-North-1", online: true]
+        |> DevicesFixtures.device_fixture()
+        |> DevicesFixtures.add_tags(["eu-north", "edge"])
+
+      channel =
+        CampaignsFixtures.channel_fixture(
+          tenant: tenant,
+          name: "Canary Rollout",
+          handle: "canary-rollout",
+          target_group_ids: []
+        )
+
+      conn =
+        post(conn, ~p"/session", %{
+          "session" => %{"tenant_slug" => tenant.slug, "auth_token" => jwt}
+        })
+
+      {:ok, groups_view, _html} = live(recycle(conn), ~p"/tenants/#{tenant.slug}/device-groups")
+
+      # Open the slide-over creation drawer
+      groups_view
+      |> element("#create-device-group-btn")
+      |> render_click()
+
+      assert_patch(groups_view, ~p"/tenants/#{tenant.slug}/device-groups/new")
+      assert has_element?(groups_view, "#new-device-group-drawer[aria-modal='false']")
+
+      assert has_element?(
+               groups_view,
+               "#new-device-group-drawer-panel.rounded-3xl.animate-floating-pill-right"
+             )
+
+      assert has_element?(groups_view, "#selector-live-preview[data-preview-state='empty']")
+
+      # Typing a name auto-derives the handle slug; invalid selector shows syntax error in preview
+      groups_view
+      |> form("#device-group-form", %{
+        "group" => %{
+          "name" => "Nordic Edge Gateways",
+          "selector" => ~s("eu-north" in)
+        }
+      })
+      |> render_change()
+
+      assert has_element?(
+               groups_view,
+               "#device-group-form input[name='group[handle]'][value='nordic-edge-gateways']"
+             )
+
+      assert has_element?(groups_view, "#selector-live-preview[data-preview-state='invalid']")
+      assert has_element?(groups_view, "#selector-preview-error")
+
+      # Clear selector and click tenant tag chips to compose a valid selector
+      groups_view
+      |> form("#device-group-form", %{
+        "group" => %{
+          "name" => "Nordic Edge Gateways",
+          "handle" => "nordic-edge-gateways",
+          "selector" => ""
+        }
+      })
+      |> render_change()
+
+      groups_view
+      |> element("button[data-tag-chip='eu-north']")
+      |> render_click()
+
+      assert has_element?(groups_view, "#selector-live-preview[data-preview-state='valid']")
+      assert has_element?(groups_view, "#selector-preview-count", "1 / 1 online")
+      assert has_element?(groups_view, "#selector-preview-samples", "Gateway EU-North-1")
+
+      # Submit form with optional channel assignment -> navigates to the new group's detail page
+      groups_view
+      |> form("#device-group-form", %{
+        "group" => %{
+          "name" => "Nordic Edge Gateways",
+          "handle" => "nordic-edge-gateways",
+          "channel_id" => to_string(channel.id),
+          "selector" => ~s("eu-north" in tags)
+        }
+      })
+      |> render_submit()
+
+      {redirect_path, _flash} = assert_redirect(groups_view)
+      assert redirect_path =~ "/tenants/#{tenant.slug}/device-groups/"
+
+      {:ok, show_view, _show_html} = live(recycle(conn), redirect_path)
+      assert has_element?(show_view, "#group-detail-name", "Nordic Edge Gateways")
+      assert has_element?(show_view, "#group-detail-handle", "@nordic-edge-gateways")
+      assert has_element?(show_view, "[data-channel='canary-rollout']", "Canary Rollout")
+    end
   end
 end
