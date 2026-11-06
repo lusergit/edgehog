@@ -88,6 +88,7 @@ defmodule EdgehogWeb.Router do
         on_mount: [{EdgehogWeb.LiveAuth, :require_authenticated}] do
         live "/devices", DevicesLive.Index, :index
         live "/device-groups", DeviceGroupsLive.Index, :index
+        live "/device-groups/new", DeviceGroupsLive.Index, :new
       end
     end
 

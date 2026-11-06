@@ -34,6 +34,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.IdentityCellComponent do
       |> assign(assigns)
       |> assign(:name, group.name)
       |> assign(:handle, group.handle)
+      |> assign(:tenant_slug, Map.get(assigns, :tenant_slug))
       |> ensure_subscribed(group.id)
 
     {:ok, socket}
@@ -43,12 +44,28 @@ defmodule EdgehogWeb.DeviceGroupsLive.IdentityCellComponent do
   def render(assigns) do
     ~H"""
     <div id={@id} class="flex flex-col">
-      <span class="font-semibold text-base-content">
-        {@name}
-      </span>
-      <span class="font-mono text-xs text-base-content/55">
-        @{@handle}
-      </span>
+      <.link
+        :if={@tenant_slug}
+        id={"group-detail-link-#{@group.id}"}
+        navigate={"/tenants/#{@tenant_slug}/device-groups/#{@group.id}"}
+        class="group flex flex-col"
+      >
+        <span class="font-semibold text-base-content group-hover:text-primary transition-colors">
+          {@name}
+        </span>
+        <span class="font-mono text-xs text-base-content/55">
+          @{@handle}
+        </span>
+      </.link>
+
+      <div :if={is_nil(@tenant_slug)} class="flex flex-col">
+        <span class="font-semibold text-base-content">
+          {@name}
+        </span>
+        <span class="font-mono text-xs text-base-content/55">
+          @{@handle}
+        </span>
+      </div>
     </div>
     """
   end
