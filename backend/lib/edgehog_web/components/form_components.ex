@@ -93,6 +93,29 @@ defmodule EdgehogWeb.Components.FormComponents do
     """
   end
 
+  def input(%{type: "select"} = assigns) do
+    ~H"""
+    <fieldset class="fieldset">
+      <.label :if={@label} for={@id}>{@label}</.label>
+      <select
+        id={@id}
+        name={@name}
+        class={[
+          "select w-full",
+          @errors != [] && "select-error"
+        ]}
+        multiple={@multiple}
+        {@rest}
+      >
+        <option :if={@prompt} value="">{@prompt}</option>
+        {Form.options_for_select(@options, @value)}
+      </select>
+      <p :if={@hint && @errors == []} class="fieldset-label text-xs">{@hint}</p>
+      <.error :for={msg <- @errors}>{msg}</.error>
+    </fieldset>
+    """
+  end
+
   def input(%{type: "textarea"} = assigns) do
     ~H"""
     <fieldset class="fieldset">
