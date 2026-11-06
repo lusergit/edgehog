@@ -823,6 +823,9 @@ defmodule Edgehog.Devices.Device do
 
     publish :create, ["tenant", :tenant_id]
     publish :from_device_registered_event, ["tenant", :tenant_id]
+    publish :from_device_status, ["tenant", :tenant_id]
+    publish :add_tags, ["tenant", :tenant_id]
+    publish :remove_tags, ["tenant", :tenant_id]
     publish_all :destroy, ["tenant", :tenant_id]
   end
 
