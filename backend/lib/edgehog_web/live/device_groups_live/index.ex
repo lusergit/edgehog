@@ -31,6 +31,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
   alias Edgehog.Groups.DeviceGroup
   alias EdgehogWeb.DeviceGroupsLive.ChannelCellComponent
   alias EdgehogWeb.DeviceGroupsLive.GroupFleetCellComponent
+  alias EdgehogWeb.DeviceGroupsLive.GroupFormComponent
   alias EdgehogWeb.DeviceGroupsLive.GroupsStatsComponent
   alias EdgehogWeb.DeviceGroupsLive.IdentityCellComponent
   alias EdgehogWeb.DeviceGroupsLive.SelectorCellComponent
@@ -60,7 +61,15 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
 
   @impl Phoenix.LiveView
   def handle_params(_params, _uri, socket) do
-    {:noreply, socket}
+    tenant = socket.assigns.current_tenant
+
+    page_title =
+      case socket.assigns.live_action do
+        :new -> "New Group · #{tenant.name}"
+        _ -> "Groups · #{tenant.name}"
+      end
+
+    {:noreply, assign(socket, :page_title, page_title)}
   end
 
   @impl Phoenix.LiveView
@@ -188,6 +197,15 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
             Dynamic selector partitions and rollout channel assignments in <span class="font-medium text-base-content/80">{@current_tenant.name}</span>.
           </p>
         </div>
+
+        <.link
+          id="create-device-group-btn"
+          patch={~p"/tenants/#{@current_tenant.slug}/device-groups/new"}
+          class="btn btn-primary btn-sm gap-1.5 self-start sm:self-auto"
+        >
+          <.icon name="hero-plus" class="size-4" />
+          <span>{gettext("Create Group")}</span>
+        </.link>
       </div>
 
       <.live_component
@@ -208,6 +226,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
             module={IdentityCellComponent}
             id={"group-identity-#{group.id}"}
             group={group}
+            tenant_slug={@current_tenant.slug}
           />
         </:col>
 
@@ -243,6 +262,16 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
           />
         </:col>
       </Cinder.collection>
+
+      <.live_component
+        :if={@live_action == :new}
+        module={GroupFormComponent}
+        id="new-device-group-drawer"
+        action={:new}
+        group={%DeviceGroup{name: "", handle: "", selector: "", channel_id: nil}}
+        tenant={@current_tenant}
+        return_to={~p"/tenants/#{@current_tenant.slug}/device-groups"}
+      />
     </div>
     """
   end

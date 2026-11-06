@@ -93,6 +93,29 @@ defmodule EdgehogWeb.Components.FormComponents do
     """
   end
 
+  def input(%{type: "select"} = assigns) do
+    ~H"""
+    <fieldset class="fieldset">
+      <.label :if={@label} for={@id}>{@label}</.label>
+      <select
+        id={@id}
+        name={@name}
+        class={[
+          "select w-full",
+          @errors != [] && "select-error"
+        ]}
+        multiple={@multiple}
+        {@rest}
+      >
+        <option :if={@prompt} value="">{@prompt}</option>
+        {Form.options_for_select(@options, @value)}
+      </select>
+      <p :if={@hint && @errors == []} class="fieldset-label text-xs">{@hint}</p>
+      <.error :for={msg <- @errors}>{msg}</.error>
+    </fieldset>
+    """
+  end
+
   def input(%{type: "textarea"} = assigns) do
     ~H"""
     <fieldset class="fieldset">
@@ -166,7 +189,7 @@ defmodule EdgehogWeb.Components.FormComponents do
   """
   attr :type, :string, default: nil
   attr :class, :any, default: nil
-  attr :variant, :string, default: "primary", values: ~w(primary secondary ghost)
+  attr :variant, :string, default: "primary", values: ~w(primary secondary ghost error)
   attr :rest, :global, include: ~w(disabled form name value)
 
   slot :inner_block, required: true
@@ -180,6 +203,7 @@ defmodule EdgehogWeb.Components.FormComponents do
         @variant == "primary" && "btn-primary",
         @variant == "secondary" && "btn-secondary",
         @variant == "ghost" && "btn-ghost",
+        @variant == "error" && "btn-error",
         @class
       ]}
       {@rest}
