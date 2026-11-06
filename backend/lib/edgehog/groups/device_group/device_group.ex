@@ -23,6 +23,9 @@ defmodule Edgehog.Groups.DeviceGroup do
     extensions: [
       AshGraphql.Resource
     ],
+    notifiers: [
+      Ash.Notifier.PubSub
+    ],
     fga_type: :device_group,
     fga_id_attribute: :handle
 
@@ -154,6 +157,22 @@ defmodule Edgehog.Groups.DeviceGroup do
   identities do
     identity :name, [:name]
     identity :handle, [:handle]
+  end
+
+  pub_sub do
+    module EdgehogWeb.Endpoint
+    prefix "device_groups"
+
+    publish "identity_update", :update, ["identity", :id]
+    publish "selector_update", :update, ["selector", :id]
+    publish "channel_assigned", :assign_channel, ["channel", :id]
+    publish "channel_unassigned", :unassign_channel, ["channel", :id]
+
+    publish :create, ["tenant", :tenant_id]
+    publish :update, ["tenant", :tenant_id]
+    publish :assign_channel, ["tenant", :tenant_id]
+    publish :unassign_channel, ["tenant", :tenant_id]
+    publish_all :destroy, ["tenant", :tenant_id]
   end
 
   postgres do
