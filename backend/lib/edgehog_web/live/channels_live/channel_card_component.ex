@@ -69,12 +69,13 @@ defmodule EdgehogWeb.ChannelsLive.ChannelCardComponent do
               <.icon name="hero-signal" class="size-4" />
             </div>
             <div class="min-w-0">
-              <h2
+              <.link
+                navigate={~p"/tenants/#{@tenant.slug}/channels/#{@channel.id}"}
                 data-role="channel-name"
-                class="font-semibold text-base text-base-content leading-tight truncate"
+                class="font-semibold text-base text-base-content leading-tight truncate hover:text-primary transition-colors block"
               >
                 {@channel.name}
-              </h2>
+              </.link>
               <p
                 data-role="channel-handle"
                 class="mt-0.5 font-mono text-xs text-base-content/55 truncate"
