@@ -431,4 +431,173 @@ defmodule EdgehogWeb.ChannelsLive.IndexTest do
       assert device1.id != device2.id
     end
   end
+
+  describe "floating pill channel creation, group stealing, and running campaign guard" do
+    test "creates a channel, steals a group from an idle channel with warning, and locks groups on channels with running campaigns",
+         %{
+           conn: conn,
+           tenant: tenant,
+           tenant_private_key: tenant_private_key
+         } do
+      jwt = generate_jwt(tenant_private_key)
+
+      _device =
+        [tenant: tenant, name: "Gateway Alpha-1", online: true]
+        |> DevicesFixtures.device_fixture()
+        |> DevicesFixtures.add_tags(["alpha", "free"])
+
+      unassigned_group =
+        GroupsFixtures.device_group_fixture(
+          tenant: tenant,
+          name: "Free Gateways",
+          handle: "free-gateways",
+          selector: ~s<"free" in tags>
+        )
+
+      stealable_group =
+        GroupsFixtures.device_group_fixture(
+          tenant: tenant,
+          name: "Alpha Cohort",
+          handle: "alpha-cohort",
+          selector: ~s<"alpha" in tags>
+        )
+
+      locked_group =
+        GroupsFixtures.device_group_fixture(
+          tenant: tenant,
+          name: "Locked Production",
+          handle: "locked-prod",
+          selector: ~s<"alpha" in tags>
+        )
+
+      idle_channel =
+        CampaignsFixtures.channel_fixture(
+          tenant: tenant,
+          name: "Alpha Ring",
+          handle: "alpha-ring",
+          target_group_ids: [stealable_group.id]
+        )
+
+      running_channel =
+        CampaignsFixtures.channel_fixture(
+          tenant: tenant,
+          name: "Locked Ring",
+          handle: "locked-ring",
+          target_group_ids: [locked_group.id]
+        )
+
+      # Create an active/running campaign on running_channel (:idle is running)
+      _running_campaign =
+        CampaignsFixtures.campaign_fixture(
+          tenant: tenant,
+          name: "Active Production Rollout",
+          channel_id: running_channel.id,
+          mechanism_type: :file_download
+        )
+
+      conn =
+        post(conn, ~p"/session", %{
+          "session" => %{"tenant_slug" => tenant.slug, "auth_token" => jwt}
+        })
+
+      {:ok, view, _html} = live(recycle(conn), ~p"/tenants/#{tenant.slug}/channels")
+
+      # Open floating pill creation drawer via #create-channel-btn
+      view
+      |> element("#create-channel-btn")
+      |> render_click()
+
+      assert_patch(view, ~p"/tenants/#{tenant.slug}/channels/new")
+
+      assert has_element?(view, "#channel-form-drawer[aria-modal='false']")
+
+      assert has_element?(
+               view,
+               "#channel-form-drawer-panel.rounded-3xl.animate-floating-pill-right"
+             )
+
+      # Verify group states in the picker:
+      # 1) unassigned_group is available
+      assert has_element?(
+               view,
+               "#picker-group-#{unassigned_group.id}[data-group-locked='false']",
+               "Unassigned"
+             )
+
+      # 2) stealable_group on idle_channel is stealable
+      assert has_element?(
+               view,
+               "#picker-group-#{stealable_group.id}[data-group-stealable='true'][data-group-locked='false']",
+               "Assigned to @#{idle_channel.handle} · Will move here"
+             )
+
+      # 3) locked_group on running_channel is locked & disabled
+      assert has_element?(
+               view,
+               "#picker-group-#{locked_group.id}[data-group-locked='true'][disabled]",
+               "Locked · Running campaign on @#{running_channel.handle}"
+             )
+
+      # Auto-derive handle from name
+      view
+      |> form("#channel-form", %{"channel" => %{"name" => "Next Gen Ring"}})
+      |> render_change()
+
+      assert has_element?(
+               view,
+               "#channel-form input[name='channel[handle]'][value='next-gen-ring']"
+             )
+
+      # Select unassigned_group and stealable_group
+      view
+      |> element("#picker-group-#{unassigned_group.id}")
+      |> render_click()
+
+      refute has_element?(view, "#channel-steal-warning")
+
+      view
+      |> element("#picker-group-#{stealable_group.id}")
+      |> render_click()
+
+      # Explicit steal warning appears and live blast-radius preview updates
+      assert has_element?(
+               view,
+               "#channel-steal-warning",
+               "will be moved from"
+             )
+
+      assert has_element?(view, "#channel-steal-warning", "@#{idle_channel.handle}")
+      assert has_element?(view, "#channel-live-preview [data-role='channel-total-devices']", "1")
+
+      assert has_element?(
+               view,
+               "#channel-live-preview [data-role='channel-online-devices']",
+               "1 online"
+             )
+
+      # Submit form -> creates channel, steals stealable_group from idle_channel, and navigates to show page
+      {:ok, show_view, _html} =
+        view
+        |> form("#channel-form", %{
+          "channel" => %{"name" => "Next Gen Ring", "handle" => "next-gen-ring"}
+        })
+        |> render_submit()
+        |> follow_redirect(recycle(conn))
+
+      assert has_element?(show_view, "#channel-detail-name", "Next Gen Ring")
+      assert has_element?(show_view, "#channel-detail-handle", "@next-gen-ring")
+      assert has_element?(show_view, "[data-group-handle='free-gateways']", "Free Gateways")
+      assert has_element?(show_view, "[data-group-handle='alpha-cohort']", "Alpha Cohort")
+
+      # Verify idle_channel no longer has stealable_group
+      reloaded_idle =
+        Ash.load!(idle_channel, :target_groups,
+          tenant: tenant,
+          authorize?: false,
+          reuse_values?: false
+        )
+
+      assert reloaded_idle.target_groups == []
+    end
+  end
 end
