@@ -45,15 +45,16 @@ defmodule EdgehogWeb.DeviceGroupsLive.ChannelCellComponent do
   def render(assigns) do
     ~H"""
     <div id={@id} class="inline-flex items-center">
-      <span
+      <.link
         :if={@channel}
+        navigate={~p"/tenants/#{@tenant.slug}/channels"}
         data-channel={@channel.handle}
-        class="badge badge-soft badge-info gap-1.5 font-medium"
+        class="badge badge-soft badge-info gap-1.5 font-medium transition-opacity hover:opacity-80"
       >
         <.icon name="hero-signal" class="size-3.5" />
         <span>{@channel.name}</span>
         <span class="font-mono text-xs opacity-65">@{@channel.handle}</span>
-      </span>
+      </.link>
 
       <span
         :if={is_nil(@channel)}
