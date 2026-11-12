@@ -47,7 +47,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.ChannelCellComponent do
     <div id={@id} class="inline-flex items-center">
       <.link
         :if={@channel}
-        navigate={~p"/tenants/#{@tenant.slug}/channels"}
+        navigate={~p"/tenants/#{@tenant.slug}/channels/#{@channel.id}"}
         data-channel={@channel.handle}
         class="badge badge-soft badge-info gap-1.5 font-medium transition-opacity hover:opacity-80"
       >

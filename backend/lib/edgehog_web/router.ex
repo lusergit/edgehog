@@ -93,6 +93,8 @@ defmodule EdgehogWeb.Router do
         live "/device-groups/:id/edit", DeviceGroupsLive.Show, :edit
         live "/channels", ChannelsLive.Index, :index
         live "/channels/new", ChannelsLive.Index, :new
+        live "/channels/:id", ChannelsLive.Show, :show
+        live "/channels/:id/edit", ChannelsLive.Show, :edit
       end
     end
 
