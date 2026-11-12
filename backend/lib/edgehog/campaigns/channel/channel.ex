@@ -25,6 +25,7 @@ defmodule Edgehog.Campaigns.Channel do
     extensions: [
       AshGraphql.Resource
     ],
+    notifiers: [Ash.Notifier.PubSub],
     fga_type: :channel,
     fga_id_attribute: :handle
 
@@ -227,6 +228,18 @@ defmodule Edgehog.Campaigns.Channel do
   identities do
     identity :handle, [:handle]
     identity :name, [:name]
+  end
+
+  pub_sub do
+    module EdgehogWeb.Endpoint
+    prefix "channels"
+
+    publish :create, ["tenant", :tenant_id]
+    publish :update, ["tenant", :tenant_id]
+    publish_all :destroy, ["tenant", :tenant_id]
+
+    publish :update, [:id]
+    publish_all :destroy, [:id]
   end
 
   postgres do

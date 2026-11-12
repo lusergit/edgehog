@@ -326,6 +326,17 @@ defmodule Edgehog.Campaigns.Campaign do
     module EdgehogWeb.Endpoint
 
     publish :pause, [[:id, "*"]]
+
+    publish :create, ["tenant", :tenant_id]
+    publish :update, ["tenant", :tenant_id]
+    publish :mark_as_in_progress, ["tenant", :tenant_id]
+    publish :mark_as_failed, ["tenant", :tenant_id]
+    publish :mark_as_successful, ["tenant", :tenant_id]
+    publish :mark_as_paused, ["tenant", :tenant_id]
+    publish :mark_as_scheduled, ["tenant", :tenant_id]
+    publish :pause, ["tenant", :tenant_id]
+    publish :resume, ["tenant", :tenant_id]
+    publish_all :destroy, ["tenant", :tenant_id]
   end
 
   postgres do
