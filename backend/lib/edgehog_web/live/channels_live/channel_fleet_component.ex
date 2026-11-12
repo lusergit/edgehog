@@ -71,8 +71,14 @@ defmodule EdgehogWeb.ChannelsLive.ChannelFleetComponent do
   """
   def compute_channel_reach(channel, tenant) do
     channel = ensure_target_groups_loaded(channel, tenant)
-    groups = channel.target_groups || []
+    compute_groups_reach(channel.target_groups || [], tenant)
+  end
 
+  @doc """
+  Computes the deduplicated device reach, online count, availability percentage,
+  and system model distribution across a list of `DeviceGroup` structs.
+  """
+  def compute_groups_reach(groups, tenant) when is_list(groups) do
     devices_by_id =
       Enum.reduce(groups, %{}, fn group, acc ->
         group.selector
@@ -105,6 +111,23 @@ defmodule EdgehogWeb.ChannelsLive.ChannelFleetComponent do
       system_models: system_models,
       device_ids: device_ids
     }
+  end
+
+  @doc """
+  Builds an `Ash.Query` on `Edgehog.Devices.Device` matching the deduplicated
+  union of devices across `groups`.
+  """
+  def channel_devices_query(groups, tenant) when is_list(groups) do
+    ids =
+      groups
+      |> compute_groups_reach(tenant)
+      |> Map.fetch!(:device_ids)
+      |> MapSet.to_list()
+
+    Device
+    |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+    |> Ash.Query.load([:system_model, :tags])
+    |> Ash.Query.filter(id in ^ids)
   end
 
   @doc """

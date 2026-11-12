@@ -33,6 +33,7 @@ defmodule EdgehogWeb.ChannelsLive.Index do
   alias EdgehogWeb.ChannelsLive.CampaignStripComponent
   alias EdgehogWeb.ChannelsLive.ChannelCardComponent
   alias EdgehogWeb.ChannelsLive.ChannelFleetComponent
+  alias EdgehogWeb.ChannelsLive.ChannelFormComponent
   alias EdgehogWeb.ChannelsLive.ChannelsStatsComponent
   alias EdgehogWeb.ChannelsLive.ChannelsToolbarComponent
   alias EdgehogWeb.ChannelsLive.UnassignedGroupsComponent
@@ -58,6 +59,19 @@ defmodule EdgehogWeb.ChannelsLive.Index do
       |> load_channels()
 
     {:ok, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_params(_params, _uri, socket) do
+    tenant = socket.assigns.current_tenant
+
+    page_title =
+      case socket.assigns.live_action do
+        :new -> "New Channel · #{tenant.name}"
+        _ -> "Channels · #{tenant.name}"
+      end
+
+    {:noreply, assign(socket, :page_title, page_title)}
   end
 
   @impl Phoenix.LiveView
@@ -103,6 +117,16 @@ defmodule EdgehogWeb.ChannelsLive.Index do
         <:subtitle>
           Rollout rings grouping target cohorts for staged OTA updates, container deployments, and file deliveries in <span class="font-medium text-base-content/80">{@current_tenant.name}</span>.
         </:subtitle>
+        <:actions>
+          <.link
+            id="create-channel-btn"
+            patch={~p"/tenants/#{@current_tenant.slug}/channels/new"}
+            class="btn btn-primary btn-sm gap-1.5"
+          >
+            <.icon name="hero-plus" class="size-4" />
+            <span>{gettext("Create Channel")}</span>
+          </.link>
+        </:actions>
       </.page_header>
 
       <.live_component module={ChannelsStatsComponent} id="channels-stats" tenant={@current_tenant} />
@@ -138,6 +162,16 @@ defmodule EdgehogWeb.ChannelsLive.Index do
         module={UnassignedGroupsComponent}
         id="unassigned-groups-tray"
         tenant={@current_tenant}
+      />
+
+      <.live_component
+        :if={@live_action == :new}
+        module={ChannelFormComponent}
+        id="channel-form-drawer"
+        action={:new}
+        channel={%Channel{}}
+        tenant={@current_tenant}
+        return_to={~p"/tenants/#{@current_tenant.slug}/channels"}
       />
     </div>
     """
