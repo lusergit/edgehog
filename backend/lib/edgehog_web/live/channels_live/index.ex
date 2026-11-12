@@ -1,0 +1,203 @@
+#
+# This file is part of Edgehog.
+#
+# Copyright 2026 SECO Mind Srl
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+defmodule EdgehogWeb.ChannelsLive.Index do
+  @moduledoc """
+  LiveView for browsing, searching, and monitoring a tenant's rollout channels
+  in real time using a Bento Grid of Rollout Ring Cards.
+
+  Composes `ChannelsStatsComponent`, `ChannelsToolbarComponent`, a responsive
+  grid of `ChannelCardComponent`s, and `UnassignedGroupsComponent`.
+  """
+  use EdgehogWeb, :live_view
+
+  alias Edgehog.Campaigns.Channel
+  alias EdgehogWeb.ChannelsLive.CampaignStripComponent
+  alias EdgehogWeb.ChannelsLive.ChannelCardComponent
+  alias EdgehogWeb.ChannelsLive.ChannelsStatsComponent
+  alias EdgehogWeb.ChannelsLive.ChannelsToolbarComponent
+  alias EdgehogWeb.ChannelsLive.UnassignedGroupsComponent
+
+  require Ash.Query
+
+  @valid_filters ~w(all active_rollout empty_groups zero_devices)
+
+  @impl Phoenix.LiveView
+  def mount(_params, _session, socket) do
+    tenant = socket.assigns.current_tenant
+
+    if connected?(socket) do
+      EdgehogWeb.Endpoint.subscribe("channels:tenant:#{tenant.tenant_id}")
+      EdgehogWeb.Endpoint.subscribe("campaigns:tenant:#{tenant.tenant_id}")
+      EdgehogWeb.Endpoint.subscribe("device_groups:tenant:#{tenant.tenant_id}")
+      EdgehogWeb.Endpoint.subscribe("devices:tenant:#{tenant.tenant_id}")
+    end
+
+    socket =
+      socket
+      |> assign(:page_title, "Channels · #{tenant.name}")
+      |> assign(:search, "")
+      |> assign(:filter, "all")
+      |> load_channels()
+
+    {:ok, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("search", %{"search" => search}, socket) do
+    {:noreply,
+     socket
+     |> assign(:search, String.trim(search))
+     |> load_filtered_channels()}
+  end
+
+  def handle_event("filter", %{"filter" => filter}, socket) when filter in @valid_filters do
+    {:noreply,
+     socket
+     |> assign(:filter, filter)
+     |> load_filtered_channels()}
+  end
+
+  def handle_event("clear_filters", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:search, "")
+     |> assign(:filter, "all")
+     |> load_filtered_channels()}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_info(%Phoenix.Socket.Broadcast{topic: topic}, socket) when is_binary(topic) do
+    tenant = socket.assigns.current_tenant
+    send_update(ChannelsStatsComponent, id: "channels-stats", tenant: tenant)
+    send_update(UnassignedGroupsComponent, id: "unassigned-groups-tray", tenant: tenant)
+
+    {:noreply, load_channels(socket)}
+  end
+
+  @impl Phoenix.LiveView
+  def render(assigns) do
+    ~H"""
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <.page_header
+        title="Channels"
+        live_title="Subscribed to live rollout channel and fleet telemetry updates"
+      >
+        <:subtitle>
+          Rollout rings grouping target cohorts for staged OTA updates, container deployments, and file deliveries in <span class="font-medium text-base-content/80">{@current_tenant.name}</span>.
+        </:subtitle>
+      </.page_header>
+
+      <.live_component module={ChannelsStatsComponent} id="channels-stats" tenant={@current_tenant} />
+
+      <ChannelsToolbarComponent.channels_toolbar
+        search={@search}
+        filter={@filter}
+        filter_counts={@filter_counts}
+      />
+
+      <section
+        :if={@filtered_channels != []}
+        id="channels-grid"
+        aria-label="Rollout channels grid"
+        class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+      >
+        <.live_component
+          :for={channel <- @filtered_channels}
+          module={ChannelCardComponent}
+          id={"channel-card-#{channel.id}"}
+          channel={channel}
+          tenant={@current_tenant}
+        />
+      </section>
+
+      <ChannelsToolbarComponent.channels_empty_state
+        :if={@filtered_channels == []}
+        has_channels?={@filter_counts.all > 0}
+      />
+
+      <.live_component
+        module={UnassignedGroupsComponent}
+        id="unassigned-groups-tray"
+        tenant={@current_tenant}
+      />
+    </div>
+    """
+  end
+
+  defp load_channels(socket) do
+    tenant = socket.assigns.current_tenant
+
+    all_channels =
+      Channel
+      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.load([:target_group_count, :has_active_rollout, :fleet_reach])
+      |> Ash.read!(tenant: tenant, authorize?: false)
+
+    filter_counts = %{
+      all: length(all_channels),
+      active_rollout: Enum.count(all_channels, &(&1.has_active_rollout == true)),
+      empty_groups: Enum.count(all_channels, &(&1.target_group_count == 0)),
+      zero_devices: Enum.count(all_channels, &(&1.fleet_reach.total_count == 0))
+    }
+
+    socket
+    |> assign(:filter_counts, filter_counts)
+    |> load_filtered_channels()
+  end
+
+  defp load_filtered_channels(socket) do
+    tenant = socket.assigns.current_tenant
+    search = socket.assigns.search || ""
+    filter = socket.assigns.filter || "all"
+
+    query =
+      Channel
+      |> Ash.Query.for_read(:list, %{search: search}, tenant: tenant, authorize?: false)
+      |> apply_channel_filter(filter)
+      |> Ash.Query.load([
+        :target_groups,
+        :target_group_count,
+        :has_active_rollout,
+        :fleet_reach,
+        featured_campaign: CampaignStripComponent.campaign_loads()
+      ])
+      |> Ash.Query.sort(name: :asc)
+
+    channels = Ash.read!(query, tenant: tenant, authorize?: false)
+
+    filtered =
+      if filter == "zero_devices" do
+        Enum.filter(channels, &(&1.fleet_reach.total_count == 0))
+      else
+        channels
+      end
+
+    assign(socket, :filtered_channels, filtered)
+  end
+
+  defp apply_channel_filter(query, "active_rollout"),
+    do: Ash.Query.filter(query, has_active_rollout == true)
+
+  defp apply_channel_filter(query, "empty_groups"),
+    do: Ash.Query.filter(query, target_group_count == 0)
+
+  defp apply_channel_filter(query, _other), do: query
+end
