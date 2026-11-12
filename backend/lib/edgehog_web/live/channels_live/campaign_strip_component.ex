@@ -26,6 +26,7 @@ defmodule EdgehogWeb.ChannelsLive.CampaignStripComponent do
   use EdgehogWeb, :html
 
   @active_campaign_statuses [:idle, :scheduled, :in_progress, :pausing, :paused]
+  @running_campaign_statuses [:idle, :in_progress, :pausing, :paused]
 
   @campaign_loads [
     :total_target_count,
@@ -44,6 +45,12 @@ defmodule EdgehogWeb.ChannelsLive.CampaignStripComponent do
   Returns true when a campaign status represents an active or scheduled rollout.
   """
   def active_campaign_status?(status), do: status in @active_campaign_statuses
+
+  @doc """
+  Returns true when a campaign status represents an actively executing or paused
+  campaign whose channel target groups must not be reassigned.
+  """
+  def running_campaign_status?(status), do: status in @running_campaign_statuses
 
   @doc """
   Selects the featured campaign for a channel, prioritizing any active or
