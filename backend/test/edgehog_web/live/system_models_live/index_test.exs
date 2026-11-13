@@ -422,4 +422,166 @@ defmodule EdgehogWeb.SystemModelsLive.IndexTest do
       assert device1.id != device2.id
     end
   end
+
+  describe "floating pill system model creation, unmapped PN prefill, and part number stealing" do
+    test "prefills unmapped part number from discovery tray, warns on part number stealing, and creates model",
+         %{
+           conn: conn,
+           tenant: tenant,
+           tenant_private_key: tenant_private_key
+         } do
+      jwt = generate_jwt(tenant_private_key)
+
+      ht =
+        DevicesFixtures.hardware_type_fixture(
+          tenant: tenant,
+          name: "Strawberry Pi 5",
+          handle: "strawberry-pi-5",
+          part_numbers: ["STBEPI-5-REV1"]
+        )
+
+      existing_model =
+        DevicesFixtures.system_model_fixture(
+          tenant: tenant,
+          hardware_type_id: ht.id,
+          name: "Legacy Scooter v1",
+          handle: "legacy-scooter-v1",
+          part_numbers: ["LEGACY-PN-1", "STEAL-ME-PN"]
+        )
+
+      _stolen_device =
+        DevicesFixtures.device_fixture(
+          tenant: tenant,
+          name: "Scooter Legacy 01",
+          online: true,
+          part_number: "STEAL-ME-PN"
+        )
+
+      _orphan_device =
+        DevicesFixtures.device_fixture(
+          tenant: tenant,
+          name: "Orphan Bike 01",
+          online: true,
+          part_number: "ORPHAN-BIKE-PN"
+        )
+
+      conn =
+        post(conn, ~p"/session", %{
+          "session" => %{"tenant_slug" => tenant.slug, "auth_token" => jwt}
+        })
+
+      {:ok, view, _html} = live(recycle(conn), ~p"/tenants/#{tenant.slug}/system-models")
+
+      # Click "+ Create Model" on the unmapped part number chip
+      view
+      |> element("#unmapped-pn-ORPHAN-BIKE-PN [data-role='create-model-from-pn']")
+      |> render_click()
+
+      assert_patch(view, ~p"/tenants/#{tenant.slug}/system-models/new?part_number=ORPHAN-BIKE-PN")
+
+      # Verify non-blurring floating pill drawer shell
+      assert has_element?(view, "#system-model-form-drawer[aria-modal='false']")
+
+      assert has_element?(
+               view,
+               "#system-model-form-drawer-panel.rounded-3xl.animate-floating-pill-right"
+             )
+
+      # Verify row 0 is prefilled with ORPHAN-BIKE-PN and shows unmapped match badge
+      assert has_element?(
+               view,
+               "#part-number-input-0[value='ORPHAN-BIKE-PN']"
+             )
+
+      assert has_element?(
+               view,
+               "#part-number-row-0 [data-part-number-unmapped-match='true']",
+               "Matches unmapped fleet devices"
+             )
+
+      assert has_element?(
+               view,
+               "#system-model-live-preview [data-role='model-total-devices']",
+               "1"
+             )
+
+      # Add a second part number row and type STEAL-ME-PN (owned by existing_model)
+      view
+      |> element("#add-part-number-btn")
+      |> render_click()
+
+      view
+      |> form("#system-model-form", %{
+        "system_model" => %{
+          "name" => "Connected E-Bike 2",
+          "description" => "Next-gen electric commuter bike.",
+          "picture_url" => "https://example.com/images/ebike-2.png",
+          "part_numbers" => ["ORPHAN-BIKE-PN", "STEAL-ME-PN"]
+        }
+      })
+      |> render_change()
+
+      # Verify auto-slugified handle, steal badge on row 1, steal warning banner, and live preview of 2 devices
+      assert has_element?(
+               view,
+               "#system-model-form input[name='system_model[handle]'][value='connected-e-bike-2']"
+             )
+
+      assert has_element?(
+               view,
+               "#part-number-row-1 [data-part-number-steal='true']",
+               existing_model.name
+             )
+
+      assert has_element?(
+               view,
+               "#system-model-steal-warning",
+               "STEAL-ME-PN (from Legacy Scooter v1 @legacy-scooter-v1)"
+             )
+
+      assert has_element?(
+               view,
+               "#system-model-live-preview [data-role='model-total-devices']",
+               "2"
+             )
+
+      # Submit form -> creates model, steals STEAL-ME-PN, and navigates to Show page
+      {:ok, show_view, _html} =
+        view
+        |> form("#system-model-form", %{
+          "system_model" => %{
+            "name" => "Connected E-Bike 2",
+            "handle" => "connected-e-bike-2",
+            "hardware_type_id" => to_string(ht.id),
+            "description" => "Next-gen electric commuter bike.",
+            "picture_url" => "https://example.com/images/ebike-2.png",
+            "part_numbers" => ["ORPHAN-BIKE-PN", "STEAL-ME-PN"]
+          }
+        })
+        |> render_submit()
+        |> follow_redirect(recycle(conn))
+
+      assert has_element?(show_view, "#system-model-detail-name", "Connected E-Bike 2")
+      assert has_element?(show_view, "#system-model-detail-handle", "@connected-e-bike-2")
+
+      assert has_element?(
+               show_view,
+               "#system-model-detail-description",
+               "Next-gen electric commuter bike."
+             )
+
+      assert has_element?(show_view, "[data-part-number='ORPHAN-BIKE-PN']")
+      assert has_element?(show_view, "[data-part-number='STEAL-ME-PN']")
+
+      # Verify existing_model no longer has STEAL-ME-PN
+      reloaded_existing =
+        Ash.load!(existing_model, :part_numbers,
+          tenant: tenant,
+          authorize?: false,
+          reuse_values?: false
+        )
+
+      assert Enum.map(reloaded_existing.part_numbers, & &1.part_number) == ["LEGACY-PN-1"]
+    end
+  end
 end
