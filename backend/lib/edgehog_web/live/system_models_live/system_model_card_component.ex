@@ -66,7 +66,7 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelCardComponent do
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-start gap-3.5 min-w-0">
             <.link
-              navigate={"/tenants/#{@tenant.slug}/system-models/#{@model.id}"}
+              navigate={~p"/tenants/#{@tenant.slug}/system-models/#{@model.id}"}
               class="shrink-0"
               tabindex="-1"
               aria-hidden="true"
@@ -89,7 +89,7 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelCardComponent do
 
             <div class="min-w-0">
               <.link
-                navigate={"/tenants/#{@tenant.slug}/system-models/#{@model.id}"}
+                navigate={~p"/tenants/#{@tenant.slug}/system-models/#{@model.id}"}
                 data-role="model-name"
                 class="font-semibold text-base text-base-content leading-tight truncate hover:text-primary transition-colors block"
               >

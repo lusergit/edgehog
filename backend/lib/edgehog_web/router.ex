@@ -97,6 +97,8 @@ defmodule EdgehogWeb.Router do
         live "/channels/:id/edit", ChannelsLive.Show, :edit
         live "/system-models", SystemModelsLive.Index, :index
         live "/system-models/new", SystemModelsLive.Index, :new
+        live "/system-models/:id", SystemModelsLive.Show, :show
+        live "/system-models/:id/edit", SystemModelsLive.Show, :edit
       end
     end
 
