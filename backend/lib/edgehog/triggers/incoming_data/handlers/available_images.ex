@@ -31,27 +31,35 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableImages do
   def handle_event(event, _opts, context) do
     %{realm_id: realm_id, device_id: device_id, tenant: tenant} = context
 
-    device = Devices.fetch_device_by_identity!(device_id, realm_id, tenant: tenant)
+    with {:ok, device} <- Devices.fetch_device_by_identity(device_id, realm_id, tenant: tenant) do
+      case String.split(event.path, "/") do
+        ["", image_id, "pulled"] ->
+          handle_pulled(image_id, event.value, device.id, tenant)
 
-    case String.split(event.path, "/") do
-      ["", image_id, "pulled"] ->
-        image_deployment =
-          Containers.fetch_image_deployment!(image_id, device.id, tenant: tenant)
+        _ ->
+          {:error, :invalid_event_path}
+      end
+    end
+  end
 
-        case event.value do
-          true ->
-            Containers.mark_image_deployment_as_pulled(image_deployment, tenant: tenant)
+  defp handle_pulled(image_id, value, device_id, tenant) do
+    with {:ok, image_deployment} <-
+           Containers.fetch_image_deployment(image_id, device_id, tenant: tenant) do
+      update_image_deployment(image_deployment, value, tenant)
+    end
+  end
 
-          false ->
-            Containers.mark_image_deployment_as_unpulled(image_deployment, tenant: tenant)
+  defp update_image_deployment(image_deployment, true, tenant) do
+    Containers.mark_image_deployment_as_pulled(image_deployment, tenant: tenant)
+  end
 
-          nil ->
-            Containers.destroy_image_deployment!(image_deployment, tenant: tenant)
-            {:ok, image_deployment}
-        end
+  defp update_image_deployment(image_deployment, false, tenant) do
+    Containers.mark_image_deployment_as_unpulled(image_deployment, tenant: tenant)
+  end
 
-      _ ->
-        {:error, :invalid_event_path}
+  defp update_image_deployment(image_deployment, nil, tenant) do
+    with :ok <- Containers.destroy_image_deployment(image_deployment, tenant: tenant) do
+      {:ok, image_deployment}
     end
   end
 end

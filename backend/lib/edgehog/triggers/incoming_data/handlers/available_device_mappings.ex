@@ -31,37 +31,46 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableDeviceMappings do
   def handle_event(event, _opts, context) do
     %{realm_id: realm_id, device_id: device_id, tenant: tenant} = context
 
-    device = Devices.fetch_device_by_identity!(device_id, realm_id, tenant: tenant)
+    with {:ok, device} <- Devices.fetch_device_by_identity(device_id, realm_id, tenant: tenant) do
+      case String.split(event.path, "/") do
+        ["", device_mapping_id, "present"] ->
+          handle_present(device_mapping_id, event.value, device.id, tenant)
 
-    case String.split(event.path, "/") do
-      ["", device_mapping_id, "present"] ->
-        device_mapping_deployment =
-          Containers.fetch_device_mapping_deployment!(device_mapping_id, device.id,
-            tenant: tenant
-          )
+        _ ->
+          {:error, :invalid_event_path}
+      end
+    end
+  end
 
-        case event.value do
-          true ->
-            Containers.mark_device_mapping_deployment_as_present(device_mapping_deployment,
-              tenant: tenant
-            )
+  defp handle_present(device_mapping_id, value, device_id, tenant) do
+    with {:ok, device_mapping_deployment} <-
+           Containers.fetch_device_mapping_deployment(device_mapping_id, device_id,
+             tenant: tenant
+           ) do
+      update_device_mapping_deployment(device_mapping_deployment, value, tenant)
+    end
+  end
 
-          false ->
-            Containers.mark_device_mapping_deployment_as_not_present(device_mapping_deployment,
-              tenant: tenant
-            )
+  defp update_device_mapping_deployment(device_mapping_deployment, true, tenant) do
+    Containers.mark_device_mapping_deployment_as_present(device_mapping_deployment,
+      tenant: tenant
+    )
+  end
 
-          # The device mapping has been removed on the device. We should remove it too.
-          nil ->
-            Containers.destroy_device_mapping_deployment(device_mapping_deployment,
-              tenant: tenant
-            )
+  defp update_device_mapping_deployment(device_mapping_deployment, false, tenant) do
+    Containers.mark_device_mapping_deployment_as_not_present(
+      device_mapping_deployment,
+      tenant: tenant
+    )
+  end
 
-            {:ok, device_mapping_deployment}
-        end
-
-      _ ->
-        {:error, :invalid_event_path}
+  # The device mapping has been removed on the device. We should remove it too.
+  defp update_device_mapping_deployment(device_mapping_deployment, nil, tenant) do
+    with :ok <-
+           Containers.destroy_device_mapping_deployment(device_mapping_deployment,
+             tenant: tenant
+           ) do
+      {:ok, device_mapping_deployment}
     end
   end
 end

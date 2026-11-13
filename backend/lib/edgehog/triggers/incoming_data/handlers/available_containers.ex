@@ -31,37 +31,44 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableContainers do
   def handle_event(event, _opts, context) do
     %{realm_id: realm_id, device_id: device_id, tenant: tenant} = context
 
-    device = Devices.fetch_device_by_identity!(device_id, realm_id, tenant: tenant)
+    with {:ok, device} <- Devices.fetch_device_by_identity(device_id, realm_id, tenant: tenant) do
+      case String.split(event.path, "/") do
+        ["", container_id, "status"] ->
+          handle_status(container_id, event.value, device.id, tenant)
 
-    case String.split(event.path, "/") do
-      ["", container_id, "status"] ->
-        container_deployment =
-          Containers.fetch_container_deployment!(container_id, device.id, tenant: tenant)
+        _ ->
+          {:error, :invalid_event_path}
+      end
+    end
+  end
 
-        # Pure side effects
-        case event.value do
-          "Received" ->
-            Containers.mark_container_deployment_as_received(container_deployment,
-              tenant: tenant
-            )
+  defp handle_status(container_id, value, device_id, tenant) do
+    with {:ok, container_deployment} <-
+           Containers.fetch_container_deployment(container_id, device_id, tenant: tenant) do
+      update_container_deployment(container_deployment, value, tenant)
+    end
+  end
 
-          "Created" ->
-            Containers.mark_container_deployment_as_created(container_deployment, tenant: tenant)
+  defp update_container_deployment(container_deployment, "Received", tenant) do
+    Containers.mark_container_deployment_as_received(container_deployment, tenant: tenant)
+  end
 
-          "Running" ->
-            Containers.mark_container_deployment_as_running(container_deployment, tenant: tenant)
+  defp update_container_deployment(container_deployment, "Created", tenant) do
+    Containers.mark_container_deployment_as_created(container_deployment, tenant: tenant)
+  end
 
-          "Stopped" ->
-            Containers.mark_container_deployment_as_stopped(container_deployment, tenant: tenant)
+  defp update_container_deployment(container_deployment, "Running", tenant) do
+    Containers.mark_container_deployment_as_running(container_deployment, tenant: tenant)
+  end
 
-          # The container has been deleted, astarte is purgin properties on the available container
-          nil ->
-            Containers.destroy_container_deployment!(container_deployment, tenant: tenant)
-            {:ok, container_deployment}
-        end
+  defp update_container_deployment(container_deployment, "Stopped", tenant) do
+    Containers.mark_container_deployment_as_stopped(container_deployment, tenant: tenant)
+  end
 
-      _ ->
-        {:error, :invalid_event_path}
+  # The container has been deleted, astarte is purgin properties on the available container
+  defp update_container_deployment(container_deployment, nil, tenant) do
+    with :ok <- Containers.destroy_container_deployment(container_deployment, tenant: tenant) do
+      {:ok, container_deployment}
     end
   end
 end

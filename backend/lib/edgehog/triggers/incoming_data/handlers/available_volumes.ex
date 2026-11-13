@@ -31,28 +31,36 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableVolumes do
   def handle_event(event, _opts, context) do
     %{realm_id: realm_id, device_id: device_id, tenant: tenant} = context
 
-    device = Devices.fetch_device_by_identity!(device_id, realm_id, tenant: tenant)
+    with {:ok, device} <- Devices.fetch_device_by_identity(device_id, realm_id, tenant: tenant) do
+      case String.split(event.path, "/") do
+        ["", volume_id, "created"] ->
+          handle_created(volume_id, event.value, device.id, tenant)
 
-    case String.split(event.path, "/") do
-      ["", volume_id, "created"] ->
-        volume_deployment =
-          Containers.fetch_volume_deployment!(volume_id, device.id, tenant: tenant)
+        _ ->
+          {:error, :invalid_event_path}
+      end
+    end
+  end
 
-        case event.value do
-          true ->
-            Containers.mark_volume_deployment_as_available(volume_deployment, tenant: tenant)
+  defp handle_created(volume_id, value, device_id, tenant) do
+    with {:ok, volume_deployment} <-
+           Containers.fetch_volume_deployment(volume_id, device_id, tenant: tenant) do
+      update_volume_deployment(volume_deployment, value, tenant)
+    end
+  end
 
-          false ->
-            Containers.mark_volume_deployment_as_unavailable(volume_deployment, tenant: tenant)
+  defp update_volume_deployment(volume_deployment, true, tenant) do
+    Containers.mark_volume_deployment_as_available(volume_deployment, tenant: tenant)
+  end
 
-          # The volume has been removed on the device, we should remove it too.
-          nil ->
-            Containers.destroy_volume_deployment!(volume_deployment, tenant: tenant)
-            {:ok, volume_deployment}
-        end
+  defp update_volume_deployment(volume_deployment, false, tenant) do
+    Containers.mark_volume_deployment_as_unavailable(volume_deployment, tenant: tenant)
+  end
 
-      _ ->
-        {:error, :invalid_event_path}
+  # The volume has been removed on the device, we should remove it too.
+  defp update_volume_deployment(volume_deployment, nil, tenant) do
+    with :ok <- Containers.destroy_volume_deployment(volume_deployment, tenant: tenant) do
+      {:ok, volume_deployment}
     end
   end
 end
