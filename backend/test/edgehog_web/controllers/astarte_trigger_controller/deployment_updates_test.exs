@@ -1158,6 +1158,40 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerController.DeploymentUpdatesTest 
 
       assert {:error, _} = Ash.get(Container.Deployment, container_deployment.id, tenant: tenant)
     end
+
+    test "Available* triggers return 422 when resource is not found", context do
+      %{conn: conn, realm: realm, device: device, tenant: tenant} = context
+
+      unknown_id = Ash.UUID.generate()
+      path = Routes.astarte_trigger_path(conn, :process_event, tenant.slug)
+
+      for {interface, property, value} <- [
+            {"io.edgehog.devicemanager.apps.AvailableDeviceMappings", "present", true},
+            {"io.edgehog.devicemanager.apps.AvailableImages", "pulled", true},
+            {"io.edgehog.devicemanager.apps.AvailableVolumes", "created", true},
+            {"io.edgehog.devicemanager.apps.AvailableNetworks", "created", true},
+            {"io.edgehog.devicemanager.apps.AvailableContainers", "status", "Received"},
+            {"io.edgehog.devicemanager.apps.AvailableDeviceRequests", "present", true},
+            {"io.edgehog.devicemanager.apps.AvailableFileBinds", "targetId", unknown_id},
+            {"io.edgehog.devicemanager.apps.AvailableEnvFiles", "targetId", unknown_id}
+          ] do
+        event = %{
+          device_id: device.device_id,
+          event: %{
+            type: "incoming_data",
+            interface: interface,
+            path: "/#{unknown_id}/#{property}",
+            value: value
+          },
+          timestamp: DateTime.to_iso8601(DateTime.utc_now())
+        }
+
+        build_conn()
+        |> put_req_header("astarte-realm", realm.name)
+        |> post(path, event)
+        |> response(422)
+      end
+    end
   end
 
   defp set_ready(%Image.Deployment{} = deployment),

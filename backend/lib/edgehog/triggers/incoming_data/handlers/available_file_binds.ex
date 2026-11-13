@@ -31,30 +31,32 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableFileBinds do
   def handle_event(event, _opts, context) do
     %{realm_id: realm_id, device_id: device_id, tenant: tenant} = context
 
-    device = Devices.fetch_device_by_identity!(device_id, realm_id, tenant: tenant)
-
-    case String.split(event.path, "/") do
-      ["", bind_id, _field] -> handle_bind_event(bind_id, event.value, device, tenant)
-      _ -> {:error, :invalid_event_path}
+    with {:ok, device} <- Devices.fetch_device_by_identity(device_id, realm_id, tenant: tenant) do
+      case String.split(event.path, "/") do
+        ["", bind_id, _field] -> handle_bind_event(bind_id, event.value, device, tenant)
+        _ -> {:error, :invalid_event_path}
+      end
     end
   end
 
   defp handle_bind_event(bind_id, value, device, tenant) do
-    file_bind = Containers.fetch_file_bind!(bind_id, tenant: tenant)
-
-    file_bind =
-      Ash.load!(file_bind, [container_deployment: [:device_id]], tenant: tenant)
-
-    if file_bind.container_deployment.device_id != device.id do
-      {:error, :device_mismatch}
-    else
-      update_file_bind(file_bind, value, tenant)
+    with {:ok, file_bind} <-
+           Containers.fetch_file_bind(bind_id,
+             tenant: tenant,
+             load: [container_deployment: [:device_id]]
+           ) do
+      if file_bind.container_deployment.device_id != device.id do
+        {:error, :device_mismatch}
+      else
+        update_file_bind(file_bind, value, tenant)
+      end
     end
   end
 
   defp update_file_bind(file_bind, nil, tenant) do
-    Containers.destroy_file_bind!(file_bind, tenant: tenant)
-    {:ok, file_bind}
+    with :ok <- Containers.destroy_file_bind(file_bind, tenant: tenant) do
+      {:ok, file_bind}
+    end
   end
 
   defp update_file_bind(file_bind, true, tenant) do

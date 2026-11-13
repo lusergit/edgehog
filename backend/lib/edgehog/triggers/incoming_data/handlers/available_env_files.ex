@@ -30,33 +30,35 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableEnvFiles do
   def handle_event(event, _opts, context) do
     %{realm_id: realm_id, device_id: device_id, tenant: tenant} = context
 
-    device = Devices.fetch_device_by_identity!(device_id, realm_id, tenant: tenant)
+    with {:ok, device} <- Devices.fetch_device_by_identity(device_id, realm_id, tenant: tenant) do
+      case String.split(event.path, "/") do
+        ["", env_file_id, _field] ->
+          handle_env_file_event(env_file_id, event.value, device, tenant)
 
-    case String.split(event.path, "/") do
-      ["", env_file_id, _field] ->
-        handle_env_file_event(env_file_id, event.value, device, tenant)
-
-      _ ->
-        {:error, :invalid_event_path}
+        _ ->
+          {:error, :invalid_event_path}
+      end
     end
   end
 
   defp handle_env_file_event(env_file_id, value, device, tenant) do
-    env_file = Containers.fetch_env_file!(env_file_id, tenant: tenant)
-
-    env_file =
-      Ash.load!(env_file, [container_deployment: [:device_id]], tenant: tenant)
-
-    if env_file.container_deployment.device_id != device.id do
-      {:error, :device_mismatch}
-    else
-      update_env_file(env_file, value, tenant)
+    with {:ok, env_file} <-
+           Containers.fetch_env_file(env_file_id,
+             tenant: tenant,
+             load: [container_deployment: [:device_id]]
+           ) do
+      if env_file.container_deployment.device_id != device.id do
+        {:error, :device_mismatch}
+      else
+        update_env_file(env_file, value, tenant)
+      end
     end
   end
 
   defp update_env_file(env_file, nil, tenant) do
-    Containers.destroy_env_file!(env_file, tenant: tenant)
-    {:ok, env_file}
+    with :ok <- Containers.destroy_env_file(env_file, tenant: tenant) do
+      {:ok, env_file}
+    end
   end
 
   defp update_env_file(env_file, true, tenant) do

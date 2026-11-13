@@ -44,11 +44,11 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableContainers do
   def handle_event(event, _opts, context) do
     %{realm_id: realm_id, device_id: device_id, tenant: tenant} = context
 
-    device = Devices.fetch_device_by_identity!(device_id, realm_id, tenant: tenant)
-
-    event.path
-    |> String.split("/")
-    |> handle_property(event.value, device.id, tenant)
+    with {:ok, device} <- Devices.fetch_device_by_identity(device_id, realm_id, tenant: tenant) do
+      event.path
+      |> String.split("/")
+      |> handle_property(event.value, device.id, tenant)
+    end
   end
 
   defp handle_property(["", container_id, "status"], value, device_id, tenant),
@@ -83,20 +83,22 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableContainers do
   defp handle_property(_path, _value, _device_id, _tenant), do: {:error, :invalid_event_path}
 
   defp handle_status(container_id, nil, device_id, tenant) do
-    container_deployment =
-      Containers.fetch_container_deployment!(container_id, device_id, tenant: tenant)
-
-    Containers.destroy_container_deployment!(container_deployment, tenant: tenant)
-    {:ok, container_deployment}
+    with {:ok, container_deployment} <-
+           Containers.fetch_container_deployment(container_id, device_id, tenant: tenant),
+         :ok <- Containers.destroy_container_deployment(container_deployment, tenant: tenant) do
+      {:ok, container_deployment}
+    end
   end
 
   defp handle_status(container_id, status, device_id, tenant) do
     case Map.fetch(@container_status_actions, status) do
       {:ok, {action, params}} ->
-        container_id
-        |> Containers.fetch_container_deployment!(device_id, tenant: tenant)
-        |> Ash.Changeset.for_update(action, params)
-        |> Ash.update(tenant: tenant)
+        with {:ok, container_deployment} <-
+               Containers.fetch_container_deployment(container_id, device_id, tenant: tenant) do
+          container_deployment
+          |> Ash.Changeset.for_update(action, params)
+          |> Ash.update(tenant: tenant)
+        end
 
       :error ->
         {:error, {:unsupported_status, status}}
@@ -104,9 +106,12 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableContainers do
   end
 
   defp update_container_deployment(container_id, device_id, attrs, tenant) do
-    container_id
-    |> Containers.fetch_container_deployment!(device_id, tenant: tenant)
-    |> Containers.update_container_deployment_from_device(attrs, tenant: tenant)
+    with {:ok, container_deployment} <-
+           Containers.fetch_container_deployment(container_id, device_id, tenant: tenant) do
+      Containers.update_container_deployment_from_device(container_deployment, attrs,
+        tenant: tenant
+      )
+    end
   end
 
   defp health_status("None"), do: {:ok, :none}
