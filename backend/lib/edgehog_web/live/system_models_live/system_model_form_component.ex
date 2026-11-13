@@ -380,7 +380,7 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelFormComponent do
   defp navigate_after_save(%{assigns: %{action: :new}} = socket, saved_model, tenant) do
     socket
     |> put_flash(:info, gettext("System model created."))
-    |> push_navigate(to: "/tenants/#{tenant.slug}/system-models/#{saved_model.id}")
+    |> push_navigate(to: ~p"/tenants/#{tenant.slug}/system-models/#{saved_model.id}")
   end
 
   defp navigate_after_save(socket, _saved_model, _tenant) do
