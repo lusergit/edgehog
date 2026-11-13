@@ -278,7 +278,11 @@ defmodule Edgehog.Containers.Reconciler.Core do
         |> Ash.Changeset.for_update(:set_state, %{state: desc.status})
         |> Ash.update(tenant: tenant)
 
-      with {:ok, _} <- marking, do: :ok
+      with {:ok, updated_deployment} <- marking,
+           {:ok, _} <-
+             Containers.deployment_update_resources_state(updated_deployment, tenant: tenant) do
+        :ok
+      end
     end
   end
 

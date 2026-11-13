@@ -792,6 +792,73 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerController.DeploymentUpdatesTest 
       assert updated.state == :received
     end
 
+    test "AvailableContainers with Created status notifies parent deployment when last resource",
+         context do
+      %{conn: conn, realm: realm, device: device, tenant: tenant} = context
+
+      device_mapping = device_mapping_fixture(tenant: tenant)
+
+      release =
+        [
+          containers: 1,
+          container_params: [device_mappings: [device_mapping.id]],
+          tenant: tenant
+        ]
+        |> release_fixture()
+        |> Ash.load!(:containers)
+
+      [container] = release.containers
+
+      deployment =
+        [tenant: tenant, device_id: device.id, release_id: release.id, state: :sent]
+        |> deployment_fixture()
+        |> Ash.load!(container_deployments: [:image_deployment, :device_mapping_deployments])
+
+      [container_deployment] = deployment.container_deployments
+      image_deployment = container_deployment.image_deployment
+      [device_mapping_deployment] = container_deployment.device_mapping_deployments
+
+      set_ready(image_deployment)
+      set_ready(device_mapping_deployment)
+      set_ready(deployment)
+
+      EdgehogWeb.Endpoint.subscribe("deployments:#{deployment.id}")
+
+      deployment_event = %{
+        device_id: device.device_id,
+        event: %{
+          type: "incoming_data",
+          interface: "io.edgehog.devicemanager.apps.AvailableContainers",
+          path: "/" <> container.id <> "/status",
+          value: "Created"
+        },
+        timestamp: DateTime.to_iso8601(DateTime.utc_now())
+      }
+
+      path = Routes.astarte_trigger_path(conn, :process_event, tenant.slug)
+
+      conn
+      |> put_req_header("astarte-realm", realm.name)
+      |> post(path, deployment_event)
+      |> response(200)
+
+      deployment_id = deployment.id
+
+      assert_receive %Phoenix.Socket.Broadcast{
+        event: "maybe_run_ready_actions",
+        payload: %Ash.Notifier.Notification{
+          data: %Deployment{id: ^deployment_id, is_ready: true}
+        }
+      }
+
+      updated_deployment =
+        Deployment
+        |> Ash.get!(deployment.id, tenant: tenant)
+        |> Ash.load!(:is_ready, tenant: tenant)
+
+      assert updated_deployment.is_ready
+    end
+
     test "AvailableContainers with Running status marks container as running", context do
       %{conn: conn, realm: realm, device: device, tenant: tenant} = context
 

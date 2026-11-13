@@ -93,19 +93,27 @@ defmodule Edgehog.Containers.Container.Deployment do
     end
 
     update :mark_as_received do
+      require_atomic? false
       change set_attribute(:state, :received)
+      change Changes.MaybeNotifyUpwards
     end
 
     update :mark_as_created do
+      require_atomic? false
       change set_attribute(:state, :device_created)
+      change Changes.MaybeNotifyUpwards
     end
 
     update :mark_as_stopped do
+      require_atomic? false
       change set_attribute(:state, :stopped)
+      change Changes.MaybeNotifyUpwards
     end
 
     update :mark_as_running do
+      require_atomic? false
       change set_attribute(:state, :running)
+      change Changes.MaybeNotifyUpwards
     end
 
     update :mark_as_errored do

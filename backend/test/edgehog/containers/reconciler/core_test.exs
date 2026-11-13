@@ -39,6 +39,7 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
   alias Edgehog.Astarte.Device.AvailableNetworksMock
   alias Edgehog.Astarte.Device.AvailableVolumes.VolumeStatus
   alias Edgehog.Astarte.Device.AvailableVolumesMock
+  alias Edgehog.Containers
   alias Edgehog.Containers.Reconciler
 
   describe "reconcile_images/2" do
@@ -602,6 +603,52 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
         |> Map.get(:state)
 
       assert :stopped = new_state
+    end
+
+    test "notifies upwards and runs ready actions when deployment is reconciled", %{
+      tenant: tenant,
+      deployment: deployment,
+      device: device
+    } do
+      deployment = Ash.load!(deployment, container_deployments: [:image_deployment])
+
+      [container_deployment] = deployment.container_deployments
+      image_deployment = container_deployment.image_deployment
+
+      Containers.mark_image_deployment_as_pulled!(image_deployment, tenant: tenant)
+      Containers.mark_container_deployment_as_created!(container_deployment, tenant: tenant)
+
+      EdgehogWeb.Endpoint.subscribe("deployments:#{deployment.id}")
+
+      device_id = device.device_id
+
+      expect(AvailableDeploymentsMock, :get, fn _client, ^device_id ->
+        status =
+          [
+            struct!(%DeploymentStatus{
+              id: deployment.id,
+              status: "Stopped"
+            })
+          ]
+
+        {:ok, status}
+      end)
+
+      :ok = Reconciler.Core.reconcile_deployments(device, tenant)
+
+      deployment_id = deployment.id
+
+      assert_receive %Phoenix.Socket.Broadcast{
+        event: "maybe_run_ready_actions",
+        payload: %Ash.Notifier.Notification{
+          data: %Edgehog.Containers.Deployment{id: ^deployment_id, is_ready: true}
+        }
+      }
+
+      updated_deployment = Ash.load!(deployment, [:state, :is_ready], tenant: tenant)
+
+      assert :stopped = updated_deployment.state
+      assert updated_deployment.is_ready
     end
   end
 
