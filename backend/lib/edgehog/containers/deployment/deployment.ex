@@ -227,7 +227,7 @@ defmodule Edgehog.Containers.Deployment do
     end
 
     update :mark_as_sent do
-      change set_attribute(:state, :sent)
+      change atomic_update(:state, expr(if state == :pending, do: :sent, else: state))
 
       require_atomic? false
     end

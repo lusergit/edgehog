@@ -89,7 +89,7 @@ defmodule Edgehog.Containers.Container.Deployment do
     end
 
     update :mark_as_sent do
-      change set_attribute(:state, :sent)
+      change atomic_update(:state, expr(if state == :created, do: :sent, else: state))
     end
 
     update :mark_as_received do

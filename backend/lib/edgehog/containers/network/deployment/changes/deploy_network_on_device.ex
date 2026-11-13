@@ -42,7 +42,12 @@ defmodule Edgehog.Containers.Network.Deployment.Changes.DeployNetworkOnDevice do
   end
 
   defp maybe_update_state(changeset, :created),
-    do: Ash.Changeset.change_attribute(changeset, :state, :sent)
+    do:
+      Ash.Changeset.atomic_update(
+        changeset,
+        :state,
+        expr(if state == :created, do: :sent, else: state)
+      )
 
   defp maybe_update_state(changeset, _), do: changeset
 end

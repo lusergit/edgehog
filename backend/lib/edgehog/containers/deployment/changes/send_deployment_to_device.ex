@@ -29,21 +29,24 @@ defmodule Edgehog.Containers.Deployment.Changes.SendDeploymentToDevice do
 
   @impl Ash.Resource.Change
   def change(changeset, _opts, %{tenant: tenant}) do
-    Ash.Changeset.after_action(changeset, &after_action(&1, &2, tenant))
+    Ash.Changeset.after_transaction(changeset, &after_transaction(&1, &2, tenant))
   end
 
-  defp after_action(_changeset, deployment, tenant) do
+  defp after_transaction(_changeset, {:ok, deployment}, tenant) do
     with {:ok, deployment} <-
-           Ash.load(deployment, [:container_deployments, :device, :state], tenant: tenant) do
+           Ash.load(deployment, [:container_deployments, :device], tenant: tenant) do
       container_deployments = deployment.container_deployments
 
       Enum.each(container_deployments, &deploy_container(&1, deployment, tenant))
 
       with {:ok, _device} <-
              Devices.send_create_deployment_request(deployment.device, deployment, tenant: tenant),
+           {:ok, deployment} <- Ash.load(deployment, :state, tenant: tenant, reuse_values?: false),
            do: maybe_update_state(deployment, tenant)
     end
   end
+
+  defp after_transaction(_changeset, result, _tenant), do: result
 
   defp deploy_container(container_deployment, deployment, tenant) do
     container_deployment

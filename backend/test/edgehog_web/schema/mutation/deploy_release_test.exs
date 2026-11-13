@@ -28,6 +28,11 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
   alias Edgehog.Astarte.Device.CreateImageRequestMock
   alias Edgehog.Astarte.Device.CreateNetworkRequestMock
   alias Edgehog.Astarte.Device.CreateVolumeRequestMock
+  alias Edgehog.Containers.Deployment
+  alias Edgehog.Triggers.IncomingData.Handlers.AvailableContainers
+  alias Edgehog.Triggers.IncomingData.Handlers.AvailableDeployments
+  alias Edgehog.Triggers.IncomingData.Handlers.AvailableDeviceMappings
+  alias Edgehog.Triggers.IncomingData.Handlers.AvailableImages
 
   test "deployRelease creates the deployment on the device", %{tenant: tenant} do
     containers = 3
@@ -269,6 +274,102 @@ defmodule EdgehogWeb.Schema.Mutation.DeployReleaseTest do
     ]
     |> deploy_release_mutation()
     |> extract_result!()
+  end
+
+  test "deployRelease preserves ready states when device triggers arrive immediately", %{
+    tenant: tenant
+  } do
+    device_mapping = device_mapping_fixture(tenant: tenant)
+    device = device_fixture(tenant: tenant)
+
+    release =
+      release_fixture(
+        tenant: tenant,
+        containers: 1,
+        container_params: [device_mappings: [device_mapping.id]]
+      )
+
+    trigger_context = %{
+      realm_id: device.realm_id,
+      device_id: device.device_id,
+      tenant: tenant
+    }
+
+    expect(CreateImageRequestMock, :send_create_image_request, 1, fn _, _, data ->
+      assert {:ok, _} =
+               AvailableImages.handle_event(
+                 %{path: "/#{data.id}/pulled", value: true},
+                 [],
+                 trigger_context
+               )
+
+      :ok
+    end)
+
+    expect(CreateDeviceMappingRequestMock, :send_create_device_mapping_request, 1, fn _,
+                                                                                      _,
+                                                                                      data ->
+      assert {:ok, _} =
+               AvailableDeviceMappings.handle_event(
+                 %{path: "/#{data.id}/present", value: true},
+                 [],
+                 trigger_context
+               )
+
+      :ok
+    end)
+
+    expect(CreateContainerRequestMock, :send_create_container_request, 1, fn _, _, data ->
+      assert {:ok, _} =
+               AvailableContainers.handle_event(
+                 %{path: "/#{data.id}/status", value: "Created"},
+                 [],
+                 trigger_context
+               )
+
+      :ok
+    end)
+
+    expect(CreateDeploymentRequestMock, :send_create_deployment_request, 1, fn _, _, data ->
+      assert {:ok, _} =
+               AvailableDeployments.handle_event(
+                 %{path: "/#{data.id}/status", value: "Stopped"},
+                 [],
+                 trigger_context
+               )
+
+      :ok
+    end)
+
+    result =
+      [
+        tenant: tenant,
+        release_id: AshGraphql.Resource.encode_relay_id(release),
+        device_id: AshGraphql.Resource.encode_relay_id(device)
+      ]
+      |> deploy_release_mutation()
+      |> extract_result!()
+
+    {:ok, deployment_id} = AshGraphql.Resource.decode_relay_id(result["id"])
+
+    deployment =
+      Deployment
+      |> Ash.get!(deployment_id, tenant: tenant, load: :is_ready)
+      |> Ash.load!(
+        [container_deployments: [:is_ready, :image_deployment, :device_mapping_deployments]],
+        tenant: tenant
+      )
+
+    assert deployment.state == :stopped
+    assert deployment.is_ready
+
+    [container_deployment] = deployment.container_deployments
+    assert container_deployment.state == :device_created
+    assert container_deployment.is_ready
+    assert container_deployment.image_deployment.state == :pulled
+
+    [device_mapping_deployment] = container_deployment.device_mapping_deployments
+    assert device_mapping_deployment.state == :present
   end
 
   defp deploy_release_mutation(opts) do

@@ -38,7 +38,7 @@ defmodule Edgehog.Containers.DeploymentReadyAction do
       change manage_relationship(:deployment,
                on_lookup: :relate,
                use_identities: [:_primary_key, :release_instance],
-               on_no_match: {:create, :deploy},
+               on_no_match: {:create, :just_create},
                on_match: :ignore
              )
 

@@ -34,14 +34,20 @@ defmodule Edgehog.Containers.Volume.Deployment.Changes.DeployVolumeOnDevice do
       volume = volume_deployment.volume
       device = volume_deployment.device
 
-      with {:ok, _device} <- Devices.send_create_volume_request(device, volume, deployment) do
+      with {:ok, _device} <-
+             Devices.send_create_volume_request(device, volume, deployment, tenant: tenant) do
         maybe_update_state(changeset, volume_deployment.state)
       end
     end
   end
 
   defp maybe_update_state(changeset, :created),
-    do: Ash.Changeset.change_attribute(changeset, :state, :sent)
+    do:
+      Ash.Changeset.atomic_update(
+        changeset,
+        :state,
+        expr(if state == :created, do: :sent, else: state)
+      )
 
   defp maybe_update_state(changeset, _), do: changeset
 end

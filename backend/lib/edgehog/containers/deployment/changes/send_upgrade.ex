@@ -26,14 +26,18 @@ defmodule Edgehog.Containers.Deployment.Changes.SendUpgrade do
   database has been updated with relevant information _and_ in case of success
   """
   use Ash.Resource.Change
+
+  alias Edgehog.Containers
   alias Edgehog.Containers.DeploymentReadyAction
 
   @impl Ash.Resource.Change
-  def change(changeset, _opts, _context) do
-    Ash.Changeset.after_action(changeset, &send_upgrade/2)
+  def change(changeset, _opts, %{tenant: tenant}) do
+    changeset
+    |> Ash.Changeset.after_action(&create_ready_action/2)
+    |> Ash.Changeset.after_transaction(&send_upgrade(&1, &2, tenant))
   end
 
-  defp send_upgrade(changeset, deployment) do
+  defp create_ready_action(changeset, deployment) do
     tenant = changeset.tenant
     device_id = deployment.device_id
     # SAFETY: we have validated the parameter in the validations, so it must exist.
@@ -53,4 +57,16 @@ defmodule Edgehog.Containers.Deployment.Changes.SendUpgrade do
       {:ok, action.deployment}
     end
   end
+
+  defp send_upgrade(_changeset, {:ok, new_deployment}, tenant) do
+    with {:ok, new_deployment} <- Ash.load(new_deployment, :is_ready, tenant: tenant) do
+      if new_deployment.is_ready do
+        Containers.deployment_update_resources_state(new_deployment, tenant: tenant)
+      else
+        Containers.send_deployment(new_deployment, tenant: tenant)
+      end
+    end
+  end
+
+  defp send_upgrade(_changeset, result, _tenant), do: result
 end

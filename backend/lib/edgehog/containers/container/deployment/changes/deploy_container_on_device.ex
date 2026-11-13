@@ -29,22 +29,25 @@ defmodule Edgehog.Containers.Container.Deployment.Changes.DeployContainerOnDevic
 
   @impl Ash.Resource.Change
   def change(changeset, _opts, %{tenant: tenant}) do
-    Ash.Changeset.after_action(changeset, &send_deployment(&1, &2, tenant))
+    Ash.Changeset.after_transaction(changeset, &send_deployment(&1, &2, tenant))
   end
 
-  defp send_deployment(changeset, container_deployment, tenant) do
+  defp send_deployment(changeset, {:ok, container_deployment}, tenant) do
     deployment = Ash.Changeset.get_argument(changeset, :deployment)
 
     with {:ok, container_deployment} <-
-           Ash.load(container_deployment, [
-             :image_deployment,
-             :volume_deployments,
-             :network_deployments,
-             :device_mapping_deployments,
-             :device,
-             :container,
-             :state
-           ]) do
+           Ash.load(
+             container_deployment,
+             [
+               :image_deployment,
+               :volume_deployments,
+               :network_deployments,
+               :device_mapping_deployments,
+               :device,
+               :container
+             ],
+             tenant: tenant
+           ) do
       image_deployment = container_deployment.image_deployment
       volume_deployments = container_deployment.volume_deployments
       network_deployments = container_deployment.network_deployments
@@ -63,9 +66,13 @@ defmodule Edgehog.Containers.Container.Deployment.Changes.DeployContainerOnDevic
                deployment,
                tenant: tenant
              ),
+           {:ok, container_deployment} <-
+             Ash.load(container_deployment, :state, tenant: tenant, reuse_values?: false),
            do: maybe_update_state(container_deployment, tenant)
     end
   end
+
+  defp send_deployment(_changeset, result, _tenant), do: result
 
   defp deploy_resource(res, deployment, tenant) do
     res
