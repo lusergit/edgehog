@@ -30,47 +30,42 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableImages do
   @impl Ash.Astarte.Triggers.HandlerBehavior
   def handle_event(event, _opts, context) do
     %{realm_id: realm_id, device_id: device_id, tenant: tenant} = context
+    
+    with {:ok, device} <- Devices.fetch_device_by_identity(device_id, realm_id, tenant: tenant) do
+      case String.split(event.path, "/") do
+        ["", image_id, "pulled"] ->
+          handle_pulled(image_id, event.value, device.id, tenant)
+        
+        ["", image_id, "status"] ->
+          update_image_deployment(image_id, device.id, %{status: event.value}, tenant)
+        
+        ["", image_id, "imageId"] ->
+          update_image_deployment(image_id, device.id, %{docker_image_id: event.value}, tenant)
+        
+        ["", image_id, "repoTags"] ->
+          update_image_deployment(image_id, device.id, %{repo_tags: event.value}, tenant)
+        
+        ["", image_id, "repoDigests"] ->
+          update_image_deployment(image_id, device.id, %{repo_digests: event.value}, tenant)
+        
+        ["", image_id, "size"] ->
+          update_image_deployment(image_id, device.id, %{size: event.value}, tenant)
 
-    device = Devices.fetch_device_by_identity!(device_id, realm_id, tenant: tenant)
-
-    case String.split(event.path, "/") do
-      ["", image_id, "pulled"] ->
-        handle_pulled(image_id, event.value, device.id, tenant)
-
-      ["", image_id, "status"] ->
-        update_image_deployment(image_id, device.id, %{status: event.value}, tenant)
-
-      ["", image_id, "imageId"] ->
-        update_image_deployment(image_id, device.id, %{docker_image_id: event.value}, tenant)
-
-      ["", image_id, "repoTags"] ->
-        update_image_deployment(image_id, device.id, %{repo_tags: event.value}, tenant)
-
-      ["", image_id, "repoDigests"] ->
-        update_image_deployment(image_id, device.id, %{repo_digests: event.value}, tenant)
-
-      ["", image_id, "size"] ->
-        update_image_deployment(image_id, device.id, %{size: event.value}, tenant)
-
-      _ ->
-        {:error, :invalid_event_path}
+        _ ->
+          {:error, :invalid_event_path}
+      end
     end
   end
 
   defp handle_pulled(image_id, value, device_id, tenant) do
-    image_deployment =
-      Containers.fetch_image_deployment!(image_id, device_id, tenant: tenant)
-
     case value do
-      true ->
-        Containers.mark_image_deployment_as_pulled(image_deployment, tenant: tenant)
-
-      false ->
-        Containers.mark_image_deployment_as_unpulled(image_deployment, tenant: tenant)
-
       nil ->
         Containers.destroy_image_deployment!(image_deployment, tenant: tenant)
         {:ok, image_deployment}
+
+      value ->
+        state = if value, do: :pulled, else: :unpulled
+        update_image_deployment(image_id, device_id, %{state: state}, tenant)
     end
   end
 
