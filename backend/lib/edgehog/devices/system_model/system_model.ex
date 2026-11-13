@@ -22,6 +22,9 @@ defmodule Edgehog.Devices.SystemModel do
     domain: Edgehog.Devices,
     extensions: [
       AshGraphql.Resource
+    ],
+    notifiers: [
+      Ash.Notifier.PubSub
     ]
 
   alias Edgehog.Devices.SystemModel.Changes
@@ -219,6 +222,17 @@ defmodule Edgehog.Devices.SystemModel do
   identities do
     identity :handle, [:handle]
     identity :name, [:name]
+  end
+
+  pub_sub do
+    prefix "system_models"
+    module EdgehogWeb.Endpoint
+
+    publish :create, ["tenant", :tenant_id]
+    publish :update, ["tenant", :tenant_id]
+    publish :update, [:id]
+    publish :destroy, ["tenant", :tenant_id]
+    publish :destroy, [:id]
   end
 
   postgres do
