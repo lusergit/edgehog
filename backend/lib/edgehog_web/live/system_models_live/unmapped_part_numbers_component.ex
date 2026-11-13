@@ -88,7 +88,7 @@ defmodule EdgehogWeb.SystemModelsLive.UnmappedPartNumbersComponent do
           </span>
 
           <.link
-            navigate={"/tenants/#{@tenant.slug}/system-models/new?part_number=#{URI.encode_www_form(entry.part_number)}"}
+            patch={~p"/tenants/#{@tenant.slug}/system-models/new?#{[part_number: entry.part_number]}"}
             data-role="create-model-from-pn"
             class="btn btn-xs btn-ghost rounded-full border border-base-300 bg-base-100 gap-1 px-2 text-[11px] font-medium hover:border-primary/40 hover:text-primary"
           >

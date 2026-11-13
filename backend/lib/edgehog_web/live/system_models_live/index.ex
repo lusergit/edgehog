@@ -33,6 +33,7 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
   alias EdgehogWeb.SystemModelsLive.ModelFleetComponent
   alias EdgehogWeb.SystemModelsLive.StatsComponent
   alias EdgehogWeb.SystemModelsLive.SystemModelCardComponent
+  alias EdgehogWeb.SystemModelsLive.SystemModelFormComponent
   alias EdgehogWeb.SystemModelsLive.ToolbarComponent
   alias EdgehogWeb.SystemModelsLive.UnmappedPartNumbersComponent
 
@@ -53,15 +54,26 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
       |> assign(:search, "")
       |> assign(:filter, "all")
       |> assign(:hardware_type_id, nil)
+      |> assign(:initial_part_number, nil)
       |> load_system_models()
 
     {:ok, socket}
   end
 
   @impl Phoenix.LiveView
-  def handle_params(_params, _uri, socket) do
+  def handle_params(params, _uri, socket) do
     tenant = socket.assigns.current_tenant
-    {:noreply, assign(socket, :page_title, "System Models · #{tenant.name}")}
+
+    page_title =
+      case socket.assigns.live_action do
+        :new -> "New System Model · #{tenant.name}"
+        _ -> "System Models · #{tenant.name}"
+      end
+
+    {:noreply,
+     socket
+     |> assign(:page_title, page_title)
+     |> assign(:initial_part_number, params["part_number"])}
   end
 
   @impl Phoenix.LiveView
@@ -118,7 +130,7 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
         <:actions>
           <.link
             id="create-system-model-btn"
-            navigate={"/tenants/#{@current_tenant.slug}/system-models/new"}
+            patch={~p"/tenants/#{@current_tenant.slug}/system-models/new"}
             class="btn btn-primary btn-sm gap-1.5"
           >
             <.icon name="hero-plus" class="size-4" />
@@ -162,6 +174,17 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
         module={UnmappedPartNumbersComponent}
         id="unmapped-part-numbers-tray"
         tenant={@current_tenant}
+      />
+
+      <.live_component
+        :if={@live_action == :new}
+        module={SystemModelFormComponent}
+        id="system-model-form-drawer"
+        action={:new}
+        system_model={%SystemModel{}}
+        initial_part_number={@initial_part_number}
+        tenant={@current_tenant}
+        return_to={~p"/tenants/#{@current_tenant.slug}/system-models"}
       />
     </div>
     """
