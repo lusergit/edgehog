@@ -31,27 +31,35 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.AvailableNetworks do
   def handle_event(event, _opts, context) do
     %{realm_id: realm_id, device_id: device_id, tenant: tenant} = context
 
-    device = Devices.fetch_device_by_identity!(device_id, realm_id, tenant: tenant)
+    with {:ok, device} <- Devices.fetch_device_by_identity(device_id, realm_id, tenant: tenant) do
+      case String.split(event.path, "/") do
+        ["", network_id, "created"] ->
+          handle_created(network_id, event.value, device.id, tenant)
 
-    case String.split(event.path, "/") do
-      ["", network_id, "created"] ->
-        network_deployment =
-          Containers.fetch_network_deployment!(network_id, device.id, tenant: tenant)
+        _ ->
+          {:error, :invalid_event_path}
+      end
+    end
+  end
 
-        case event.value do
-          true ->
-            Containers.mark_network_deployment_as_available(network_deployment, tenant: tenant)
+  defp handle_created(network_id, value, device_id, tenant) do
+    with {:ok, network_deployment} <-
+           Containers.fetch_network_deployment(network_id, device_id, tenant: tenant) do
+      update_network_deployment(network_deployment, value, tenant)
+    end
+  end
 
-          false ->
-            Containers.mark_network_deployment_as_unavailable(network_deployment, tenant: tenant)
+  defp update_network_deployment(network_deployment, true, tenant) do
+    Containers.mark_network_deployment_as_available(network_deployment, tenant: tenant)
+  end
 
-          nil ->
-            Containers.destroy_network_deployment!(network_deployment, tenant: tenant)
-            {:ok, network_deployment}
-        end
+  defp update_network_deployment(network_deployment, false, tenant) do
+    Containers.mark_network_deployment_as_unavailable(network_deployment, tenant: tenant)
+  end
 
-      _ ->
-        {:error, :invalid_event_path}
+  defp update_network_deployment(network_deployment, nil, tenant) do
+    with :ok <- Containers.destroy_network_deployment(network_deployment, tenant: tenant) do
+      {:ok, network_deployment}
     end
   end
 end
