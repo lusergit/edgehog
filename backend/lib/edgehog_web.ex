@@ -85,6 +85,7 @@ defmodule EdgehogWeb do
       use Gettext, backend: EdgehogWeb.Gettext
 
       import EdgehogWeb.Components.BottomDock
+      import EdgehogWeb.Components.DataDisplayComponents
       import EdgehogWeb.Components.FlashComponents
       import EdgehogWeb.Components.FormComponents
       import EdgehogWeb.Components.IconComponents
