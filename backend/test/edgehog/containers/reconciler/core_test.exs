@@ -413,6 +413,19 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
 
       assert :present = new_state
     end
+
+    test "handles nil response when Astarte returns an error", %{
+      tenant: tenant,
+      device: device
+    } do
+      device_id = device.device_id
+
+      expect(AvailableDeviceMappingsMock, :get, fn _client, ^device_id ->
+        {:error, :not_found}
+      end)
+
+      assert :ok = Reconciler.Core.reconcile_device_mappings(device, tenant)
+    end
   end
 
   describe "reconcile_containers/2" do
@@ -611,6 +624,81 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
 
       assert device.id == read_device.id
       assert device.device_id == read_device.device_id
+    end
+  end
+
+  describe "reconcile/1" do
+    test "reconciles device mappings alongside other container resources", %{} do
+      tenant = tenant_fixture()
+      device_mapping = device_mapping_fixture(tenant: tenant)
+
+      deployment =
+        deployment_fixture(
+          release_opts: [containers: 1, container_params: [device_mappings: [device_mapping.id]]],
+          tenant: tenant
+        )
+
+      device_mapping_deployment =
+        deployment
+        |> Ash.load!(container_deployments: [:device_mapping_deployments])
+        |> Map.get(:container_deployments, [])
+        |> List.first()
+        |> Map.get(:device_mapping_deployments, [])
+        |> List.first()
+
+      device =
+        deployment
+        |> Ash.load!(:device)
+        |> Map.get(:device)
+
+      device_id = device.device_id
+      test_pid = self()
+
+      for module <- [
+            AvailableImagesMock,
+            AvailableVolumesMock,
+            AvailableNetworksMock,
+            AvailableContainersMock,
+            AvailableDeploymentsMock
+          ] do
+        expect(module, :get, fn _client, ^device_id ->
+          send(test_pid, {:task, module, self()})
+          {:ok, []}
+        end)
+      end
+
+      expect(AvailableDeviceMappingsMock, :get, fn _client, ^device_id ->
+        send(test_pid, {:task, AvailableDeviceMappingsMock, self()})
+
+        {:ok,
+         [
+           struct!(%DeviceMappingStatus{
+             id: device_mapping_deployment.device_mapping_id,
+             present: true
+           })
+         ]}
+      end)
+
+      assert :ok = Reconciler.Core.reconcile(%{device_id: device.id, tenant: tenant})
+
+      for module <- [
+            AvailableImagesMock,
+            AvailableVolumesMock,
+            AvailableNetworksMock,
+            AvailableDeviceMappingsMock,
+            AvailableContainersMock,
+            AvailableDeploymentsMock
+          ] do
+        assert_receive {:task, ^module, task_pid}
+        ref = Process.monitor(task_pid)
+        assert_receive {:DOWN, ^ref, :process, ^task_pid, reason}
+        assert reason in [:normal, :noproc]
+      end
+
+      assert :present =
+               device_mapping_deployment
+               |> Ash.load!(:state, tenant: tenant)
+               |> Map.get(:state)
     end
   end
 end
