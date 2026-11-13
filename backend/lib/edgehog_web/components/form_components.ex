@@ -166,7 +166,7 @@ defmodule EdgehogWeb.Components.FormComponents do
   """
   attr :type, :string, default: nil
   attr :class, :any, default: nil
-  attr :variant, :string, default: "primary", values: ~w(primary secondary ghost)
+  attr :variant, :string, default: "primary", values: ~w(primary secondary ghost error)
   attr :rest, :global, include: ~w(disabled form name value)
 
   slot :inner_block, required: true
@@ -180,6 +180,7 @@ defmodule EdgehogWeb.Components.FormComponents do
         @variant == "primary" && "btn-primary",
         @variant == "secondary" && "btn-secondary",
         @variant == "ghost" && "btn-ghost",
+        @variant == "error" && "btn-error",
         @class
       ]}
       {@rest}
