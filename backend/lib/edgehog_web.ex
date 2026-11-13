@@ -85,11 +85,13 @@ defmodule EdgehogWeb do
       use Gettext, backend: EdgehogWeb.Gettext
 
       import EdgehogWeb.Components.BottomDock
+      import EdgehogWeb.Components.CatalogComponents
       import EdgehogWeb.Components.DataDisplayComponents
       import EdgehogWeb.Components.FlashComponents
       import EdgehogWeb.Components.FormComponents
       import EdgehogWeb.Components.IconComponents
       import EdgehogWeb.Components.LeftDock
+      import EdgehogWeb.Components.OverlayComponents
       import Phoenix.HTML
 
       alias Phoenix.LiveView.JS
