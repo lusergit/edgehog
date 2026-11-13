@@ -59,6 +59,7 @@ defmodule Edgehog.Containers.Reconciler.Core do
       Task.start(fn -> reconcile_images(device, tenant) end)
       Task.start(fn -> reconcile_volumes(device, tenant) end)
       Task.start(fn -> reconcile_networks(device, tenant) end)
+      Task.start(fn -> reconcile_device_mappings(device, tenant) end)
       Task.start(fn -> reconcile_containers(device, tenant) end)
       Task.start(fn -> reconcile_deployments(device, tenant) end)
 
@@ -87,7 +88,8 @@ defmodule Edgehog.Containers.Reconciler.Core do
   end
 
   def reconcile_images(device, tenant) do
-    available_images = device |> Ash.load!(:available_images) |> Map.get(:available_images, [])
+    available_images =
+      device |> Ash.load!(:available_images) |> Map.get(:available_images) |> Kernel.||([])
 
     available_images
     |> Enum.map(&reconcile_image(&1, device, tenant))
@@ -96,7 +98,8 @@ defmodule Edgehog.Containers.Reconciler.Core do
   end
 
   def reconcile_volumes(device, tenant) do
-    available_volumes = device |> Ash.load!(:available_volumes) |> Map.get(:available_volumes, [])
+    available_volumes =
+      device |> Ash.load!(:available_volumes) |> Map.get(:available_volumes) |> Kernel.||([])
 
     available_volumes
     |> Enum.map(&reconcile_volume(&1, device, tenant))
@@ -106,7 +109,7 @@ defmodule Edgehog.Containers.Reconciler.Core do
 
   def reconcile_networks(device, tenant) do
     available_networks =
-      device |> Ash.load!(:available_networks) |> Map.get(:available_networks, [])
+      device |> Ash.load!(:available_networks) |> Map.get(:available_networks) |> Kernel.||([])
 
     available_networks
     |> Enum.map(&reconcile_network(&1, device, tenant))
@@ -116,7 +119,10 @@ defmodule Edgehog.Containers.Reconciler.Core do
 
   def reconcile_device_mappings(device, tenant) do
     available_device_mappings =
-      device |> Ash.load!(:available_device_mappings) |> Map.get(:available_device_mappings, [])
+      device
+      |> Ash.load!(:available_device_mappings)
+      |> Map.get(:available_device_mappings)
+      |> Kernel.||([])
 
     available_device_mappings
     |> Enum.map(&reconcile_device_mapping(&1, device, tenant))
@@ -128,7 +134,10 @@ defmodule Edgehog.Containers.Reconciler.Core do
 
   def reconcile_containers(device, tenant) do
     available_containers =
-      device |> Ash.load!(:available_containers) |> Map.get(:available_containers, [])
+      device
+      |> Ash.load!(:available_containers)
+      |> Map.get(:available_containers)
+      |> Kernel.||([])
 
     available_containers
     |> Enum.map(&reconcile_container(&1, device, tenant))
@@ -138,7 +147,10 @@ defmodule Edgehog.Containers.Reconciler.Core do
 
   def reconcile_deployments(device, tenant) do
     available_deployments =
-      device |> Ash.load!(:available_deployments) |> Map.get(:available_deployments, [])
+      device
+      |> Ash.load!(:available_deployments)
+      |> Map.get(:available_deployments)
+      |> Kernel.||([])
 
     available_deployments
     |> Enum.map(&reconcile_deployment(&1, device, tenant))
@@ -177,8 +189,8 @@ defmodule Edgehog.Containers.Reconciler.Core do
 
       marking =
         if image_desc.pulled,
-          do: Containers.mark_image_deployment_as_pulled(image_deployment),
-          else: Containers.mark_image_deployment_as_unpulled(image_deployment)
+          do: Containers.mark_image_deployment_as_pulled(image_deployment, tenant: tenant),
+          else: Containers.mark_image_deployment_as_unpulled(image_deployment, tenant: tenant)
 
       with {:ok, _} <- marking, do: :ok
     end
@@ -197,8 +209,9 @@ defmodule Edgehog.Containers.Reconciler.Core do
 
       marking =
         if volume_desc.created,
-          do: Containers.mark_volume_deployment_as_available(volume_deployment),
-          else: Containers.mark_volume_deployment_as_unavailable(volume_deployment)
+          do: Containers.mark_volume_deployment_as_available(volume_deployment, tenant: tenant),
+          else:
+            Containers.mark_volume_deployment_as_unavailable(volume_deployment, tenant: tenant)
 
       with {:ok, _} <- marking, do: :ok
     end
@@ -220,8 +233,9 @@ defmodule Edgehog.Containers.Reconciler.Core do
 
       marking =
         if network_desc.created,
-          do: Containers.mark_network_deployment_as_available(network_deployment),
-          else: Containers.mark_network_deployment_as_unavailable(network_deployment)
+          do: Containers.mark_network_deployment_as_available(network_deployment, tenant: tenant),
+          else:
+            Containers.mark_network_deployment_as_unavailable(network_deployment, tenant: tenant)
 
       with {:ok, _} <- marking, do: :ok
     end
@@ -244,9 +258,14 @@ defmodule Edgehog.Containers.Reconciler.Core do
 
       marking =
         if device_mapping_desc.present,
-          do: Containers.mark_device_mapping_deployment_as_present(device_mapping_deployment),
+          do:
+            Containers.mark_device_mapping_deployment_as_present(device_mapping_deployment,
+              tenant: tenant
+            ),
           else:
-            Containers.mark_device_mapping_deployment_as_not_present(device_mapping_deployment)
+            Containers.mark_device_mapping_deployment_as_not_present(device_mapping_deployment,
+              tenant: tenant
+            )
 
       with {:ok, _} <- marking, do: :ok
     end
