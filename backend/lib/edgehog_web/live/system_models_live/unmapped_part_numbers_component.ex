@@ -27,11 +27,10 @@ defmodule EdgehogWeb.SystemModelsLive.UnmappedPartNumbersComponent do
   use EdgehogWeb, :live_component
 
   @impl Phoenix.LiveComponent
-  def update(%{tenant: tenant} = assigns, socket) do
+  def update(%{scope: scope} = assigns, socket) do
     loaded =
-      Ash.load!(tenant, :unmapped_part_numbers,
-        tenant: tenant,
-        authorize?: false,
+      Ash.load!(scope.current_tenant, :unmapped_part_numbers,
+        scope: scope,
         reuse_values?: false
       )
 
@@ -95,7 +94,9 @@ defmodule EdgehogWeb.SystemModelsLive.UnmappedPartNumbersComponent do
           </span>
 
           <.link
-            patch={~p"/tenants/#{@tenant.slug}/system-models/new?#{[part_number: entry.part_number]}"}
+            patch={
+              ~p"/tenants/#{@scope.current_tenant.slug}/system-models/new?#{[part_number: entry.part_number]}"
+            }
             data-role="create-model-from-pn"
             class="btn btn-xs btn-ghost rounded-full border border-base-300 bg-base-100 gap-1 px-2 text-[11px] font-medium hover:border-primary/40 hover:text-primary"
           >

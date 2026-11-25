@@ -30,11 +30,10 @@ defmodule EdgehogWeb.SystemModelsLive.DeleteSystemModelModalComponent do
   use EdgehogWeb, :live_component
 
   @impl Phoenix.LiveComponent
-  def update(%{system_model: model, tenant: tenant} = assigns, socket) do
+  def update(%{system_model: model, scope: scope} = assigns, socket) do
     model =
       Ash.load!(model, [:part_number_count, :device_count, :base_image_collection],
-        tenant: tenant,
-        authorize?: false,
+        scope: scope,
         reuse_values?: false
       )
 
@@ -58,12 +57,20 @@ defmodule EdgehogWeb.SystemModelsLive.DeleteSystemModelModalComponent do
 
   def handle_event("confirm_delete", _params, socket) do
     model = socket.assigns.system_model
-    tenant = socket.assigns.tenant
+    scope = socket.assigns.scope
 
-    case Ash.destroy(model, tenant: tenant, authorize?: false) do
+    case Ash.destroy(model, scope: scope) do
       :ok ->
         send(self(), {:system_model_deleted, model})
         {:noreply, socket}
+
+      {:error, %Ash.Error.Forbidden{}} ->
+        {:noreply,
+         assign(
+           socket,
+           :delete_error,
+           gettext("You are not authorized to delete this system model.")
+         )}
 
       {:error, _error} ->
         {:noreply,

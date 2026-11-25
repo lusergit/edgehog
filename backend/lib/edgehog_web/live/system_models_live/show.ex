@@ -38,8 +38,9 @@ defmodule EdgehogWeb.SystemModelsLive.Show do
   @impl Phoenix.LiveView
   def mount(%{"id" => id}, _session, socket) do
     tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
-    case fetch_system_model(id, tenant) do
+    case fetch_system_model(id, scope) do
       {:ok, model} ->
         if connected?(socket) do
           EdgehogWeb.Endpoint.subscribe("system_models:#{model.id}")
@@ -132,8 +133,9 @@ defmodule EdgehogWeb.SystemModelsLive.Show do
 
   defp refresh_model_state(%{assigns: %{system_model: %SystemModel{} = model}} = socket) do
     tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
-    case fetch_system_model(model.id, tenant) do
+    case fetch_system_model(model.id, scope) do
       {:ok, refreshed} ->
         {:noreply,
          socket
@@ -207,7 +209,7 @@ defmodule EdgehogWeb.SystemModelsLive.Show do
         id="edit-system-model-drawer"
         action={:edit}
         system_model={@system_model}
-        tenant={@current_tenant}
+        scope={@current_scope}
         return_to={~p"/tenants/#{@current_tenant.slug}/system-models/#{@system_model.id}"}
       />
 
@@ -216,7 +218,7 @@ defmodule EdgehogWeb.SystemModelsLive.Show do
         module={DeleteSystemModelModalComponent}
         id="delete-system-model-modal"
         system_model={@system_model}
-        tenant={@current_tenant}
+        scope={@current_scope}
       />
     </div>
     """
@@ -224,15 +226,13 @@ defmodule EdgehogWeb.SystemModelsLive.Show do
 
   defp apply_model_state(socket, model) do
     tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
     part_numbers = ModelFleetComponent.extract_part_number_strings(model)
     counts_by_part_number = ModelFleetComponent.counts_by_part_number(model.part_numbers)
 
     devices_query =
       Device
-      |> Ash.Query.for_read(:for_system_model, %{system_model_id: model.id},
-        tenant: tenant,
-        authorize?: false
-      )
+      |> Ash.Query.for_read(:for_system_model, %{system_model_id: model.id}, scope: scope)
       |> Ash.Query.load([:tags, :last_seen])
 
     socket
@@ -243,9 +243,9 @@ defmodule EdgehogWeb.SystemModelsLive.Show do
     |> assign(:page_title, "#{model.name} · System Models · #{tenant.name}")
   end
 
-  defp fetch_system_model(id, tenant) do
+  defp fetch_system_model(id, scope) do
     with {int_id, ""} <- id |> to_string() |> Integer.parse(),
-         {:ok, model} <- Ash.get(SystemModel, int_id, tenant: tenant, authorize?: false) do
+         {:ok, model} <- Ash.get(SystemModel, int_id, scope: scope) do
       loaded =
         Ash.load!(
           model,
@@ -259,8 +259,7 @@ defmodule EdgehogWeb.SystemModelsLive.Show do
             :base_image_collection,
             part_numbers: [:device_count, :online_device_count]
           ],
-          tenant: tenant,
-          authorize?: false,
+          scope: scope,
           reuse_values?: false
         )
 

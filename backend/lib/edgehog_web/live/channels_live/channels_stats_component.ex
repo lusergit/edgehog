@@ -32,8 +32,8 @@ defmodule EdgehogWeb.ChannelsLive.ChannelsStatsComponent do
 
   @impl Phoenix.LiveComponent
   def update(assigns, socket) do
-    tenant = assigns.tenant
-    stats = compute_stats(tenant)
+    scope = assigns.scope
+    stats = compute_stats(scope)
 
     {:ok,
      socket
@@ -93,10 +93,10 @@ defmodule EdgehogWeb.ChannelsLive.ChannelsStatsComponent do
     """
   end
 
-  defp compute_stats(tenant) do
+  defp compute_stats(scope) do
     loaded =
       Ash.load!(
-        tenant,
+        scope.current_tenant,
         [
           :channel_count,
           :empty_channel_count,
@@ -105,20 +105,18 @@ defmodule EdgehogWeb.ChannelsLive.ChannelsStatsComponent do
           :active_campaign_count,
           :device_count
         ],
-        tenant: tenant,
-        authorize?: false,
+        scope: scope,
         reuse_values?: false
       )
 
-    in_channels_query =
-      Ash.Query.for_read(Device, :in_any_channel, %{}, tenant: tenant, authorize?: false)
+    in_channels_query = Ash.Query.for_read(Device, :in_any_channel, %{}, scope: scope)
 
-    covered_devices = Ash.count!(in_channels_query, tenant: tenant, authorize?: false)
+    covered_devices = Ash.count!(in_channels_query, scope: scope)
 
     covered_online =
       in_channels_query
       |> Ash.Query.filter(online == true)
-      |> Ash.count!(tenant: tenant, authorize?: false)
+      |> Ash.count!(scope: scope)
 
     coverage_pct =
       if loaded.device_count > 0 do

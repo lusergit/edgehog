@@ -32,8 +32,8 @@ defmodule EdgehogWeb.ChannelsLive.ChannelCardComponent do
   alias EdgehogWeb.ChannelsLive.TargetGroupsComponent
 
   @impl Phoenix.LiveComponent
-  def update(%{channel: channel, tenant: tenant} = assigns, socket) do
-    channel = ensure_loaded(channel, tenant)
+  def update(%{channel: channel, scope: scope} = assigns, socket) do
+    channel = ensure_loaded(channel, scope)
 
     socket =
       socket
@@ -63,7 +63,7 @@ defmodule EdgehogWeb.ChannelsLive.ChannelCardComponent do
             </div>
             <div class="min-w-0">
               <.link
-                navigate={~p"/tenants/#{@tenant.slug}/channels/#{@channel.id}"}
+                navigate={~p"/tenants/#{@scope.current_tenant.slug}/channels/#{@channel.id}"}
                 data-role="channel-name"
                 class="font-semibold text-base text-base-content leading-tight truncate hover:text-primary transition-colors block"
               >
@@ -81,7 +81,10 @@ defmodule EdgehogWeb.ChannelsLive.ChannelCardComponent do
           {render_channel_badge(assigns)}
         </div>
 
-        <TargetGroupsComponent.target_groups target_groups={@target_groups} tenant={@tenant} />
+        <TargetGroupsComponent.target_groups
+          target_groups={@target_groups}
+          tenant={@scope.current_tenant}
+        />
         <ChannelFleetComponent.fleet_reach reach={@reach} />
       </div>
 
@@ -131,13 +134,13 @@ defmodule EdgehogWeb.ChannelsLive.ChannelCardComponent do
            fleet_reach: %FleetReach{},
            featured_campaign: featured
          } = channel,
-         _tenant
+         _scope
        )
        when is_list(groups) and is_boolean(active?) and not is_struct(featured, Ash.NotLoaded) do
     channel
   end
 
-  defp ensure_loaded(channel, tenant) do
+  defp ensure_loaded(channel, scope) do
     Ash.load!(
       channel,
       [
@@ -146,8 +149,7 @@ defmodule EdgehogWeb.ChannelsLive.ChannelCardComponent do
         :fleet_reach,
         featured_campaign: CampaignStripComponent.campaign_loads()
       ],
-      tenant: tenant,
-      authorize?: false,
+      scope: scope,
       reuse_values?: false
     )
   end

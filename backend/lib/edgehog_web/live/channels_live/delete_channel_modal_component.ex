@@ -29,8 +29,8 @@ defmodule EdgehogWeb.ChannelsLive.DeleteChannelModalComponent do
   use EdgehogWeb, :live_component
 
   @impl Phoenix.LiveComponent
-  def update(%{channel: channel, tenant: tenant} = assigns, socket) do
-    channel = ensure_counts_loaded(channel, tenant)
+  def update(%{channel: channel, scope: scope} = assigns, socket) do
+    channel = ensure_counts_loaded(channel, scope)
 
     {:ok,
      socket
@@ -49,12 +49,20 @@ defmodule EdgehogWeb.ChannelsLive.DeleteChannelModalComponent do
 
   def handle_event("confirm_delete", _params, socket) do
     channel = socket.assigns.channel
-    tenant = socket.assigns.tenant
+    scope = socket.assigns.scope
 
-    case Ash.destroy(channel, tenant: tenant, authorize?: false) do
+    case Ash.destroy(channel, scope: scope) do
       :ok ->
         send(self(), {:channel_deleted, channel})
         {:noreply, socket}
+
+      {:error, %Ash.Error.Forbidden{}} ->
+        {:noreply,
+         assign(
+           socket,
+           :delete_error,
+           gettext("You are not authorized to delete this rollout channel.")
+         )}
 
       {:error, _error} ->
         {:noreply,
@@ -115,15 +123,14 @@ defmodule EdgehogWeb.ChannelsLive.DeleteChannelModalComponent do
 
   defp ensure_counts_loaded(
          %{target_group_count: group_count, campaign_count: camp_count} = channel,
-         _tenant
+         _scope
        )
        when is_integer(group_count) and is_integer(camp_count),
        do: channel
 
-  defp ensure_counts_loaded(channel, tenant) do
+  defp ensure_counts_loaded(channel, scope) do
     Ash.load!(channel, [:target_group_count, :campaign_count],
-      tenant: tenant,
-      authorize?: false,
+      scope: scope,
       reuse_values?: false
     )
   end

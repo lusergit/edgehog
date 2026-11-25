@@ -141,6 +141,7 @@ defmodule EdgehogWeb.Auth.LoginLive do
   defp validate_slug_format(_), do: []
 
   defp load_dev_tenants do
+    # Only executed on the unauthenticated /login page when :dev_routes is enabled.
     case Ash.read(Tenant, authorize?: false) do
       {:ok, tenants} -> Enum.sort_by(tenants, & &1.slug)
       _ -> []

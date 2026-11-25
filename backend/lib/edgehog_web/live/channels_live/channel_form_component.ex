@@ -34,16 +34,16 @@ defmodule EdgehogWeb.ChannelsLive.ChannelFormComponent do
   alias EdgehogWeb.ChannelsLive.ChannelGroupPickerComponent
 
   @impl Phoenix.LiveComponent
-  def update(%{channel: channel, tenant: tenant, action: action} = assigns, socket) do
+  def update(%{channel: channel, scope: scope, action: action} = assigns, socket) do
     current_channel_id = if action == :edit, do: channel.id, else: nil
-    group_items = ChannelGroupPickerComponent.load_group_items(current_channel_id, tenant)
+    group_items = ChannelGroupPickerComponent.load_group_items(current_channel_id, scope)
 
     selected_group_ids =
       group_items
       |> Enum.filter(&(&1.group.channel_id != nil and &1.group.channel_id == current_channel_id))
       |> MapSet.new(& &1.group.id)
 
-    ash_form = build_ash_form(channel, action, tenant)
+    ash_form = build_ash_form(channel, action, scope)
 
     socket =
       socket
@@ -102,7 +102,7 @@ defmodule EdgehogWeb.ChannelsLive.ChannelFormComponent do
   end
 
   def handle_event("save", %{"channel" => channel_params}, socket) do
-    tenant = socket.assigns.tenant
+    tenant = socket.assigns.scope.current_tenant
     selected_ids = MapSet.to_list(socket.assigns.selected_group_ids)
 
     submit_params =
@@ -209,13 +209,13 @@ defmodule EdgehogWeb.ChannelsLive.ChannelFormComponent do
 
   defp recompute_picker_state(socket) do
     selected_ids = socket.assigns.selected_group_ids
-    tenant = socket.assigns.tenant
+    scope = socket.assigns.scope
 
     selected_items =
       Enum.filter(socket.assigns.group_items, &MapSet.member?(selected_ids, &1.group.id))
 
     stolen_items = Enum.filter(selected_items, &(&1.state == :stealable))
-    preview_reach = ChannelGroupPickerComponent.preview_reach(selected_ids, tenant)
+    preview_reach = ChannelGroupPickerComponent.preview_reach(selected_ids, scope)
 
     socket
     |> assign(:stolen_items, stolen_items)
@@ -242,22 +242,20 @@ defmodule EdgehogWeb.ChannelsLive.ChannelFormComponent do
 
   defp extract_group_error(_error), do: nil
 
-  defp build_ash_form(channel, :new, tenant) do
+  defp build_ash_form(channel, :new, scope) do
     Channel
     |> AshPhoenix.Form.for_create(:create,
       as: "channel",
-      tenant: tenant,
-      authorize?: false,
+      scope: scope,
       forms: [auto?: false]
     )
     |> Map.put(:data, channel)
   end
 
-  defp build_ash_form(channel, :edit, tenant) do
+  defp build_ash_form(channel, :edit, scope) do
     AshPhoenix.Form.for_update(channel, :update,
       as: "channel",
-      tenant: tenant,
-      authorize?: false,
+      scope: scope,
       forms: [auto?: false]
     )
   end

@@ -37,8 +37,9 @@ defmodule EdgehogWeb.ChannelsLive.Show do
   @impl Phoenix.LiveView
   def mount(%{"id" => id}, _session, socket) do
     tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
-    case fetch_channel(id, tenant) do
+    case fetch_channel(id, scope) do
       {:ok, channel} ->
         if connected?(socket) do
           EdgehogWeb.Endpoint.subscribe("channels:#{channel.id}")
@@ -131,8 +132,9 @@ defmodule EdgehogWeb.ChannelsLive.Show do
          %{assigns: %{channel: %Channel{} = channel}} = socket
        ) do
     tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
-    case fetch_channel(channel.id, tenant) do
+    case fetch_channel(channel.id, scope) do
       {:ok, refreshed} ->
         {:noreply,
          socket
@@ -238,7 +240,7 @@ defmodule EdgehogWeb.ChannelsLive.Show do
         id="edit-channel-drawer"
         action={:edit}
         channel={@channel}
-        tenant={@current_tenant}
+        scope={@current_scope}
         return_to={~p"/tenants/#{@current_tenant.slug}/channels/#{@channel.id}"}
       />
 
@@ -247,7 +249,7 @@ defmodule EdgehogWeb.ChannelsLive.Show do
         module={DeleteChannelModalComponent}
         id="delete-channel-modal"
         channel={@channel}
-        tenant={@current_tenant}
+        scope={@current_scope}
       />
     </div>
     """
@@ -255,14 +257,12 @@ defmodule EdgehogWeb.ChannelsLive.Show do
 
   defp apply_channel_state(socket, channel) do
     tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
     target_groups = Enum.sort_by(channel.target_groups || [], & &1.name)
 
     devices_query =
       Device
-      |> Ash.Query.for_read(:for_channel, %{channel_id: channel.id},
-        tenant: tenant,
-        authorize?: false
-      )
+      |> Ash.Query.for_read(:for_channel, %{channel_id: channel.id}, scope: scope)
       |> Ash.Query.load([:system_model, :tags, :last_seen])
 
     socket
@@ -274,9 +274,9 @@ defmodule EdgehogWeb.ChannelsLive.Show do
     |> assign(:page_title, "#{channel.name} · Channels · #{tenant.name}")
   end
 
-  defp fetch_channel(id, tenant) do
+  defp fetch_channel(id, scope) do
     with {int_id, ""} <- id |> to_string() |> Integer.parse(),
-         {:ok, channel} <- Ash.get(Channel, int_id, tenant: tenant, authorize?: false) do
+         {:ok, channel} <- Ash.get(Channel, int_id, scope: scope) do
       {:ok,
        Ash.load!(
          channel,
@@ -288,8 +288,7 @@ defmodule EdgehogWeb.ChannelsLive.Show do
            :fleet_reach,
            featured_campaign: CampaignStripComponent.campaign_loads()
          ],
-         tenant: tenant,
-         authorize?: false,
+         scope: scope,
          reuse_values?: false
        )}
     else

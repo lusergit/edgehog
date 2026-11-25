@@ -28,8 +28,8 @@ defmodule EdgehogWeb.ChannelsLive.UnassignedGroupsComponent do
   alias Edgehog.Groups
 
   @impl Phoenix.LiveComponent
-  def update(%{tenant: tenant} = assigns, socket) do
-    unassigned_groups = Groups.unassigned_device_groups!(tenant: tenant, authorize?: false)
+  def update(%{scope: scope} = assigns, socket) do
+    unassigned_groups = Groups.unassigned_device_groups!(scope: scope)
 
     {:ok,
      socket
@@ -59,7 +59,7 @@ defmodule EdgehogWeb.ChannelsLive.UnassignedGroupsComponent do
           :for={group <- @unassigned_groups}
           id={"unassigned-group-#{group.id}"}
           data-group-handle={group.handle}
-          navigate={~p"/tenants/#{@tenant.slug}/device-groups/#{group.id}"}
+          navigate={~p"/tenants/#{@scope.current_tenant.slug}/device-groups/#{group.id}"}
           class="inline-flex items-center gap-2 rounded-lg border border-base-300 bg-base-200/40 px-3 py-1.5 text-xs font-medium text-base-content transition-colors hover:border-primary/40 hover:bg-primary/5"
         >
           <.icon name="hero-user-group" class="size-3.5 text-base-content/55" />

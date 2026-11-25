@@ -99,9 +99,9 @@ defmodule EdgehogWeb.ChannelsLive.Index do
 
   @impl Phoenix.LiveView
   def handle_info(%Phoenix.Socket.Broadcast{topic: topic}, socket) when is_binary(topic) do
-    tenant = socket.assigns.current_tenant
-    send_update(ChannelsStatsComponent, id: "channels-stats", tenant: tenant)
-    send_update(UnassignedGroupsComponent, id: "unassigned-groups-tray", tenant: tenant)
+    scope = socket.assigns.current_scope
+    send_update(ChannelsStatsComponent, id: "channels-stats", scope: scope)
+    send_update(UnassignedGroupsComponent, id: "unassigned-groups-tray", scope: scope)
 
     {:noreply, load_channels(socket)}
   end
@@ -129,7 +129,11 @@ defmodule EdgehogWeb.ChannelsLive.Index do
         </:actions>
       </.page_header>
 
-      <.live_component module={ChannelsStatsComponent} id="channels-stats" tenant={@current_tenant} />
+      <.live_component
+        module={ChannelsStatsComponent}
+        id="channels-stats"
+        scope={@current_scope}
+      />
 
       <ChannelsToolbarComponent.channels_toolbar
         search={@search}
@@ -148,7 +152,7 @@ defmodule EdgehogWeb.ChannelsLive.Index do
           module={ChannelCardComponent}
           id={"channel-card-#{channel.id}"}
           channel={channel}
-          tenant={@current_tenant}
+          scope={@current_scope}
         />
       </section>
 
@@ -160,7 +164,7 @@ defmodule EdgehogWeb.ChannelsLive.Index do
       <.live_component
         module={UnassignedGroupsComponent}
         id="unassigned-groups-tray"
-        tenant={@current_tenant}
+        scope={@current_scope}
       />
 
       <.live_component
@@ -169,7 +173,7 @@ defmodule EdgehogWeb.ChannelsLive.Index do
         id="channel-form-drawer"
         action={:new}
         channel={%Channel{}}
-        tenant={@current_tenant}
+        scope={@current_scope}
         return_to={~p"/tenants/#{@current_tenant.slug}/channels"}
       />
     </div>
@@ -177,13 +181,13 @@ defmodule EdgehogWeb.ChannelsLive.Index do
   end
 
   defp load_channels(socket) do
-    tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
     all_channels =
       Channel
-      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:read, %{}, scope: scope)
       |> Ash.Query.load([:target_group_count, :has_active_rollout, :fleet_reach])
-      |> Ash.read!(tenant: tenant, authorize?: false)
+      |> Ash.read!(scope: scope)
 
     filter_counts = %{
       all: length(all_channels),
@@ -198,13 +202,13 @@ defmodule EdgehogWeb.ChannelsLive.Index do
   end
 
   defp load_filtered_channels(socket) do
-    tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
     search = socket.assigns.search || ""
     filter = socket.assigns.filter || "all"
 
     query =
       Channel
-      |> Ash.Query.for_read(:list, %{search: search}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:list, %{search: search}, scope: scope)
       |> apply_channel_filter(filter)
       |> Ash.Query.load([
         :target_groups,
@@ -215,7 +219,7 @@ defmodule EdgehogWeb.ChannelsLive.Index do
       ])
       |> Ash.Query.sort(name: :asc)
 
-    channels = Ash.read!(query, tenant: tenant, authorize?: false)
+    channels = Ash.read!(query, scope: scope)
 
     filtered =
       if filter == "zero_devices" do

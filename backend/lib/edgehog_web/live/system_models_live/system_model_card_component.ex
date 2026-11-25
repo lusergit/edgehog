@@ -31,8 +31,8 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelCardComponent do
   alias EdgehogWeb.SystemModelsLive.PartNumbersStripComponent
 
   @impl Phoenix.LiveComponent
-  def update(%{model: model, tenant: tenant} = assigns, socket) do
-    model = ensure_loaded(model, tenant)
+  def update(%{model: model, scope: scope} = assigns, socket) do
+    model = ensure_loaded(model, scope)
     part_numbers = ModelFleetComponent.extract_part_number_strings(model)
     counts_by_part_number = ModelFleetComponent.counts_by_part_number(model.part_numbers)
 
@@ -60,7 +60,7 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelCardComponent do
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-start gap-3.5 min-w-0">
             <.link
-              navigate={~p"/tenants/#{@tenant.slug}/system-models/#{@model.id}"}
+              navigate={~p"/tenants/#{@scope.current_tenant.slug}/system-models/#{@model.id}"}
               class="shrink-0"
               tabindex="-1"
               aria-hidden="true"
@@ -83,7 +83,7 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelCardComponent do
 
             <div class="min-w-0">
               <.link
-                navigate={~p"/tenants/#{@tenant.slug}/system-models/#{@model.id}"}
+                navigate={~p"/tenants/#{@scope.current_tenant.slug}/system-models/#{@model.id}"}
                 data-role="model-name"
                 class="font-semibold text-base text-base-content leading-tight truncate hover:text-primary transition-colors block"
               >
@@ -192,14 +192,14 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelCardComponent do
            has_picture: has_picture?,
            default_description: desc
          } = model,
-         _tenant
+         _scope
        )
        when is_list(part_numbers) and is_integer(total) and is_integer(online) and
               is_boolean(has_picture?) and not is_struct(desc, Ash.NotLoaded) do
     model
   end
 
-  defp ensure_loaded(model, tenant) do
+  defp ensure_loaded(model, scope) do
     Ash.load!(
       model,
       [
@@ -210,8 +210,7 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelCardComponent do
         :default_description,
         part_numbers: [:device_count, :online_device_count]
       ],
-      tenant: tenant,
-      authorize?: false,
+      scope: scope,
       reuse_values?: false
     )
   end

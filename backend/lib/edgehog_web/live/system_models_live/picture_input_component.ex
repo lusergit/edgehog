@@ -241,11 +241,11 @@ defmodule EdgehogWeb.SystemModelsLive.PictureInputComponent do
   @doc """
   Loads all tenant `HardwareType`s sorted alphabetically by name.
   """
-  def load_hardware_types(tenant) do
+  def load_hardware_types(scope) do
     HardwareType
-    |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+    |> Ash.Query.for_read(:read, %{}, scope: scope)
     |> Ash.Query.sort(name: :asc)
-    |> Ash.read!(tenant: tenant, authorize?: false)
+    |> Ash.read!(scope: scope)
   end
 
   @doc """
@@ -267,7 +267,11 @@ defmodule EdgehogWeb.SystemModelsLive.PictureInputComponent do
     }
     |> maybe_put_hardware_type_id(assigns.action, selected_hw_id)
     |> put_picture_param(picture_url_text, upload_struct)
-    |> put_localized_descriptions_param(assigns.action, description_text, assigns.tenant)
+    |> put_localized_descriptions_param(
+      assigns.action,
+      description_text,
+      assigns.scope.current_tenant
+    )
   end
 
   @doc """

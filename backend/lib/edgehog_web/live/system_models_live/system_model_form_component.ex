@@ -45,10 +45,11 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelFormComponent do
   end
 
   @impl Phoenix.LiveComponent
-  def update(%{system_model: model, tenant: tenant, action: action} = assigns, socket) do
-    model = ensure_model_loaded(model, action, tenant)
+  def update(%{system_model: model, scope: scope, action: action} = assigns, socket) do
+    tenant = scope.current_tenant
+    model = ensure_model_loaded(model, action, scope)
     current_model_id = if action == :edit, do: model.id, else: nil
-    hardware_types = PictureInputComponent.load_hardware_types(tenant)
+    hardware_types = PictureInputComponent.load_hardware_types(scope)
 
     initial_rows =
       PartNumbersInputComponent.initial_part_number_rows(
@@ -66,7 +67,7 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelFormComponent do
         _ -> nil
       end
 
-    ash_form = build_ash_form(model, action, tenant)
+    ash_form = build_ash_form(model, action, scope)
 
     socket =
       socket
@@ -200,7 +201,8 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelFormComponent do
 
       case result do
         {:ok, saved_model} ->
-          {:noreply, navigate_after_save(socket, saved_model, socket.assigns.tenant)}
+          {:noreply,
+           navigate_after_save(socket, saved_model, socket.assigns.scope.current_tenant)}
 
         {:error, %AshPhoenix.Form{} = ash_form} ->
           {:noreply,
@@ -273,7 +275,7 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelFormComponent do
 
           <PictureInputComponent.description_field
             description_text={@description_text}
-            default_locale={@tenant.default_locale}
+            default_locale={@scope.current_tenant.default_locale}
           />
 
           <PictureInputComponent.picture_input
@@ -315,7 +317,7 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelFormComponent do
       PartNumbersInputComponent.analyze_part_numbers(
         socket.assigns.part_number_rows,
         socket.assigns.current_model_id,
-        socket.assigns.tenant
+        socket.assigns.scope
       )
 
     assign(socket, :pn_analysis, analysis)
@@ -328,34 +330,29 @@ defmodule EdgehogWeb.SystemModelsLive.SystemModelFormComponent do
     end
   end
 
-  defp build_ash_form(model, :new, tenant) do
+  defp build_ash_form(model, :new, scope) do
     SystemModel
     |> AshPhoenix.Form.for_create(:create,
       as: "system_model",
-      tenant: tenant,
-      authorize?: false,
+      scope: scope,
       forms: [auto?: false]
     )
     |> Map.put(:data, model)
   end
 
-  defp build_ash_form(model, :edit, tenant) do
+  defp build_ash_form(model, :edit, scope) do
     AshPhoenix.Form.for_update(model, :update,
       as: "system_model",
-      tenant: tenant,
-      authorize?: false,
+      scope: scope,
       forms: [auto?: false]
     )
   end
 
-  defp ensure_model_loaded(model, :edit, tenant) do
-    Ash.load!(model, [:hardware_type, :part_numbers, :default_description],
-      tenant: tenant,
-      authorize?: false
-    )
+  defp ensure_model_loaded(model, :edit, scope) do
+    Ash.load!(model, [:hardware_type, :part_numbers, :default_description], scope: scope)
   end
 
-  defp ensure_model_loaded(model, _action, _tenant), do: model
+  defp ensure_model_loaded(model, _action, _scope), do: model
 
   defp maybe_auto_slug_handle(sm_params, full_params, assigns) do
     target = Map.get(full_params, "_target", [])

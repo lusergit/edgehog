@@ -155,12 +155,12 @@ defmodule EdgehogWeb.ChannelsLive.ChannelGroupPickerComponent do
   `:available | :current | :stealable | :locked_other | :locked_current` UI
   picker state.
   """
-  def load_group_items(current_channel_id, tenant) do
+  def load_group_items(current_channel_id, scope) do
     DeviceGroup
-    |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+    |> Ash.Query.for_read(:read, %{}, scope: scope)
     |> Ash.Query.load([:device_count, channel: [:has_running_campaign]])
     |> Ash.Query.sort(name: :asc)
-    |> Ash.read!(tenant: tenant, authorize?: false)
+    |> Ash.read!(scope: scope)
     |> Enum.map(&build_group_item(&1, current_channel_id))
   end
 
@@ -168,20 +168,17 @@ defmodule EdgehogWeb.ChannelsLive.ChannelGroupPickerComponent do
   Computes the live `%FleetReach{}` preview for the currently selected
   `device_group_ids` using `Device`'s `:for_device_groups` read action.
   """
-  def preview_reach(selected_ids, tenant) do
+  def preview_reach(selected_ids, scope) do
     ids = MapSet.to_list(selected_ids)
 
     if ids == [] do
       %FleetReach{total_count: 0, online_count: 0, system_model_counts: []}
     else
       Device
-      |> Ash.Query.for_read(:for_device_groups, %{device_group_ids: ids},
-        tenant: tenant,
-        authorize?: false
-      )
+      |> Ash.Query.for_read(:for_device_groups, %{device_group_ids: ids}, scope: scope)
       |> Ash.Query.select([:id, :online, :part_number])
       |> Ash.Query.load(:system_model)
-      |> Ash.read!(tenant: tenant, authorize?: false)
+      |> Ash.read!(scope: scope)
       |> FleetReachCalc.from_devices()
     end
   end

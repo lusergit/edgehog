@@ -28,8 +28,8 @@ defmodule EdgehogWeb.SystemModelsLive.StatsComponent do
 
   @impl Phoenix.LiveComponent
   def update(assigns, socket) do
-    tenant = assigns.tenant
-    stats = compute_stats(tenant)
+    scope = assigns.scope
+    stats = compute_stats(scope)
 
     {:ok,
      socket
@@ -96,10 +96,10 @@ defmodule EdgehogWeb.SystemModelsLive.StatsComponent do
     """
   end
 
-  defp compute_stats(tenant) do
+  defp compute_stats(scope) do
     loaded =
       Ash.load!(
-        tenant,
+        scope.current_tenant,
         [
           :system_model_count,
           :hardware_type_count,
@@ -111,8 +111,7 @@ defmodule EdgehogWeb.SystemModelsLive.StatsComponent do
           :unmapped_device_count,
           :unmapped_part_numbers
         ],
-        tenant: tenant,
-        authorize?: false,
+        scope: scope,
         reuse_values?: false
       )
 

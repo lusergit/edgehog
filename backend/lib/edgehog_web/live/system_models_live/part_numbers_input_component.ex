@@ -69,9 +69,9 @@ defmodule EdgehogWeb.SystemModelsLive.PartNumbersInputComponent do
   `SystemModelPartNumber` SQL aggregates and `Tenant.unmapped_part_numbers`,
   returning annotated row items, stolen entries, and live fleet reach preview.
   """
-  def analyze_part_numbers(raw_rows, current_model_id, tenant) when is_list(raw_rows) do
+  def analyze_part_numbers(raw_rows, current_model_id, scope) when is_list(raw_rows) do
     unique_pns = clean_part_numbers(raw_rows)
-    lookup = build_lookup(unique_pns, current_model_id, tenant)
+    lookup = build_lookup(unique_pns, current_model_id, scope)
 
     rows =
       raw_rows
@@ -102,25 +102,24 @@ defmodule EdgehogWeb.SystemModelsLive.PartNumbersInputComponent do
     }
   end
 
-  defp build_lookup([], _current_model_id, _tenant) do
+  defp build_lookup([], _current_model_id, _scope) do
     %{registered: %{}, unmapped: %{}, current_model_id: nil}
   end
 
-  defp build_lookup(unique_pns, current_model_id, tenant) do
+  defp build_lookup(unique_pns, current_model_id, scope) do
     registered =
       SystemModelPartNumber
-      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:read, %{}, scope: scope)
       |> Ash.Query.filter(part_number in ^unique_pns)
       |> Ash.Query.load([:system_model, :device_count, :online_device_count])
-      |> Ash.read!(tenant: tenant, authorize?: false)
+      |> Ash.read!(scope: scope)
       |> Map.new(&{&1.part_number, &1})
 
     unmapped =
       if length(unique_pns) > map_size(registered) do
-        tenant
+        scope.current_tenant
         |> Ash.load!(:unmapped_part_numbers,
-          tenant: tenant,
-          authorize?: false,
+          scope: scope,
           reuse_values?: false
         )
         |> Map.fetch!(:unmapped_part_numbers)

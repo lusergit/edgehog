@@ -110,9 +110,9 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
 
   @impl Phoenix.LiveView
   def handle_info(%Phoenix.Socket.Broadcast{topic: topic}, socket) when is_binary(topic) do
-    tenant = socket.assigns.current_tenant
-    send_update(StatsComponent, id: "system-models-stats", tenant: tenant)
-    send_update(UnmappedPartNumbersComponent, id: "unmapped-part-numbers-tray", tenant: tenant)
+    scope = socket.assigns.current_scope
+    send_update(StatsComponent, id: "system-models-stats", scope: scope)
+    send_update(UnmappedPartNumbersComponent, id: "unmapped-part-numbers-tray", scope: scope)
 
     {:noreply, load_system_models(socket)}
   end
@@ -140,7 +140,11 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
         </:actions>
       </.page_header>
 
-      <.live_component module={StatsComponent} id="system-models-stats" tenant={@current_tenant} />
+      <.live_component
+        module={StatsComponent}
+        id="system-models-stats"
+        scope={@current_scope}
+      />
 
       <ToolbarComponent.system_models_toolbar
         search={@search}
@@ -161,7 +165,7 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
           module={SystemModelCardComponent}
           id={"system-model-card-#{model.id}"}
           model={model}
-          tenant={@current_tenant}
+          scope={@current_scope}
         />
       </section>
 
@@ -173,7 +177,7 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
       <.live_component
         module={UnmappedPartNumbersComponent}
         id="unmapped-part-numbers-tray"
-        tenant={@current_tenant}
+        scope={@current_scope}
       />
 
       <.live_component
@@ -183,7 +187,7 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
         action={:new}
         system_model={%SystemModel{}}
         initial_part_number={@initial_part_number}
-        tenant={@current_tenant}
+        scope={@current_scope}
         return_to={~p"/tenants/#{@current_tenant.slug}/system-models"}
       />
     </div>
@@ -191,19 +195,19 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
   end
 
   defp load_system_models(socket) do
-    tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
     all_models =
       SystemModel
-      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:read, %{}, scope: scope)
       |> Ash.Query.load([:device_count, :has_picture])
-      |> Ash.read!(tenant: tenant, authorize?: false)
+      |> Ash.read!(scope: scope)
 
     hardware_types =
       HardwareType
-      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:read, %{}, scope: scope)
       |> Ash.Query.sort(name: :asc)
-      |> Ash.read!(tenant: tenant, authorize?: false)
+      |> Ash.read!(scope: scope)
 
     filter_counts = %{
       all: length(all_models),
@@ -219,14 +223,14 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
   end
 
   defp load_filtered_models(socket) do
-    tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
     search = socket.assigns.search || ""
     filter = socket.assigns.filter || "all"
     hardware_type_id = socket.assigns.hardware_type_id
 
     models =
       SystemModel
-      |> Ash.Query.for_read(:list, %{search: search}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:list, %{search: search}, scope: scope)
       |> apply_model_filter(filter)
       |> apply_hardware_type_filter(hardware_type_id)
       |> Ash.Query.load([
@@ -238,7 +242,7 @@ defmodule EdgehogWeb.SystemModelsLive.Index do
         part_numbers: [:device_count, :online_device_count]
       ])
       |> Ash.Query.sort(name: :asc)
-      |> Ash.read!(tenant: tenant, authorize?: false)
+      |> Ash.read!(scope: scope)
 
     assign(socket, :filtered_models, models)
   end
