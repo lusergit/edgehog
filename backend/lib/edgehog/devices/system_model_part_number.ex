@@ -75,6 +75,19 @@ defmodule Edgehog.Devices.SystemModelPartNumber do
     end
   end
 
+  aggregates do
+    count :device_count, :devices do
+      public? true
+      description "The total number of devices reporting this part number."
+    end
+
+    count :online_device_count, :devices do
+      public? true
+      filter expr(online == true)
+      description "The number of online devices reporting this part number."
+    end
+  end
+
   identities do
     identity :part_number, [:part_number]
   end

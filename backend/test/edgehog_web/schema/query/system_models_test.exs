@@ -19,6 +19,7 @@
 defmodule EdgehogWeb.Schema.Query.SystemModelsTest do
   use EdgehogWeb.GraphqlCase, async: true
 
+  import Edgehog.BaseImagesFixtures
   import Edgehog.DevicesFixtures
 
   describe "systemModels query" do
@@ -93,6 +94,161 @@ defmodule EdgehogWeb.Schema.Query.SystemModelsTest do
                %{"handle" => "2"},
                %{"handle" => "3"}
              ] = system_models
+    end
+
+    test "exposes aggregates, baseImageCollection, hasPicture, defaultDescription, search, and device queries",
+         %{tenant: tenant} do
+      hw = hardware_type_fixture(tenant: tenant, name: "ARM Gateway", handle: "arm-gateway")
+
+      model =
+        system_model_fixture(
+          tenant: tenant,
+          name: "Edge Sensor",
+          handle: "edge-sensor",
+          hardware_type_id: hw.id,
+          part_numbers: ["PN-100", "PN-200"],
+          picture_url: "https://example.com/sensor.png",
+          localized_descriptions: [
+            %{language_tag: "it-IT", value: "Sensore industriale"},
+            %{language_tag: "en-US", value: "Industrial sensor"}
+          ]
+        )
+
+      bic =
+        base_image_collection_fixture(
+          tenant: tenant,
+          name: "Sensor OS",
+          handle: "sensor-os",
+          system_model_id: model.id
+        )
+
+      _d1 = device_fixture(tenant: tenant, part_number: "PN-100", online: true)
+      _d2 = device_fixture(tenant: tenant, part_number: "PN-200", online: false)
+      _unmapped = device_fixture(tenant: tenant, part_number: "PN-UNMAPPED", online: true)
+
+      model_relay_id = AshGraphql.Resource.encode_relay_id(model)
+      bic_name = bic.name
+
+      doc = """
+      query ($modelId: ID!) {
+        systemModels(search: "PN-200") {
+          edges {
+            node {
+              name
+              hasPicture
+              partNumberCount
+              deviceCount
+              onlineDeviceCount
+              releaseCount
+              hasBaseImageCollection
+              baseImageCollection {
+                name
+              }
+              defaultDescription {
+                languageTag
+                value
+              }
+              hardwareType {
+                systemModelCount
+              }
+              partNumbers(sort: [{ field: PART_NUMBER, order: ASC }]) {
+                edges {
+                  node {
+                    partNumber
+                    deviceCount
+                    onlineDeviceCount
+                  }
+                }
+              }
+            }
+          }
+        }
+        systemModelPartNumbers(filter: { partNumber: { in: ["PN-100"] } }) {
+          count
+          edges {
+            node {
+              partNumber
+              deviceCount
+              onlineDeviceCount
+              systemModel {
+                name
+              }
+            }
+          }
+        }
+        devicesForSystemModel(systemModelId: $modelId) {
+          count
+        }
+        mappedDevices: devices(filter: { hasSystemModel: { eq: true } }) {
+          count
+        }
+      }
+      """
+
+      result =
+        Absinthe.run!(doc, EdgehogWeb.Schema,
+          variables: %{"modelId" => model_relay_id},
+          context: %{tenant: tenant, actor: %{}}
+        )
+
+      assert %{
+               data: %{
+                 "systemModels" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "name" => "Edge Sensor",
+                         "hasPicture" => true,
+                         "partNumberCount" => 2,
+                         "deviceCount" => 2,
+                         "onlineDeviceCount" => 1,
+                         "releaseCount" => 0,
+                         "hasBaseImageCollection" => true,
+                         "baseImageCollection" => %{"name" => ^bic_name},
+                         "defaultDescription" => %{
+                           "languageTag" => "en-US",
+                           "value" => "Industrial sensor"
+                         },
+                         "hardwareType" => %{"systemModelCount" => 1},
+                         "partNumbers" => %{
+                           "edges" => [
+                             %{
+                               "node" => %{
+                                 "partNumber" => "PN-100",
+                                 "deviceCount" => 1,
+                                 "onlineDeviceCount" => 1
+                               }
+                             },
+                             %{
+                               "node" => %{
+                                 "partNumber" => "PN-200",
+                                 "deviceCount" => 1,
+                                 "onlineDeviceCount" => 0
+                               }
+                             }
+                           ]
+                         }
+                       }
+                     }
+                   ]
+                 },
+                 "systemModelPartNumbers" => %{
+                   "count" => 1,
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "partNumber" => "PN-100",
+                         "deviceCount" => 1,
+                         "onlineDeviceCount" => 1,
+                         "systemModel" => %{"name" => "Edge Sensor"}
+                       }
+                     }
+                   ]
+                 },
+                 "devicesForSystemModel" => %{"count" => 2},
+                 "mappedDevices" => %{"count" => 2}
+               }
+             } = result
     end
   end
 

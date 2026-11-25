@@ -29,6 +29,7 @@ defmodule Edgehog.Devices do
   alias Edgehog.Devices.Device
   alias Edgehog.Devices.HardwareType
   alias Edgehog.Devices.SystemModel
+  alias Edgehog.Devices.SystemModelPartNumber
 
   authorization do
     authorize :when_requested
@@ -88,6 +89,13 @@ defmodule Edgehog.Devices do
         relay? true
       end
 
+      list Device, :devices_for_system_model, :for_system_model do
+        description "Returns devices whose part number belongs to the specified system model."
+        paginate_with :keyset
+        relay? true
+        relay_id_translations system_model_id: :system_model
+      end
+
       get HardwareType, :hardware_type, :read do
         description "Returns a single hardware type."
       end
@@ -102,8 +110,14 @@ defmodule Edgehog.Devices do
         description "Returns a single system model."
       end
 
-      list SystemModel, :system_models, :read do
+      list SystemModel, :system_models, :list do
         description "Returns a list of system models."
+        relay? true
+        paginate_with :keyset
+      end
+
+      list SystemModelPartNumber, :system_model_part_numbers, :read do
+        description "Returns a list of registered system model part numbers."
         relay? true
         paginate_with :keyset
       end

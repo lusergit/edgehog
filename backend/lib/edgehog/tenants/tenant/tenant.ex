@@ -33,6 +33,7 @@ defmodule Edgehog.Tenants.Tenant do
 
   alias Ash.Error.Invalid.TenantRequired
   alias Edgehog.Campaigns.Status, as: CampaignStatus
+  alias Edgehog.Devices.SystemModelPartNumber.UnmappedPartNumber
   alias Edgehog.Tenants.AstarteConfig
   alias Edgehog.Tenants.Tenant
   alias Edgehog.Tenants.Tenant.Calculations
@@ -186,6 +187,21 @@ defmodule Edgehog.Tenants.Tenant do
       source_attribute :tenant_id
       destination_attribute :tenant_id
     end
+
+    has_many :system_models, Edgehog.Devices.SystemModel do
+      source_attribute :tenant_id
+      destination_attribute :tenant_id
+    end
+
+    has_many :hardware_types, Edgehog.Devices.HardwareType do
+      source_attribute :tenant_id
+      destination_attribute :tenant_id
+    end
+
+    has_many :system_model_part_numbers, Edgehog.Devices.SystemModelPartNumber do
+      source_attribute :tenant_id
+      destination_attribute :tenant_id
+    end
   end
 
   calculations do
@@ -193,6 +209,14 @@ defmodule Edgehog.Tenants.Tenant do
       public? true
       allow_nil? false
       description "The number of device groups currently matching zero devices."
+    end
+
+    calculate :unmapped_part_numbers,
+              {:array, UnmappedPartNumber},
+              Calculations.UnmappedPartNumbers do
+      public? true
+      allow_nil? false
+      description "Distinct non-empty device part numbers not mapped to any catalog system model."
     end
   end
 
@@ -206,6 +230,29 @@ defmodule Edgehog.Tenants.Tenant do
       public? true
       filter expr(online == true)
       description "The number of online devices in the tenant."
+    end
+
+    count :mapped_device_count, :devices do
+      public? true
+      filter expr(exists(system_model_part_number, true))
+      description "The number of devices whose part number matches a catalog system model."
+    end
+
+    count :online_mapped_device_count, :devices do
+      public? true
+      filter expr(online == true and exists(system_model_part_number, true))
+      description "The number of online devices whose part number matches a catalog system model."
+    end
+
+    count :unmapped_device_count, :devices do
+      public? true
+
+      filter expr(
+               not is_nil(part_number) and fragment("btrim(?) <> ''", part_number) and
+                 not exists(system_model_part_number, true)
+             )
+
+      description "The number of devices reporting a part number without a catalog system model."
     end
 
     count :device_group_count, :device_groups do
@@ -234,6 +281,27 @@ defmodule Edgehog.Tenants.Tenant do
       public? true
       filter expr(status in ^CampaignStatus.active_statuses())
       description "The number of active or scheduled campaigns in the tenant."
+    end
+
+    count :system_model_count, :system_models do
+      public? true
+      description "The total number of system models in the tenant."
+    end
+
+    count :hardware_type_count, :hardware_types do
+      public? true
+      description "The total number of hardware types in the tenant."
+    end
+
+    count :covered_hardware_type_count, :hardware_types do
+      public? true
+      filter expr(exists(system_models, true))
+      description "The number of hardware types referenced by at least one system model."
+    end
+
+    count :system_model_part_number_count, :system_model_part_numbers do
+      public? true
+      description "The total number of registered system model part numbers in the tenant."
     end
   end
 

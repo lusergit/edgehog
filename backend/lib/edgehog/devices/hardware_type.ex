@@ -50,7 +50,7 @@ defmodule Edgehog.Devices.HardwareType do
       end
     end
 
-    paginate_relationship_with part_numbers: :relay
+    paginate_relationship_with part_numbers: :relay, system_models: :relay
   end
 
   actions do
@@ -145,11 +145,19 @@ defmodule Edgehog.Devices.HardwareType do
       description "The list of part numbers associated with the hardware type."
     end
 
-    # TODO: :system_model
+    has_many :system_models, Edgehog.Devices.SystemModel do
+      public? true
+      description "The system models associated with this hardware type."
+    end
   end
 
   aggregates do
     list :part_number_strings, :part_numbers, :part_number
+
+    count :system_model_count, :system_models do
+      public? true
+      description "The number of system models associated with this hardware type."
+    end
   end
 
   identities do

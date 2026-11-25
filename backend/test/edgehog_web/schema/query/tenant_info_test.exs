@@ -165,5 +165,63 @@ defmodule EdgehogWeb.Schema.Query.TenantInfoTest do
                }
              } = Absinthe.run!(doc, EdgehogWeb.Schema, context: %{tenant: tenant, actor: %{}})
     end
+
+    test "returns tenant-scoped system model catalog aggregates and unmapped part numbers" do
+      tenant = tenant_fixture()
+      hw_covered = hardware_type_fixture(tenant: tenant)
+      _hw_unused = hardware_type_fixture(tenant: tenant)
+
+      _model =
+        system_model_fixture(
+          tenant: tenant,
+          hardware_type_id: hw_covered.id,
+          part_numbers: ["PN-MAPPED"]
+        )
+
+      _d1 = device_fixture(tenant: tenant, part_number: "PN-MAPPED", online: true)
+      _d2 = device_fixture(tenant: tenant, part_number: "PN-MAPPED", online: false)
+      _d3 = device_fixture(tenant: tenant, part_number: "PN-ORPHAN", online: true)
+      _d4 = device_fixture(tenant: tenant, part_number: "PN-ORPHAN", online: false)
+
+      doc = """
+      query {
+        tenantInfo {
+          systemModelCount
+          hardwareTypeCount
+          coveredHardwareTypeCount
+          systemModelPartNumberCount
+          mappedDeviceCount
+          onlineMappedDeviceCount
+          unmappedDeviceCount
+          unmappedPartNumbers {
+            partNumber
+            deviceCount
+            onlineDeviceCount
+          }
+        }
+      }
+      """
+
+      assert %{
+               data: %{
+                 "tenantInfo" => %{
+                   "systemModelCount" => 1,
+                   "hardwareTypeCount" => 2,
+                   "coveredHardwareTypeCount" => 1,
+                   "systemModelPartNumberCount" => 1,
+                   "mappedDeviceCount" => 2,
+                   "onlineMappedDeviceCount" => 1,
+                   "unmappedDeviceCount" => 2,
+                   "unmappedPartNumbers" => [
+                     %{
+                       "partNumber" => "PN-ORPHAN",
+                       "deviceCount" => 2,
+                       "onlineDeviceCount" => 1
+                     }
+                   ]
+                 }
+               }
+             } = Absinthe.run!(doc, EdgehogWeb.Schema, context: %{tenant: tenant, actor: %{}})
+    end
   end
 end

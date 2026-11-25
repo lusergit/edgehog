@@ -27,11 +27,14 @@ defmodule Edgehog.Devices.SystemModel do
       Ash.Notifier.PubSub
     ]
 
+  alias Edgehog.Devices.SystemModel.Calculations
   alias Edgehog.Devices.SystemModel.Changes
   alias Edgehog.Devices.SystemModel.Validations
   alias Edgehog.Localization
   alias Edgehog.Localization.Changes.UpsertLocalizedAttribute
   alias Edgehog.Types.Upload
+
+  require Ash.Query
 
   resource do
     description """
@@ -50,6 +53,50 @@ defmodule Edgehog.Devices.SystemModel do
 
   actions do
     defaults [:read]
+
+    read :list do
+      description "Returns system models with optional case-insensitive search across models, hardware types, and part numbers."
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      argument :search, :string do
+        description "Optional case-insensitive substring filter matching model, hardware type, or part number."
+      end
+
+      prepare fn query, _context ->
+        case Ash.Query.get_argument(query, :search) do
+          search when is_binary(search) ->
+            trimmed = String.trim(search)
+
+            if trimmed == "" do
+              query
+            else
+              escaped = String.replace(trimmed, ~r/([%_\\])/, "\\\\\\1")
+              pattern = "%#{escaped}%"
+
+              Ash.Query.filter(
+                query,
+                fragment("? ILIKE ?", name, ^pattern) or
+                  fragment("? ILIKE ?", handle, ^pattern) or
+                  exists(
+                    hardware_type,
+                    fragment("? ILIKE ?", name, ^pattern) or
+                      fragment("? ILIKE ?", handle, ^pattern)
+                  ) or
+                  exists(part_numbers, fragment("? ILIKE ?", part_number, ^pattern))
+              )
+            end
+
+          _ ->
+            query
+        end
+      end
+    end
 
     create :create do
       description "Creates a system model."
@@ -204,6 +251,11 @@ defmodule Edgehog.Devices.SystemModel do
       public? true
       description "The various application releases that require the system model to be deployed."
     end
+
+    has_one :base_image_collection, Edgehog.BaseImages.BaseImageCollection do
+      public? true
+      description "The base image collection targeting this system model, if present."
+    end
   end
 
   calculations do
@@ -213,10 +265,51 @@ defmodule Edgehog.Devices.SystemModel do
       calculation {Localization.Calculations.LocalizedAttributes, attribute: :description}
       argument :preferred_language_tags, {:array, :string}
     end
+
+    calculate :default_description, Localization.LocalizedAttribute do
+      public? true
+      description "The preferred or fallback localized description for this system model."
+      argument :preferred_locale, :string
+      calculation Calculations.DefaultDescription
+    end
+
+    calculate :has_picture,
+              :boolean,
+              expr(not is_nil(picture_url) and fragment("btrim(?) <> ''", picture_url)) do
+      public? true
+      allow_nil? false
+      description "Whether the system model has a non-empty product picture URL."
+    end
   end
 
   aggregates do
     list :part_number_strings, :part_numbers, :part_number
+
+    count :part_number_count, :part_numbers do
+      public? true
+      description "The number of part numbers registered for this system model."
+    end
+
+    count :device_count, [:part_numbers, :devices] do
+      public? true
+      description "The total number of devices matching this system model's part numbers."
+    end
+
+    count :online_device_count, [:part_numbers, :devices] do
+      public? true
+      filter expr(online == true)
+      description "The number of online devices matching this system model's part numbers."
+    end
+
+    count :release_count, :releases do
+      public? true
+      description "The number of compatible application releases for this system model."
+    end
+
+    exists :has_base_image_collection, :base_image_collection do
+      public? true
+      description "Whether a base image collection references this system model."
+    end
   end
 
   identities do

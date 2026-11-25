@@ -283,6 +283,24 @@ defmodule Edgehog.Devices.Device do
       end
     end
 
+    read :for_system_model do
+      description "Returns devices whose part number belongs to the specified system model."
+
+      argument :system_model_id, :id do
+        allow_nil? false
+        description "The ID of the system model."
+      end
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      filter expr(exists(system_model_part_number, system_model_id == ^arg(:system_model_id)))
+    end
+
     create :create do
       primary? true
 
@@ -1014,6 +1032,13 @@ defmodule Edgehog.Devices.Device do
       constraints items: [instance_of: Edgehog.Astarte.Device.Geolocation.SensorPosition]
       filterable? false
       calculation Calculations.SensorPositions
+    end
+  end
+
+  aggregates do
+    exists :has_system_model, :system_model_part_number do
+      public? true
+      description "Whether the device's part number is mapped to a catalog system model."
     end
   end
 
