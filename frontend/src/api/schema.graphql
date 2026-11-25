@@ -641,6 +641,17 @@ type DeploymentDeploy {
   release: Release
 }
 
+type UnmappedPartNumber {
+  "The unmapped part number string reported by devices."
+  partNumber: String!
+
+  "The total number of devices reporting this unmapped part number."
+  deviceCount: Int!
+
+  "The number of online devices reporting this unmapped part number."
+  onlineDeviceCount: Int!
+}
+
 """
 Describes the position of a device.
 
@@ -7133,6 +7144,8 @@ type system_model_part_number_result {
 enum SystemModelPartNumberSortField {
   ID
   PART_NUMBER
+  DEVICE_COUNT
+  ONLINE_DEVICE_COUNT
 }
 
 ":system_model_part_number connection"
@@ -7154,6 +7167,32 @@ type SystemModelPartNumberEdge {
 
   ":system_model_part_number node"
   node: SystemModelPartNumber!
+}
+
+input SystemModelPartNumberFilterOnlineDeviceCount {
+  isNil: Boolean
+  eq: Int
+  notEq: Int
+  in: [Int]
+  lessThan: Int
+  greaterThan: Int
+  lessThanOrEqual: Int
+  greaterThanOrEqual: Int
+  isDistinctFrom: Int
+  isNotDistinctFrom: Int
+}
+
+input SystemModelPartNumberFilterDeviceCount {
+  isNil: Boolean
+  eq: Int
+  notEq: Int
+  in: [Int]
+  lessThan: Int
+  greaterThan: Int
+  lessThanOrEqual: Int
+  greaterThanOrEqual: Int
+  isDistinctFrom: Int
+  isNotDistinctFrom: Int
 }
 
 input SystemModelPartNumberFilterPartNumber {
@@ -7200,6 +7239,12 @@ input SystemModelPartNumberFilterInput {
   partNumber: SystemModelPartNumberFilterPartNumber
 
   systemModel: SystemModelFilterInput
+
+  "The total number of devices reporting this part number."
+  deviceCount: SystemModelPartNumberFilterDeviceCount
+
+  "The number of online devices reporting this part number."
+  onlineDeviceCount: SystemModelPartNumberFilterOnlineDeviceCount
 }
 
 input SystemModelPartNumberSortInput {
@@ -7214,6 +7259,12 @@ type SystemModelPartNumber {
   partNumber: String!
 
   systemModel: SystemModel
+
+  "The total number of devices reporting this part number."
+  deviceCount: Int!
+
+  "The number of online devices reporting this part number."
+  onlineDeviceCount: Int!
 }
 
 "The result of the :delete_system_model mutation"
@@ -7304,6 +7355,12 @@ enum SystemModelSortField {
   HANDLE
   NAME
   PICTURE_URL
+  HAS_PICTURE
+  PART_NUMBER_COUNT
+  DEVICE_COUNT
+  ONLINE_DEVICE_COUNT
+  RELEASE_COUNT
+  HAS_BASE_IMAGE_COLLECTION
 }
 
 ":system_model connection"
@@ -7325,6 +7382,88 @@ type SystemModelEdge {
 
   ":system_model node"
   node: SystemModel!
+}
+
+input SystemModelFilterHasPicture {
+  isNil: Boolean
+  eq: Boolean
+  notEq: Boolean
+  in: [Boolean!]
+  lessThan: Boolean
+  greaterThan: Boolean
+  lessThanOrEqual: Boolean
+  greaterThanOrEqual: Boolean
+  isDistinctFrom: Boolean
+  isNotDistinctFrom: Boolean
+}
+
+input SystemModelDefaultDescriptionFieldInput {
+  preferredLocale: String
+}
+
+input SystemModelFilterHasBaseImageCollection {
+  isNil: Boolean
+  eq: Boolean
+  notEq: Boolean
+  in: [Boolean]
+  lessThan: Boolean
+  greaterThan: Boolean
+  lessThanOrEqual: Boolean
+  greaterThanOrEqual: Boolean
+  isDistinctFrom: Boolean
+  isNotDistinctFrom: Boolean
+}
+
+input SystemModelFilterReleaseCount {
+  isNil: Boolean
+  eq: Int
+  notEq: Int
+  in: [Int]
+  lessThan: Int
+  greaterThan: Int
+  lessThanOrEqual: Int
+  greaterThanOrEqual: Int
+  isDistinctFrom: Int
+  isNotDistinctFrom: Int
+}
+
+input SystemModelFilterOnlineDeviceCount {
+  isNil: Boolean
+  eq: Int
+  notEq: Int
+  in: [Int]
+  lessThan: Int
+  greaterThan: Int
+  lessThanOrEqual: Int
+  greaterThanOrEqual: Int
+  isDistinctFrom: Int
+  isNotDistinctFrom: Int
+}
+
+input SystemModelFilterDeviceCount {
+  isNil: Boolean
+  eq: Int
+  notEq: Int
+  in: [Int]
+  lessThan: Int
+  greaterThan: Int
+  lessThanOrEqual: Int
+  greaterThanOrEqual: Int
+  isDistinctFrom: Int
+  isNotDistinctFrom: Int
+}
+
+input SystemModelFilterPartNumberCount {
+  isNil: Boolean
+  eq: Int
+  notEq: Int
+  in: [Int]
+  lessThan: Int
+  greaterThan: Int
+  lessThanOrEqual: Int
+  greaterThanOrEqual: Int
+  isDistinctFrom: Int
+  isNotDistinctFrom: Int
 }
 
 input SystemModelFilterPictureUrl {
@@ -7424,11 +7563,33 @@ input SystemModelFilterInput {
 
   "The various application releases that require the system model to be deployed."
   releases: ReleaseFilterInput
+
+  "The base image collection targeting this system model, if present."
+  baseImageCollection: BaseImageCollectionFilterInput
+
+  "The number of part numbers registered for this system model."
+  partNumberCount: SystemModelFilterPartNumberCount
+
+  "The total number of devices matching this system model's part numbers."
+  deviceCount: SystemModelFilterDeviceCount
+
+  "The number of online devices matching this system model's part numbers."
+  onlineDeviceCount: SystemModelFilterOnlineDeviceCount
+
+  "The number of compatible application releases for this system model."
+  releaseCount: SystemModelFilterReleaseCount
+
+  "Whether a base image collection references this system model."
+  hasBaseImageCollection: SystemModelFilterHasBaseImageCollection
+
+  "Whether the system model has a non-empty product picture URL."
+  hasPicture: SystemModelFilterHasPicture
 }
 
 input SystemModelSortInput {
   order: SortOrder
   field: SystemModelSortField!
+  defaultDescriptionInput: SystemModelDefaultDescriptionFieldInput
 }
 
 """
@@ -7492,8 +7653,32 @@ type SystemModel implements Node {
     offset: Int
   ): [Release!]!
 
+  "The base image collection targeting this system model, if present."
+  baseImageCollection: BaseImageCollection
+
+  "The number of part numbers registered for this system model."
+  partNumberCount: Int!
+
+  "The total number of devices matching this system model's part numbers."
+  deviceCount: Int!
+
+  "The number of online devices matching this system model's part numbers."
+  onlineDeviceCount: Int!
+
+  "The number of compatible application releases for this system model."
+  releaseCount: Int!
+
+  "Whether a base image collection references this system model."
+  hasBaseImageCollection: Boolean
+
   "A list of descriptions in different languages."
   localizedDescriptions(preferredLanguageTags: [String!]): [LocalizedAttribute!]
+
+  "The preferred or fallback localized description for this system model."
+  defaultDescription(preferredLocale: String): LocalizedAttribute
+
+  "Whether the system model has a non-empty product picture URL."
+  hasPicture: Boolean!
 }
 
 type hardware_type_part_number_result {
@@ -7654,6 +7839,7 @@ enum HardwareTypeSortField {
   ID
   HANDLE
   NAME
+  SYSTEM_MODEL_COUNT
 }
 
 ":hardware_type connection"
@@ -7675,6 +7861,19 @@ type HardwareTypeEdge {
 
   ":hardware_type node"
   node: HardwareType!
+}
+
+input HardwareTypeFilterSystemModelCount {
+  isNil: Boolean
+  eq: Int
+  notEq: Int
+  in: [Int]
+  lessThan: Int
+  greaterThan: Int
+  lessThanOrEqual: Int
+  greaterThanOrEqual: Int
+  isDistinctFrom: Int
+  isNotDistinctFrom: Int
 }
 
 input HardwareTypeFilterName {
@@ -7747,6 +7946,12 @@ input HardwareTypeFilterInput {
 
   "The list of part numbers associated with the hardware type."
   partNumbers: HardwareTypePartNumberFilterInput
+
+  "The system models associated with this hardware type."
+  systemModels: SystemModelFilterInput
+
+  "The number of system models associated with this hardware type."
+  systemModelCount: HardwareTypeFilterSystemModelCount
 }
 
 input HardwareTypeSortInput {
@@ -7795,6 +8000,30 @@ type HardwareType implements Node {
     "The number of records to return to the end. Maximum 250"
     last: Int
   ): HardwareTypePartNumberConnection!
+
+  "The system models associated with this hardware type."
+  systemModels(
+    "How to sort the records in the response"
+    sort: [SystemModelSortInput]
+
+    "A filter to limit the results"
+    filter: SystemModelFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): SystemModelConnection!
+
+  "The number of system models associated with this hardware type."
+  systemModelCount: Int!
 }
 
 type device_changed_result {
@@ -7867,6 +8096,7 @@ enum DeviceSortField {
   SERIAL_NUMBER
   PART_NUMBER
   LAST_SEEN
+  HAS_SYSTEM_MODEL
 }
 
 ":device connection"
@@ -7901,6 +8131,19 @@ input DeviceFilterLastSeen {
   greaterThanOrEqual: DateTime
   isDistinctFrom: DateTime
   isNotDistinctFrom: DateTime
+}
+
+input DeviceFilterHasSystemModel {
+  isNil: Boolean
+  eq: Boolean
+  notEq: Boolean
+  in: [Boolean]
+  lessThan: Boolean
+  greaterThan: Boolean
+  lessThanOrEqual: Boolean
+  greaterThanOrEqual: Boolean
+  isDistinctFrom: Boolean
+  isNotDistinctFrom: Boolean
 }
 
 input DeviceFilterPartNumber {
@@ -8104,6 +8347,9 @@ input DeviceFilterInput {
   applicationDeployments: DeploymentFilterInput
 
   volumeDeployments: VolumeDeploymentFilterInput
+
+  "Whether the device's part number is mapped to a catalog system model."
+  hasSystemModel: DeviceFilterHasSystemModel
 
   "The most recent connection or disconnection timestamp of the device."
   lastSeen: DeviceFilterLastSeen
@@ -8324,6 +8570,9 @@ type Device implements Node {
     "The number of records to return to the end. Maximum 250"
     last: Int
   ): VolumeDeploymentConnection!
+
+  "Whether the device's part number is mapped to a catalog system model."
+  hasSystemModel: Boolean
 
   "The most recent connection or disconnection timestamp of the device."
   lastSeen: DateTime
@@ -10785,6 +11034,15 @@ type TenantInfo {
   "The number of online devices in the tenant."
   onlineDeviceCount: Int!
 
+  "The number of devices whose part number matches a catalog system model."
+  mappedDeviceCount: Int!
+
+  "The number of online devices whose part number matches a catalog system model."
+  onlineMappedDeviceCount: Int!
+
+  "The number of devices reporting a part number without a catalog system model."
+  unmappedDeviceCount: Int!
+
   "The total number of device groups in the tenant."
   deviceGroupCount: Int!
 
@@ -10800,8 +11058,23 @@ type TenantInfo {
   "The number of active or scheduled campaigns in the tenant."
   activeCampaignCount: Int!
 
+  "The total number of system models in the tenant."
+  systemModelCount: Int!
+
+  "The total number of hardware types in the tenant."
+  hardwareTypeCount: Int!
+
+  "The number of hardware types referenced by at least one system model."
+  coveredHardwareTypeCount: Int!
+
+  "The total number of registered system model part numbers in the tenant."
+  systemModelPartNumberCount: Int!
+
   "The number of device groups currently matching zero devices."
   emptyDeviceGroupCount: Int!
+
+  "Distinct non-empty device part numbers not mapped to any catalog system model."
+  unmappedPartNumbers: [UnmappedPartNumber!]!
 }
 
 type channels_result {
@@ -12155,6 +12428,30 @@ type RootQueryType {
     last: Int
   ): DeviceConnection
 
+  "Returns devices whose part number belongs to the specified system model."
+  devicesForSystemModel(
+    "How to sort the records in the response"
+    sort: [DeviceSortInput]
+
+    "A filter to limit the results"
+    filter: DeviceFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+
+    "The ID of the system model."
+    systemModelId: ID!
+  ): DeviceConnection
+
   "Returns a single hardware type."
   hardwareType("The id of the record" id: ID!): HardwareType
 
@@ -12201,7 +12498,31 @@ type RootQueryType {
 
     "The number of records to return to the end. Maximum 250"
     last: Int
+
+    "Optional case-insensitive substring filter matching model, hardware type, or part number."
+    search: String
   ): SystemModelConnection
+
+  "Returns a list of registered system model part numbers."
+  systemModelPartNumbers(
+    "How to sort the records in the response"
+    sort: [SystemModelPartNumberSortInput]
+
+    "A filter to limit the results"
+    filter: SystemModelPartNumberFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): SystemModelPartNumberConnection
 
   "Returns all the available applications."
   applications(
