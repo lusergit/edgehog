@@ -27,6 +27,7 @@ defmodule EdgehogWeb.LiveAuth do
   alias Edgehog.Actors.Actor
   alias Edgehog.Tenants
   alias EdgehogWeb.Auth
+  alias EdgehogWeb.Scope
 
   def on_mount(:redirect_if_authenticated, _params, session, socket) do
     case resolve_session(session) do
@@ -34,7 +35,7 @@ defmodule EdgehogWeb.LiveAuth do
         {:halt, redirect(socket, to: "/tenants/#{tenant.slug}/devices")}
 
       :error ->
-        {:cont, assign(socket, current_tenant: nil, current_actor: nil)}
+        {:cont, assign(socket, current_tenant: nil, current_actor: nil, current_scope: nil)}
     end
   end
 
@@ -48,6 +49,7 @@ defmodule EdgehogWeb.LiveAuth do
            socket
            |> assign(:current_tenant, tenant)
            |> assign(:current_actor, actor)
+           |> assign(:current_scope, Scope.new(tenant, actor))
            |> assign(:active_section, :fleet)
            |> assign(:active_nav_item, :devices)
            |> attach_navigation_hook()}
@@ -83,8 +85,16 @@ defmodule EdgehogWeb.LiveAuth do
 
   defp verify_dev_session(tenant_slug) when is_binary(tenant_slug) do
     case Tenants.fetch_tenant_by_slug(tenant_slug) do
-      {:ok, tenant} -> {:ok, tenant, %Actor{claims: %{"e_tga" => true}}}
-      _ -> :error
+      {:ok, tenant} ->
+        {:ok, tenant,
+         %Actor{
+           sub: "dev",
+           preferred_username: "dev",
+           claims: %{e_tga: true}
+         }}
+
+      _ ->
+        :error
     end
   end
 
