@@ -38,14 +38,14 @@ defmodule Edgehog.Campaigns.Channel.Calculations.FleetReach do
   end
 
   @impl Ash.Resource.Calculation
-  def calculate(channels, _opts, %{tenant: tenant}) do
+  def calculate(channels, _opts, context) do
     Enum.map(channels, fn channel ->
       selectors =
         channel.target_groups
         |> List.wrap()
         |> Enum.map(& &1.selector)
 
-      compute_for_selectors(selectors, tenant)
+      compute_for_selectors(selectors, context)
     end)
   end
 
@@ -70,15 +70,15 @@ defmodule Edgehog.Campaigns.Channel.Calculations.FleetReach do
     }
   end
 
-  defp compute_for_selectors(selectors, tenant) do
+  defp compute_for_selectors(selectors, context) do
     case Selector.union_ash_expr(selectors) do
       {:ok, filter_expr} ->
         Device
-        |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+        |> Ash.Query.for_read(:read, %{}, scope: context)
         |> Ash.Query.filter(^filter_expr)
         |> Ash.Query.select([:id, :online, :part_number])
         |> Ash.Query.load(:system_model)
-        |> Ash.read!(tenant: tenant, authorize?: false)
+        |> Ash.read!(scope: context)
         |> from_devices()
 
       :empty ->

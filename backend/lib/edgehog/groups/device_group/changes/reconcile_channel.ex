@@ -33,18 +33,18 @@ defmodule Edgehog.Groups.DeviceGroup.Changes.ReconcileChannel do
   @impl Ash.Resource.Change
   def change(changeset, _opts, context) do
     if Map.has_key?(changeset.arguments, :channel_id) do
-      reconcile(changeset, Map.get(changeset.arguments, :channel_id), context.tenant)
+      reconcile(changeset, Map.get(changeset.arguments, :channel_id), context)
     else
       changeset
     end
   end
 
-  defp reconcile(changeset, nil, _tenant) do
+  defp reconcile(changeset, nil, _context) do
     Ash.Changeset.force_change_attribute(changeset, :channel_id, nil)
   end
 
-  defp reconcile(changeset, channel_id, tenant) do
-    case Ash.get(Channel, channel_id, tenant: tenant, authorize?: false) do
+  defp reconcile(changeset, channel_id, context) do
+    case Ash.get(Channel, channel_id, scope: context) do
       {:ok, %Channel{id: id}} ->
         Ash.Changeset.force_change_attribute(changeset, :channel_id, id)
 

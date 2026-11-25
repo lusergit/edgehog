@@ -47,19 +47,19 @@ defmodule Edgehog.Groups.DeviceGroup.Calculations.DeviceCount do
   end
 
   @impl Ash.Resource.Calculation
-  def calculate(groups, opts, %{tenant: tenant}) do
+  def calculate(groups, opts, context) do
     online_only? = Keyword.get(opts, :online_only?, false)
-    Enum.map(groups, &count_for_group(&1, online_only?, tenant))
+    Enum.map(groups, &count_for_group(&1, online_only?, context))
   end
 
-  defp count_for_group(group, online_only?, tenant) do
+  defp count_for_group(group, online_only?, context) do
     case Selector.to_ash_expr_safe(group.selector) do
       {:ok, expr} ->
         Device
-        |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+        |> Ash.Query.for_read(:read, %{}, scope: context)
         |> Ash.Query.filter(^expr)
         |> maybe_filter_online(online_only?)
-        |> Ash.count!(tenant: tenant, authorize?: false)
+        |> Ash.count!(scope: context)
 
       {:error, _reason} ->
         0

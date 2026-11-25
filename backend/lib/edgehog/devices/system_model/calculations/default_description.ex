@@ -73,6 +73,7 @@ defmodule Edgehog.Devices.SystemModel.Calculations.DefaultDescription do
        do: locale
 
   defp resolve_preferred_locale(%{tenant: tenant_id}) when is_integer(tenant_id) do
+    # System-level lookup of the already-authenticated tenant's default_locale.
     case Ash.get(Tenant, tenant_id, authorize?: false) do
       {:ok, %Tenant{default_locale: locale}} when is_binary(locale) and locale != "" -> locale
       _ -> "en-US"

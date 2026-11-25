@@ -28,12 +28,12 @@ defmodule Edgehog.Tenants.Tenant.Calculations.EmptyDeviceGroupCount do
   alias Edgehog.Groups.DeviceGroup
 
   @impl Ash.Resource.Calculation
-  def calculate(tenants, _opts, _context) do
+  def calculate(tenants, _opts, context) do
     Enum.map(tenants, fn tenant ->
       DeviceGroup
-      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:read, %{}, scope: context, tenant: tenant)
       |> Ash.Query.load(:device_count)
-      |> Ash.read!(tenant: tenant, authorize?: false)
+      |> Ash.read!(scope: context, tenant: tenant)
       |> Enum.count(&(&1.device_count == 0))
     end)
   end

@@ -46,6 +46,8 @@ defmodule Edgehog.Groups.DeviceGroup.Validations.ChannelNotLocked do
   def has_batch_validate?, do: false
 
   defp check_channel_unlocked(group, channel_id, tenant) do
+    # Bypass actor visibility so the running-campaign lock invariant can never
+    # be circumvented by an actor who lacks permission to view campaigns.
     case Ash.get(Channel, channel_id,
            load: [:has_running_campaign],
            tenant: tenant,

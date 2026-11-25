@@ -22,20 +22,17 @@ defmodule Edgehog.Devices.Device.ManualRelationships.SystemModel do
   @moduledoc false
   use Ash.Resource.ManualRelationship
 
-  alias Edgehog.Devices.SystemModel
-
   require Ash.Query
 
   @impl Ash.Resource.ManualRelationship
-  def load(devices, _opts, %{tenant: tenant}) do
+  def load(devices, _opts, %{query: query} = context) do
     device_ids = Enum.map(devices, & &1.id)
 
     related_system_models =
-      SystemModel
-      |> Ash.Query.set_tenant(tenant)
+      query
       |> Ash.Query.filter(part_numbers.devices.id in ^device_ids)
       |> Ash.Query.load(part_numbers: [:devices])
-      |> Ash.read!()
+      |> Ash.read!(scope: context)
 
     device_id_to_system_models =
       related_system_models

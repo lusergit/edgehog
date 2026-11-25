@@ -28,14 +28,12 @@ defmodule Edgehog.Campaigns.Channel.Changes.UnrelateCurrentTargetGroups do
 
   @impl Ash.Resource.Change
   def change(changeset, _opts, context) do
-    %{tenant: tenant} = context
-
     Ash.Changeset.before_action(changeset, fn changeset ->
-      unrelate_target_groups(tenant, changeset)
+      unrelate_target_groups(context, changeset)
     end)
   end
 
-  defp unrelate_target_groups(tenant, changeset) do
+  defp unrelate_target_groups(context, changeset) do
     channel_id = changeset.data.id
 
     keep_ids =
@@ -47,7 +45,7 @@ defmodule Edgehog.Campaigns.Channel.Changes.UnrelateCurrentTargetGroups do
 
     query =
       DeviceGroup
-      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:read, %{}, scope: context)
       |> Ash.Query.filter(channel_id == ^channel_id)
 
     query =
@@ -57,10 +55,10 @@ defmodule Edgehog.Campaigns.Channel.Changes.UnrelateCurrentTargetGroups do
         Ash.Query.filter(query, id not in ^keep_ids)
       end
 
-    groups_to_unrelate = Ash.read!(query, tenant: tenant, authorize?: false)
+    groups_to_unrelate = Ash.read!(query, scope: context)
 
     Enum.reduce_while(groups_to_unrelate, changeset, fn group, acc ->
-      case Ash.update(group, %{}, action: :unassign_channel, tenant: tenant, authorize?: false) do
+      case Ash.update(group, %{}, action: :unassign_channel, scope: context) do
         {:ok, _updated} ->
           {:cont, acc}
 
