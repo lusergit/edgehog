@@ -21,6 +21,7 @@
 defmodule EdgehogWeb.Schema.Query.DeviceGroupsTest do
   use EdgehogWeb.GraphqlCase, async: true
 
+  import Edgehog.CampaignsFixtures
   import Edgehog.DevicesFixtures
   import Edgehog.GroupsFixtures
 
@@ -114,6 +115,106 @@ defmodule EdgehogWeb.Schema.Query.DeviceGroupsTest do
 
       assert AshGraphql.Resource.encode_relay_id(bar_device) in bar_device_ids
       assert AshGraphql.Resource.encode_relay_id(foo_bar_device) in bar_device_ids
+    end
+
+    test "exposes deviceCount, onlineDeviceCount, isAssigned, and unassignedDeviceGroups", %{
+      tenant: tenant
+    } do
+      assigned =
+        device_group_fixture(tenant: tenant, name: "Assigned", selector: ~s<"foo" in tags>)
+
+      unassigned =
+        device_group_fixture(tenant: tenant, name: "Unassigned", selector: ~s<"bar" in tags>)
+
+      _channel = channel_fixture(tenant: tenant, target_group_ids: [assigned.id])
+
+      [tenant: tenant, online: true] |> device_fixture() |> add_tags(["foo"])
+      [tenant: tenant, online: false] |> device_fixture() |> add_tags(["foo"])
+
+      doc = """
+      query {
+        deviceGroups(sort: [{ field: NAME, order: ASC }]) {
+          edges {
+            node {
+              name
+              isAssigned
+              deviceCount
+              onlineDeviceCount
+            }
+          }
+        }
+        unassignedDeviceGroups {
+          count
+          edges {
+            node {
+              name
+            }
+          }
+        }
+        devicesMatchingSelector(selector: "\\"foo\\" in tags") {
+          count
+        }
+        devicesInAnyDeviceGroup {
+          count
+        }
+      }
+      """
+
+      result = Absinthe.run!(doc, EdgehogWeb.Schema, context: %{tenant: tenant, actor: %{}})
+
+      assert %{
+               data: %{
+                 "deviceGroups" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "name" => "Assigned",
+                         "isAssigned" => true,
+                         "deviceCount" => 2,
+                         "onlineDeviceCount" => 1
+                       }
+                     },
+                     %{
+                       "node" => %{
+                         "name" => "Unassigned",
+                         "isAssigned" => false,
+                         "deviceCount" => 0,
+                         "onlineDeviceCount" => 0
+                       }
+                     }
+                   ]
+                 },
+                 "unassignedDeviceGroups" => %{
+                   "count" => 1,
+                   "edges" => [%{"node" => %{"name" => "Unassigned"}}]
+                 },
+                 "devicesMatchingSelector" => %{"count" => 2},
+                 "devicesInAnyDeviceGroup" => %{"count" => 2}
+               }
+             } = result
+
+      assigned_relay_id = AshGraphql.Resource.encode_relay_id(assigned)
+      unassigned_relay_id = AshGraphql.Resource.encode_relay_id(unassigned)
+
+      for_group_doc = """
+      query ($id: ID!) {
+        devicesForDeviceGroup(deviceGroupId: $id) {
+          count
+        }
+      }
+      """
+
+      assert %{data: %{"devicesForDeviceGroup" => %{"count" => 2}}} =
+               Absinthe.run!(for_group_doc, EdgehogWeb.Schema,
+                 variables: %{"id" => assigned_relay_id},
+                 context: %{tenant: tenant, actor: %{}}
+               )
+
+      assert %{data: %{"devicesForDeviceGroup" => %{"count" => 0}}} =
+               Absinthe.run!(for_group_doc, EdgehogWeb.Schema,
+                 variables: %{"id" => unassigned_relay_id},
+                 context: %{tenant: tenant, actor: %{}}
+               )
     end
   end
 

@@ -43,6 +43,9 @@ defmodule Edgehog.Labeling do
 
   resources do
     resource Edgehog.Labeling.DeviceTag
-    resource Tag
+
+    resource Tag do
+      define :list_assigned_tags, action: :read_assigned_to_devices
+    end
   end
 end

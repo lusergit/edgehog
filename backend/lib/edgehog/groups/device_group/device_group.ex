@@ -29,6 +29,8 @@ defmodule Edgehog.Groups.DeviceGroup do
     fga_type: :device_group,
     fga_id_attribute: :handle
 
+  alias Edgehog.Groups.DeviceGroup.Calculations
+  alias Edgehog.Groups.DeviceGroup.Changes
   alias Edgehog.Groups.DeviceGroup.ManualRelationships
   alias Edgehog.Groups.DeviceGroup.Validations
 
@@ -49,11 +51,31 @@ defmodule Edgehog.Groups.DeviceGroup do
   actions do
     defaults [:read]
 
+    read :unassigned do
+      description "Returns device groups not currently assigned to any rollout channel."
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      filter expr(is_nil(channel_id))
+      prepare build(sort: [name: :asc])
+    end
+
     create :create do
       description "Creates a new device group."
       primary? true
 
       accept [:name, :handle, :selector]
+
+      argument :channel_id, :id do
+        description "Optional ID of the rollout channel to assign this group to."
+      end
+
+      change Changes.ReconcileChannel
     end
 
     update :update do
@@ -64,6 +86,12 @@ defmodule Edgehog.Groups.DeviceGroup do
       require_atomic? false
 
       accept [:name, :handle, :selector]
+
+      argument :channel_id, :id do
+        description "Optional ID of the rollout channel to assign (or null to unassign)."
+      end
+
+      change Changes.ReconcileChannel
     end
 
     update :unassign_channel do
@@ -154,6 +182,26 @@ defmodule Edgehog.Groups.DeviceGroup do
     end
   end
 
+  calculations do
+    calculate :is_assigned, :boolean, expr(not is_nil(channel_id)) do
+      public? true
+      allow_nil? false
+      description "Whether the device group is currently assigned to a rollout channel."
+    end
+
+    calculate :device_count, :integer, {Calculations.DeviceCount, online_only?: false} do
+      public? true
+      allow_nil? false
+      description "The total number of devices matching this group's selector."
+    end
+
+    calculate :online_device_count, :integer, {Calculations.DeviceCount, online_only?: true} do
+      public? true
+      allow_nil? false
+      description "The number of online devices matching this group's selector."
+    end
+  end
+
   identities do
     identity :name, [:name]
     identity :handle, [:handle]
@@ -165,6 +213,7 @@ defmodule Edgehog.Groups.DeviceGroup do
 
     publish "identity_update", :update, ["identity", :id]
     publish "selector_update", :update, ["selector", :id]
+    publish "channel_update", :update, ["channel", :id]
     publish "channel_assigned", :assign_channel, ["channel", :id]
     publish "channel_unassigned", :unassign_channel, ["channel", :id]
 

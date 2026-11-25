@@ -21,6 +21,7 @@
 defmodule EdgehogWeb.Schema.Mutation.UpdateDeviceGroupTest do
   use EdgehogWeb.GraphqlCase, async: true
 
+  import Edgehog.CampaignsFixtures
   import Edgehog.GroupsFixtures
 
   describe "updateDeviceGroup query" do
@@ -71,6 +72,55 @@ defmodule EdgehogWeb.Schema.Mutation.UpdateDeviceGroupTest do
                "handle" => ^old_handle,
                "selector" => ^old_selector
              } = device_group
+    end
+
+    test "assigns and unassigns channel via channelId input", %{tenant: tenant, id: id} do
+      channel = channel_fixture(tenant: tenant, target_group_ids: [])
+      channel_relay_id = AshGraphql.Resource.encode_relay_id(channel)
+
+      doc = """
+      mutation UpdateDeviceGroup($id: ID!, $input: UpdateDeviceGroupInput!) {
+        updateDeviceGroup(id: $id, input: $input) {
+          result {
+            id
+            isAssigned
+            channel {
+              id
+            }
+          }
+        }
+      }
+      """
+
+      assert %{
+               data: %{
+                 "updateDeviceGroup" => %{
+                   "result" => %{
+                     "isAssigned" => true,
+                     "channel" => %{"id" => ^channel_relay_id}
+                   }
+                 }
+               }
+             } =
+               Absinthe.run!(doc, EdgehogWeb.Schema,
+                 variables: %{"id" => id, "input" => %{"channelId" => channel_relay_id}},
+                 context: %{tenant: tenant, actor: %{}}
+               )
+
+      assert %{
+               data: %{
+                 "updateDeviceGroup" => %{
+                   "result" => %{
+                     "isAssigned" => false,
+                     "channel" => nil
+                   }
+                 }
+               }
+             } =
+               Absinthe.run!(doc, EdgehogWeb.Schema,
+                 variables: %{"id" => id, "input" => %{"channelId" => nil}},
+                 context: %{tenant: tenant, actor: %{}}
+               )
     end
 
     test "returns error for invalid handle", %{tenant: tenant, id: id} do

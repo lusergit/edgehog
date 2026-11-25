@@ -34,6 +34,7 @@ defmodule Edgehog.Tenants.Tenant do
   alias Ash.Error.Invalid.TenantRequired
   alias Edgehog.Tenants.AstarteConfig
   alias Edgehog.Tenants.Tenant
+  alias Edgehog.Tenants.Tenant.Calculations
   alias Edgehog.Tenants.Tenant.Changes
   alias Edgehog.Validations
 
@@ -169,6 +170,19 @@ defmodule Edgehog.Tenants.Tenant do
       source_attribute :tenant_id
       destination_attribute :tenant_id
     end
+
+    has_many :device_groups, Edgehog.Groups.DeviceGroup do
+      source_attribute :tenant_id
+      destination_attribute :tenant_id
+    end
+  end
+
+  calculations do
+    calculate :empty_device_group_count, :integer, Calculations.EmptyDeviceGroupCount do
+      public? true
+      allow_nil? false
+      description "The number of device groups currently matching zero devices."
+    end
   end
 
   aggregates do
@@ -181,6 +195,17 @@ defmodule Edgehog.Tenants.Tenant do
       public? true
       filter expr(online == true)
       description "The number of online devices in the tenant."
+    end
+
+    count :device_group_count, :device_groups do
+      public? true
+      description "The total number of device groups in the tenant."
+    end
+
+    count :assigned_device_group_count, :device_groups do
+      public? true
+      filter expr(not is_nil(channel_id))
+      description "The number of device groups currently assigned to a rollout channel."
     end
   end
 

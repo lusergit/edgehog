@@ -42,16 +42,30 @@ defmodule Edgehog.Groups do
         paginate_with :keyset
         relay? true
       end
+
+      list DeviceGroup, :unassigned_device_groups, :unassigned do
+        description "Returns device groups not currently assigned to any rollout channel."
+        paginate_with :keyset
+        relay? true
+      end
     end
 
     mutations do
-      create DeviceGroup, :create_device_group, :create
-      update DeviceGroup, :update_device_group, :update
+      create DeviceGroup, :create_device_group, :create do
+        relay_id_translations input: [channel_id: :channel]
+      end
+
+      update DeviceGroup, :update_device_group, :update do
+        relay_id_translations input: [channel_id: :channel]
+      end
+
       destroy DeviceGroup, :delete_device_group, :destroy
     end
   end
 
   resources do
-    resource DeviceGroup
+    resource DeviceGroup do
+      define :unassigned_device_groups, action: :unassigned
+    end
   end
 end

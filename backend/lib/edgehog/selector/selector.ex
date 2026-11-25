@@ -27,6 +27,21 @@ defmodule Edgehog.Selector do
   alias Edgehog.Selector.Parser
   alias Edgehog.Selector.Parser.Error
 
+  require Ash.Expr
+
+  @doc """
+  Returns whether every node in the parsed selector AST is supported by the Ash
+  data layer filter compiler.
+  """
+  def supported?(%TagFilter{}), do: true
+  def supported?(%AttributeFilter{}), do: false
+
+  def supported?(%BinaryOp{lhs: lhs, rhs: rhs}) do
+    supported?(lhs) and supported?(rhs)
+  end
+
+  def supported?(_node), do: false
+
   @doc """
   Translates a selector to an `%Ash.Expr{}` matching all devices matched by the selector.
 
@@ -36,6 +51,51 @@ defmodule Edgehog.Selector do
   """
   def to_ash_expr(%node{} = ast_root) when node in [AttributeFilter, BinaryOp, TagFilter] do
     Filter.to_ash_expr(ast_root)
+  end
+
+  @doc """
+  Parses a selector string and converts it to an `%Ash.Expr{}` when all AST
+  nodes are supported by the Ash data layer.
+
+  Returns `{:ok, expr}`, `{:error, %Parser.Error{}}`, or `{:error, :unsupported}`.
+  """
+  def to_ash_expr_safe(selector) when is_binary(selector) do
+    with {:ok, ast_root} <- parse(selector) do
+      if supported?(ast_root) do
+        {:ok, to_ash_expr(ast_root)}
+      else
+        {:error, :unsupported}
+      end
+    end
+  end
+
+  def to_ash_expr_safe(_selector), do: {:error, :unsupported}
+
+  @doc """
+  Combines a list of selector strings into a single OR-disjunction `%Ash.Expr{}`
+  matching devices matched by any supported selector in the list.
+
+  Returns `{:ok, expr}` or `:empty` when no selector is supported.
+  """
+  def union_ash_expr(selectors) when is_list(selectors) do
+    exprs =
+      selectors
+      |> Enum.uniq()
+      |> Enum.reduce([], fn selector, acc ->
+        case to_ash_expr_safe(selector) do
+          {:ok, expr} -> [expr | acc]
+          {:error, _} -> acc
+        end
+      end)
+
+    combine_or_exprs(exprs)
+  end
+
+  defp combine_or_exprs([]), do: :empty
+  defp combine_or_exprs([single]), do: {:ok, single}
+
+  defp combine_or_exprs([first | rest]) do
+    {:ok, Enum.reduce(rest, first, fn next, acc -> Ash.Expr.expr(^acc or ^next) end)}
   end
 
   @doc """

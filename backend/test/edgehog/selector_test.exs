@@ -319,4 +319,43 @@ defmodule Edgehog.SelectorTest do
       assert device_bar_green.id in ids
     end
   end
+
+  describe "supported?/1, to_ash_expr_safe/1, and union_ash_expr/1" do
+    test "reports AttributeFilter as unsupported and TagFilter / BinaryOp as supported" do
+      {:ok, tag_ast} = Selector.parse(~s/"foo" in tags/)
+      {:ok, attr_ast} = Selector.parse(~s/attributes["ns:key"] == "val"/)
+      {:ok, mixed_ast} = Selector.parse(~s/"foo" in tags and attributes["ns:key"] == "val"/)
+
+      assert Selector.supported?(tag_ast)
+      refute Selector.supported?(attr_ast)
+      refute Selector.supported?(mixed_ast)
+
+      assert {:ok, _expr} = Selector.to_ash_expr_safe(~s/"foo" in tags/)
+      assert {:error, :unsupported} = Selector.to_ash_expr_safe(~s/attributes["ns:key"] == "val"/)
+      assert {:error, %Error{}} = Selector.to_ash_expr_safe(~s/not a selector/)
+    end
+
+    test "union_ash_expr/1 combines multiple selectors into a single disjunction" do
+      tenant = tenant_fixture()
+      cluster = cluster_fixture()
+      realm = realm_fixture(cluster_id: cluster.id, tenant: tenant)
+
+      foo_dev = [realm_id: realm.id, tenant: tenant] |> device_fixture() |> add_tags(["foo"])
+      bar_dev = [realm_id: realm.id, tenant: tenant] |> device_fixture() |> add_tags(["bar"])
+      _baz_dev = [realm_id: realm.id, tenant: tenant] |> device_fixture() |> add_tags(["baz"])
+
+      assert :empty == Selector.union_ash_expr([])
+      assert :empty == Selector.union_ash_expr([~s/attributes["ns:key"] == "val"/])
+
+      assert {:ok, expr} =
+               Selector.union_ash_expr([
+                 ~s/"foo" in tags/,
+                 ~s/"bar" in tags/,
+                 ~s/attributes["ns:key"] == "val"/
+               ])
+
+      ids = Device |> Ash.Query.filter(^expr) |> Ash.list!(:id, tenant: tenant)
+      assert Enum.sort(ids) == Enum.sort([foo_dev.id, bar_dev.id])
+    end
+  end
 end

@@ -37,11 +37,14 @@ defmodule Edgehog.Groups.DeviceGroup.ManualRelationships.Devices do
     # We're doing N+1 queries here, but it's probably inevitable at this point
     group_id_to_devices =
       Map.new(groups, fn group ->
-        {:ok, ast_root} = Selector.parse(group.selector)
+        devices =
+          case Selector.to_ash_expr_safe(group.selector) do
+            {:ok, filter} ->
+              query |> Ash.Query.filter(^filter) |> Ash.read!()
 
-        filter = Selector.to_ash_expr(ast_root)
-
-        devices = query |> Ash.Query.filter(^filter) |> Ash.read!()
+            {:error, _reason} ->
+              []
+          end
 
         {group.id, devices}
       end)

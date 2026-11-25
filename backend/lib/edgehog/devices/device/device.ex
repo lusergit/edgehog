@@ -47,6 +47,10 @@ defmodule Edgehog.Devices.Device do
   alias Edgehog.Devices.Device.Modem
   alias Edgehog.Devices.Device.NetworkInterface
   alias Edgehog.Devices.Device.Types
+  alias Edgehog.Groups.DeviceGroup
+  alias Edgehog.Selector
+
+  require Ash.Query
 
   resource do
     description """
@@ -91,6 +95,96 @@ defmodule Edgehog.Devices.Device do
       require_atomic? false
 
       change Changes.EmitFleetTelemetry
+    end
+
+    read :matching_selector do
+      description "Returns devices matching the provided selector expression."
+
+      argument :selector, :string do
+        allow_nil? false
+        description "A valid Edgehog selector expression."
+      end
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      prepare fn query, _context ->
+        selector = Ash.Query.get_argument(query, :selector)
+
+        case Selector.to_ash_expr_safe(selector) do
+          {:ok, filter_expr} ->
+            Ash.Query.filter(query, ^filter_expr)
+
+          {:error, :unsupported} ->
+            Ash.Query.filter(query, false)
+
+          {:error, %Selector.Parser.Error{message: message}} ->
+            Ash.Query.add_error(query,
+              field: :selector,
+              message: "failed to be parsed with error: " <> message
+            )
+
+          {:error, _reason} ->
+            Ash.Query.add_error(query, field: :selector, message: "is invalid")
+        end
+      end
+    end
+
+    read :for_device_group do
+      description "Returns devices matching the specified device group's selector."
+
+      argument :device_group_id, :id do
+        allow_nil? false
+        description "The ID of the device group."
+      end
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      prepare fn query, _context ->
+        group_id = Ash.Query.get_argument(query, :device_group_id)
+
+        with {:ok, group} <-
+               Ash.get(DeviceGroup, group_id, tenant: query.tenant, authorize?: false),
+             {:ok, filter_expr} <- Selector.to_ash_expr_safe(group.selector) do
+          Ash.Query.filter(query, ^filter_expr)
+        else
+          _ -> Ash.Query.filter(query, false)
+        end
+      end
+    end
+
+    read :in_any_device_group do
+      description "Returns devices matched by at least one device group in the tenant."
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      prepare fn query, _context ->
+        selectors =
+          DeviceGroup
+          |> Ash.Query.for_read(:read, %{}, tenant: query.tenant, authorize?: false)
+          |> Ash.Query.select([:selector])
+          |> Ash.read!(tenant: query.tenant, authorize?: false)
+          |> Enum.map(& &1.selector)
+
+        case Selector.union_ash_expr(selectors) do
+          {:ok, filter_expr} -> Ash.Query.filter(query, ^filter_expr)
+          :empty -> Ash.Query.filter(query, false)
+        end
+      end
     end
 
     create :create do

@@ -21,7 +21,9 @@
 defmodule EdgehogWeb.Schema.Query.TenantInfoTest do
   use Edgehog.DataCase, async: true
 
+  import Edgehog.CampaignsFixtures
   import Edgehog.DevicesFixtures
+  import Edgehog.GroupsFixtures
   import Edgehog.TenantsFixtures
 
   alias Edgehog.Tenants.Tenant
@@ -81,6 +83,39 @@ defmodule EdgehogWeb.Schema.Query.TenantInfoTest do
                  "tenantInfo" => %{
                    "deviceCount" => 2,
                    "onlineDeviceCount" => 1
+                 }
+               }
+             } = Absinthe.run!(doc, EdgehogWeb.Schema, context: %{tenant: tenant, actor: %{}})
+    end
+
+    test "returns tenant-scoped device group aggregates" do
+      tenant = tenant_fixture()
+
+      matched_group =
+        device_group_fixture(tenant: tenant, name: "Matched", selector: ~s<"alpha" in tags>)
+
+      _empty_group =
+        device_group_fixture(tenant: tenant, name: "Empty", selector: ~s<"none" in tags>)
+
+      _channel = channel_fixture(tenant: tenant, target_group_ids: [matched_group.id])
+      [tenant: tenant] |> device_fixture() |> add_tags(["alpha"])
+
+      doc = """
+      query {
+        tenantInfo {
+          deviceGroupCount
+          assignedDeviceGroupCount
+          emptyDeviceGroupCount
+        }
+      }
+      """
+
+      assert %{
+               data: %{
+                 "tenantInfo" => %{
+                   "deviceGroupCount" => 2,
+                   "assignedDeviceGroupCount" => 1,
+                   "emptyDeviceGroupCount" => 1
                  }
                }
              } = Absinthe.run!(doc, EdgehogWeb.Schema, context: %{tenant: tenant, actor: %{}})

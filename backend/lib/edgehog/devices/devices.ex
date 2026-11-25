@@ -49,6 +49,25 @@ defmodule Edgehog.Devices do
         relay? true
       end
 
+      list Device, :devices_matching_selector, :matching_selector do
+        description "Returns devices matching the provided selector expression."
+        paginate_with :keyset
+        relay? true
+      end
+
+      list Device, :devices_for_device_group, :for_device_group do
+        description "Returns devices matching the specified device group's selector."
+        paginate_with :keyset
+        relay? true
+        relay_id_translations device_group_id: :device_group
+      end
+
+      list Device, :devices_in_any_device_group, :in_any_device_group do
+        description "Returns devices matched by at least one device group in the tenant."
+        paginate_with :keyset
+        relay? true
+      end
+
       get HardwareType, :hardware_type, :read do
         description "Returns a single hardware type."
       end
