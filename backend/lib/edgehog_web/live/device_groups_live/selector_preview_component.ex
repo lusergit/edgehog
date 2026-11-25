@@ -141,26 +141,25 @@ defmodule EdgehogWeb.DeviceGroupsLive.SelectorPreviewComponent do
     """
   end
 
-  def load_channel_options(tenant) do
+  def load_channel_options(scope) do
     Channel
-    |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+    |> Ash.Query.for_read(:read, %{}, scope: scope)
     |> Ash.Query.sort(:name)
-    |> Ash.read!(tenant: tenant, authorize?: false)
+    |> Ash.read!(scope: scope)
     |> Enum.map(&{"#{&1.name} (@#{&1.handle})", to_string(&1.id)})
   end
 
-  def load_available_tags(tenant) do
+  def load_available_tags(scope) do
     tenant_tags =
       Labeling.list_assigned_tags!(
         query: Ash.Query.sort(Edgehog.Labeling.Tag, :name),
-        tenant: tenant,
-        authorize?: false
+        scope: scope
       )
 
     Enum.map(tenant_tags, & &1.name)
   end
 
-  def evaluate_selector_preview(selector, tenant) when is_binary(selector) do
+  def evaluate_selector_preview(selector, scope) when is_binary(selector) do
     if String.trim(selector) == "" do
       %{
         state: "empty",
@@ -173,7 +172,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.SelectorPreviewComponent do
     else
       case Selector.parse(selector) do
         {:ok, ast_root} ->
-          compute_preview_matches(selector, Selector.supported?(ast_root), tenant)
+          compute_preview_matches(selector, Selector.supported?(ast_root), scope)
 
         {:error, %Selector.Parser.Error{message: message}} ->
           %{
@@ -199,7 +198,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.SelectorPreviewComponent do
     end
   end
 
-  defp compute_preview_matches(_selector, false, _tenant) do
+  defp compute_preview_matches(_selector, false, _scope) do
     %{
       state: "valid",
       total_count: 0,
@@ -210,25 +209,22 @@ defmodule EdgehogWeb.DeviceGroupsLive.SelectorPreviewComponent do
     }
   end
 
-  defp compute_preview_matches(selector, true, tenant) do
+  defp compute_preview_matches(selector, true, scope) do
     base_query =
-      Ash.Query.for_read(Device, :matching_selector, %{selector: selector},
-        tenant: tenant,
-        authorize?: false
-      )
+      Ash.Query.for_read(Device, :matching_selector, %{selector: selector}, scope: scope)
 
-    total_count = Ash.count!(base_query, tenant: tenant, authorize?: false)
+    total_count = Ash.count!(base_query, scope: scope)
 
     online_count =
       base_query
       |> Ash.Query.filter(online == true)
-      |> Ash.count!(tenant: tenant, authorize?: false)
+      |> Ash.count!(scope: scope)
 
     sample_devices =
       base_query
       |> Ash.Query.sort(name: :asc)
       |> Ash.Query.limit(5)
-      |> Ash.read!(tenant: tenant, authorize?: false)
+      |> Ash.read!(scope: scope)
 
     %{
       state: "valid",

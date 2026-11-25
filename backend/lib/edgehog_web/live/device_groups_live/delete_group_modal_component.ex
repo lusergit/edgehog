@@ -28,13 +28,14 @@ defmodule EdgehogWeb.DeviceGroupsLive.DeleteGroupModalComponent do
   use EdgehogWeb, :live_component
 
   @impl Phoenix.LiveComponent
-  def update(%{group: group, tenant: tenant} = assigns, socket) do
-    group = ensure_channel_loaded(group, tenant)
+  def update(%{group: group, scope: scope} = assigns, socket) do
+    group = ensure_channel_loaded(group, scope)
 
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:group, group)}
+     |> assign(:group, group)
+     |> assign(:delete_error, nil)}
   end
 
   @impl Phoenix.LiveComponent
@@ -45,12 +46,29 @@ defmodule EdgehogWeb.DeviceGroupsLive.DeleteGroupModalComponent do
 
   def handle_event("confirm_delete", _params, socket) do
     group = socket.assigns.group
-    tenant = socket.assigns.tenant
+    scope = socket.assigns.scope
 
-    Ash.destroy!(group, tenant: tenant, authorize?: false)
-    send(self(), {:group_deleted, group})
+    case Ash.destroy(group, scope: scope) do
+      :ok ->
+        send(self(), {:group_deleted, group})
+        {:noreply, socket}
 
-    {:noreply, socket}
+      {:error, %Ash.Error.Forbidden{}} ->
+        {:noreply,
+         assign(
+           socket,
+           :delete_error,
+           gettext("You are not authorized to delete this device group.")
+         )}
+
+      {:error, _error} ->
+        {:noreply,
+         assign(
+           socket,
+           :delete_error,
+           gettext("Failed to delete this device group.")
+         )}
+    end
   end
 
   @impl Phoenix.LiveComponent
@@ -73,6 +91,8 @@ defmodule EdgehogWeb.DeviceGroupsLive.DeleteGroupModalComponent do
         cancel_id="cancel-delete-group-btn"
         confirm_id="confirm-delete-group-btn"
         confirm_label={gettext("Delete Group")}
+        error_id="delete-group-error"
+        error={@delete_error}
       >
         <:notice :if={@group.channel} id="delete-group-channel-warning" icon="hero-signal">
           {gettext("This group is currently assigned to rollout channel")}
@@ -86,18 +106,18 @@ defmodule EdgehogWeb.DeviceGroupsLive.DeleteGroupModalComponent do
     """
   end
 
-  defp ensure_channel_loaded(%{channel_id: nil} = group, _tenant) do
+  defp ensure_channel_loaded(%{channel_id: nil} = group, _scope) do
     %{group | channel: nil}
   end
 
   defp ensure_channel_loaded(
          %{channel_id: channel_id, channel: %{id: channel_id}} = group,
-         _tenant
+         _scope
        ) do
     group
   end
 
-  defp ensure_channel_loaded(group, tenant) do
-    Ash.load!(group, :channel, tenant: tenant, authorize?: false, reuse_values?: false)
+  defp ensure_channel_loaded(group, scope) do
+    Ash.load!(group, :channel, scope: scope, reuse_values?: false)
   end
 end

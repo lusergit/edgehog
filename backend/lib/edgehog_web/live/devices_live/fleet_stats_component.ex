@@ -27,8 +27,8 @@ defmodule EdgehogWeb.DevicesLive.FleetStatsComponent do
 
   @impl Phoenix.LiveComponent
   def update(assigns, socket) do
-    tenant = assigns.tenant
-    stats = compute_stats(tenant)
+    scope = assigns.scope
+    stats = compute_stats(scope)
 
     {:ok,
      socket
@@ -105,11 +105,10 @@ defmodule EdgehogWeb.DevicesLive.FleetStatsComponent do
     """
   end
 
-  defp compute_stats(tenant) do
+  defp compute_stats(scope) do
     loaded =
-      Ash.load!(tenant, [:device_count, :online_device_count],
-        tenant: tenant,
-        authorize?: false,
+      Ash.load!(scope.current_tenant, [:device_count, :online_device_count],
+        scope: scope,
         reuse_values?: false
       )
 

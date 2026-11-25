@@ -34,6 +34,7 @@ defmodule EdgehogWeb.Components.CatalogComponents do
   alias EdgehogWeb.DevicesLive.NameCellComponent
   alias EdgehogWeb.DevicesLive.StatusCellComponent
   alias EdgehogWeb.DevicesLive.TagsCellComponent
+  alias EdgehogWeb.Scope
 
   attr :form_id, :string, required: true
   attr :search, :string, required: true
@@ -107,7 +108,7 @@ defmodule EdgehogWeb.Components.CatalogComponents do
 
   attr :id, :string, required: true
   attr :query, :any, required: true
-  attr :tenant, :map, required: true
+  attr :scope, Scope, required: true
   attr :show_hardware_columns, :boolean, default: false
 
   def devices_cinder_table(assigns) do
@@ -115,7 +116,7 @@ defmodule EdgehogWeb.Components.CatalogComponents do
     <Cinder.collection
       id={@id}
       query={@query}
-      tenant={@tenant}
+      scope={@scope}
       page_size={[default: 15, options: [10, 15, 25, 50]]}
       search={false}
     >
@@ -158,6 +159,7 @@ defmodule EdgehogWeb.Components.CatalogComponents do
           module={LastSeenCellComponent}
           id={"device-last-seen-#{device.id}"}
           device={device}
+          scope={@scope}
         />
       </:col>
 
@@ -166,7 +168,7 @@ defmodule EdgehogWeb.Components.CatalogComponents do
           module={TagsCellComponent}
           id={"device-tags-#{device.id}"}
           device={device}
-          tenant={@tenant}
+          scope={@scope}
         />
       </:col>
     </Cinder.collection>
@@ -198,7 +200,8 @@ defmodule EdgehogWeb.Components.CatalogComponents do
       ["connection", id] ->
         Phoenix.LiveView.send_update(LastSeenCellComponent,
           id: "device-last-seen-#{id}",
-          device: device
+          device: device,
+          scope: socket.assigns.current_scope
         )
 
         :handled
@@ -207,7 +210,7 @@ defmodule EdgehogWeb.Components.CatalogComponents do
         Phoenix.LiveView.send_update(TagsCellComponent,
           id: "device-tags-#{id}",
           device: device,
-          tenant: socket.assigns.current_tenant
+          scope: socket.assigns.current_scope
         )
 
         :handled

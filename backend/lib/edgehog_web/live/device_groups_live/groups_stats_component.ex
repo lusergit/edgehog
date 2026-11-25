@@ -29,8 +29,8 @@ defmodule EdgehogWeb.DeviceGroupsLive.GroupsStatsComponent do
 
   @impl Phoenix.LiveComponent
   def update(assigns, socket) do
-    tenant = assigns.tenant
-    stats = compute_stats(tenant)
+    scope = assigns.scope
+    stats = compute_stats(scope)
 
     {:ok,
      socket
@@ -82,25 +82,24 @@ defmodule EdgehogWeb.DeviceGroupsLive.GroupsStatsComponent do
     """
   end
 
-  defp compute_stats(tenant) do
+  defp compute_stats(scope) do
     loaded =
       Ash.load!(
-        tenant,
+        scope.current_tenant,
         [
           :device_group_count,
           :assigned_device_group_count,
           :empty_device_group_count,
           :device_count
         ],
-        tenant: tenant,
-        authorize?: false,
+        scope: scope,
         reuse_values?: false
       )
 
     covered_devices =
       Device
-      |> Ash.Query.for_read(:in_any_device_group, %{}, tenant: tenant, authorize?: false)
-      |> Ash.count!(tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:in_any_device_group, %{}, scope: scope)
+      |> Ash.count!(scope: scope)
 
     coverage_pct =
       if loaded.device_count > 0 do

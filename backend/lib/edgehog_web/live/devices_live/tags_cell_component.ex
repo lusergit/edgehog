@@ -28,8 +28,8 @@ defmodule EdgehogWeb.DevicesLive.TagsCellComponent do
   use EdgehogWeb, :live_component
 
   @impl Phoenix.LiveComponent
-  def update(%{device: device, tenant: tenant} = assigns, socket) do
-    device = ensure_tags_loaded(device, tenant)
+  def update(%{device: device, scope: scope} = assigns, socket) do
+    device = ensure_tags_loaded(device, scope)
 
     socket =
       socket
@@ -66,11 +66,11 @@ defmodule EdgehogWeb.DevicesLive.TagsCellComponent do
     end
   end
 
-  defp ensure_tags_loaded(device, tenant) do
+  defp ensure_tags_loaded(device, scope) do
     if Ash.Resource.loaded?(device, :tags) do
       device
     else
-      Ash.load!(device, :tags, tenant: tenant, authorize?: false)
+      Ash.load!(device, :tags, scope: scope)
     end
   end
 

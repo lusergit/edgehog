@@ -36,8 +36,9 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
   @impl Phoenix.LiveView
   def mount(%{"id" => id}, _session, socket) do
     tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
-    case fetch_group(id, tenant) do
+    case fetch_group(id, scope) do
       {:ok, group} ->
         if connected?(socket) do
           EdgehogWeb.Endpoint.subscribe("device_groups:identity:#{group.id}")
@@ -48,7 +49,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
         {:ok,
          socket
          |> assign(:group, group)
-         |> assign(:devices_query, build_devices_query(group.id, tenant))
+         |> assign(:devices_query, build_devices_query(group.id, scope))
          |> assign(:show_delete_modal, false)
          |> assign(:page_title, "#{group.name} · Groups · #{tenant.name}")}
 
@@ -127,7 +128,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
         },
         socket
       ) do
-    tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
     group = %{socket.assigns.group | selector: updated_group.selector}
 
     send_update(SelectorCellComponent, id: "group-detail-selector-#{id}", group: group)
@@ -135,14 +136,14 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
     send_update(GroupFleetCellComponent,
       id: "group-detail-fleet-#{id}",
       group: group,
-      tenant: tenant,
+      scope: scope,
       reload?: true
     )
 
     {:noreply,
      socket
      |> assign(:group, group)
-     |> assign(:devices_query, build_devices_query(group.id, tenant))
+     |> assign(:devices_query, build_devices_query(group.id, scope))
      |> Cinder.Refresh.refresh_table("group-devices-table")}
   end
 
@@ -153,15 +154,15 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
         },
         socket
       ) do
-    tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
     group =
-      Ash.load!(updated_group, :channel, tenant: tenant, authorize?: false, reuse_values?: false)
+      Ash.load!(updated_group, :channel, scope: scope, reuse_values?: false)
 
     send_update(ChannelCellComponent,
       id: "group-detail-channel-#{id}",
       group: group,
-      tenant: tenant
+      scope: scope
     )
 
     {:noreply, assign(socket, :group, group)}
@@ -194,13 +195,13 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
         {:noreply, socket}
 
       :unhandled ->
-        tenant = socket.assigns.current_tenant
+        scope = socket.assigns.current_scope
         group = socket.assigns.group
 
         send_update(GroupFleetCellComponent,
           id: "group-detail-fleet-#{group.id}",
           group: group,
-          tenant: tenant,
+          scope: scope,
           reload?: true
         )
 
@@ -275,7 +276,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
             module={GroupFleetCellComponent}
             id={"group-detail-fleet-#{@group.id}"}
             group={@group}
-            tenant={@current_tenant}
+            scope={@current_scope}
           />
         </div>
 
@@ -310,7 +311,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
             module={ChannelCellComponent}
             id={"group-detail-channel-#{@group.id}"}
             group={@group}
-            tenant={@current_tenant}
+            scope={@current_scope}
           />
         </div>
       </section>
@@ -323,7 +324,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
         <.devices_cinder_table
           id="group-devices-table"
           query={@devices_query}
-          tenant={@current_tenant}
+          scope={@current_scope}
         />
       </div>
 
@@ -333,7 +334,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
         id="edit-device-group-drawer"
         action={:edit}
         group={@group}
-        tenant={@current_tenant}
+        scope={@current_scope}
         return_to={~p"/tenants/#{@current_tenant.slug}/device-groups/#{@group.id}"}
       />
 
@@ -342,31 +343,24 @@ defmodule EdgehogWeb.DeviceGroupsLive.Show do
         module={DeleteGroupModalComponent}
         id="delete-group-modal"
         group={@group}
-        tenant={@current_tenant}
+        scope={@current_scope}
       />
     </div>
     """
   end
 
-  defp fetch_group(id, tenant) do
+  defp fetch_group(id, scope) do
     with {int_id, ""} <- id |> to_string() |> Integer.parse(),
-         {:ok, group} <- Ash.get(DeviceGroup, int_id, tenant: tenant, authorize?: false) do
-      {:ok,
-       Ash.load!(group, [:channel, :device_count, :online_device_count],
-         tenant: tenant,
-         authorize?: false
-       )}
+         {:ok, group} <- Ash.get(DeviceGroup, int_id, scope: scope) do
+      {:ok, Ash.load!(group, [:channel, :device_count, :online_device_count], scope: scope)}
     else
       _ -> :error
     end
   end
 
-  defp build_devices_query(group_id, tenant) do
+  defp build_devices_query(group_id, scope) do
     Device
-    |> Ash.Query.for_read(:for_device_group, %{device_group_id: group_id},
-      tenant: tenant,
-      authorize?: false
-    )
+    |> Ash.Query.for_read(:for_device_group, %{device_group_id: group_id}, scope: scope)
     |> Ash.Query.load([:system_model, :tags, :last_seen])
   end
 end

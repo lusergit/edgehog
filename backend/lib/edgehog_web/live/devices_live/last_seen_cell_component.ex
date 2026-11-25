@@ -29,11 +29,11 @@ defmodule EdgehogWeb.DevicesLive.LastSeenCellComponent do
   use EdgehogWeb, :live_component
 
   @impl Phoenix.LiveComponent
-  def update(%{device: device} = assigns, socket) do
+  def update(%{device: device, scope: scope} = assigns, socket) do
     socket =
       socket
       |> assign(assigns)
-      |> assign(:last_seen, resolve_last_seen(device))
+      |> assign(:last_seen, resolve_last_seen(device, scope))
       |> ensure_subscribed(device.id)
 
     {:ok, socket}
@@ -57,12 +57,12 @@ defmodule EdgehogWeb.DevicesLive.LastSeenCellComponent do
     end
   end
 
-  defp resolve_last_seen(%{last_seen: %DateTime{} = dt}), do: dt
-  defp resolve_last_seen(%{last_seen: nil}), do: nil
+  defp resolve_last_seen(%{last_seen: %DateTime{} = dt}, _scope), do: dt
+  defp resolve_last_seen(%{last_seen: nil}, _scope), do: nil
 
-  defp resolve_last_seen(device) do
+  defp resolve_last_seen(device, scope) do
     device
-    |> Ash.load!(:last_seen, tenant: device.tenant_id, authorize?: false)
+    |> Ash.load!(:last_seen, scope: scope)
     |> Map.get(:last_seen)
   end
 

@@ -38,6 +38,7 @@ defmodule EdgehogWeb.DevicesLive.Index do
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
     if connected?(socket) do
       EdgehogWeb.Endpoint.subscribe("devices:tenant:#{tenant.tenant_id}")
@@ -45,7 +46,7 @@ defmodule EdgehogWeb.DevicesLive.Index do
 
     query =
       Device
-      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:read, %{}, scope: scope)
       |> Ash.Query.load([:system_model, :tags, :last_seen])
 
     {:ok,
@@ -68,7 +69,7 @@ defmodule EdgehogWeb.DevicesLive.Index do
         socket
       ) do
     send_update(StatusCellComponent, id: "device-status-#{id}", device: device)
-    send_update(FleetStatsComponent, id: "fleet-stats", tenant: socket.assigns.current_tenant)
+    send_update(FleetStatsComponent, id: "fleet-stats", scope: socket.assigns.current_scope)
     {:noreply, socket}
   end
 
@@ -80,7 +81,7 @@ defmodule EdgehogWeb.DevicesLive.Index do
         socket
       ) do
     send_update(StatusCellComponent, id: "device-status-#{id}", device: device)
-    send_update(FleetStatsComponent, id: "fleet-stats", tenant: socket.assigns.current_tenant)
+    send_update(FleetStatsComponent, id: "fleet-stats", scope: socket.assigns.current_scope)
     {:noreply, socket}
   end
 
@@ -102,7 +103,12 @@ defmodule EdgehogWeb.DevicesLive.Index do
         },
         socket
       ) do
-    send_update(LastSeenCellComponent, id: "device-last-seen-#{id}", device: device)
+    send_update(LastSeenCellComponent,
+      id: "device-last-seen-#{id}",
+      device: device,
+      scope: socket.assigns.current_scope
+    )
+
     {:noreply, socket}
   end
 
@@ -116,7 +122,7 @@ defmodule EdgehogWeb.DevicesLive.Index do
     send_update(TagsCellComponent,
       id: "device-tags-#{id}",
       device: device,
-      tenant: socket.assigns.current_tenant
+      scope: socket.assigns.current_scope
     )
 
     {:noreply, socket}
@@ -130,7 +136,7 @@ defmodule EdgehogWeb.DevicesLive.Index do
         socket
       )
       when action_type in [:create, :destroy] do
-    send_update(FleetStatsComponent, id: "fleet-stats", tenant: socket.assigns.current_tenant)
+    send_update(FleetStatsComponent, id: "fleet-stats", scope: socket.assigns.current_scope)
     {:noreply, Cinder.Refresh.refresh_table(socket, "devices-table")}
   end
 
@@ -165,13 +171,13 @@ defmodule EdgehogWeb.DevicesLive.Index do
       <.live_component
         module={FleetStatsComponent}
         id="fleet-stats"
-        tenant={@current_tenant}
+        scope={@current_scope}
       />
 
       <Cinder.collection
         id="devices-table"
         query={@devices_query}
-        tenant={@current_tenant}
+        scope={@current_scope}
         page_size={[default: 15, options: [10, 15, 25, 50]]}
         search={false}
       >
@@ -210,6 +216,7 @@ defmodule EdgehogWeb.DevicesLive.Index do
             module={LastSeenCellComponent}
             id={"device-last-seen-#{device.id}"}
             device={device}
+            scope={@current_scope}
           />
         </:col>
 
@@ -218,7 +225,7 @@ defmodule EdgehogWeb.DevicesLive.Index do
             module={TagsCellComponent}
             id={"device-tags-#{device.id}"}
             device={device}
-            tenant={@current_tenant}
+            scope={@current_scope}
           />
         </:col>
       </Cinder.collection>

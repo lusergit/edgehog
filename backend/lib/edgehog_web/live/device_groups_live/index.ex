@@ -41,6 +41,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
     if connected?(socket) do
       EdgehogWeb.Endpoint.subscribe("device_groups:tenant:#{tenant.tenant_id}")
@@ -49,7 +50,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
 
     query =
       DeviceGroup
-      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:read, %{}, scope: scope)
       |> Ash.Query.load([:channel, :device_count, :online_device_count])
 
     {:ok,
@@ -95,11 +96,11 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
         },
         socket
       ) do
-    tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
     send_update(SelectorCellComponent, id: "group-selector-#{id}", group: group)
-    send_update(GroupFleetCellComponent, id: "group-fleet-#{id}", group: group, tenant: tenant)
-    send_update(GroupsStatsComponent, id: "groups-stats", tenant: tenant)
+    send_update(GroupFleetCellComponent, id: "group-fleet-#{id}", group: group, scope: scope)
+    send_update(GroupsStatsComponent, id: "groups-stats", scope: scope)
 
     {:noreply, socket}
   end
@@ -111,10 +112,10 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
         },
         socket
       ) do
-    tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
 
-    send_update(ChannelCellComponent, id: "group-channel-#{id}", group: group, tenant: tenant)
-    send_update(GroupsStatsComponent, id: "groups-stats", tenant: tenant)
+    send_update(ChannelCellComponent, id: "group-channel-#{id}", group: group, scope: scope)
+    send_update(GroupsStatsComponent, id: "groups-stats", scope: scope)
 
     {:noreply, socket}
   end
@@ -126,7 +127,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
         },
         socket
       ) do
-    send_update(GroupsStatsComponent, id: "groups-stats", tenant: socket.assigns.current_tenant)
+    send_update(GroupsStatsComponent, id: "groups-stats", scope: socket.assigns.current_scope)
     {:noreply, Cinder.Refresh.refresh_table(socket, "device-groups-table")}
   end
 
@@ -138,7 +139,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
         socket
       ) do
     socket = update(socket, :mounted_group_ids, &MapSet.delete(&1, group.id))
-    send_update(GroupsStatsComponent, id: "groups-stats", tenant: socket.assigns.current_tenant)
+    send_update(GroupsStatsComponent, id: "groups-stats", scope: socket.assigns.current_scope)
     {:noreply, Cinder.Refresh.refresh_table(socket, "device-groups-table")}
   end
 
@@ -149,22 +150,22 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
         },
         socket
       ) do
-    tenant = socket.assigns.current_tenant
+    scope = socket.assigns.current_scope
     mounted_ids = MapSet.to_list(socket.assigns.mounted_group_ids)
 
-    send_update(GroupsStatsComponent, id: "groups-stats", tenant: tenant)
+    send_update(GroupsStatsComponent, id: "groups-stats", scope: scope)
 
     if mounted_ids != [] do
       DeviceGroup
-      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.for_read(:read, %{}, scope: scope)
       |> Ash.Query.filter(id in ^mounted_ids)
       |> Ash.Query.load([:device_count, :online_device_count])
-      |> Ash.read!(tenant: tenant, authorize?: false)
+      |> Ash.read!(scope: scope)
       |> Enum.each(fn group ->
         send_update(GroupFleetCellComponent,
           id: "group-fleet-#{group.id}",
           group: group,
-          tenant: tenant
+          scope: scope
         )
       end)
     end
@@ -202,13 +203,13 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
       <.live_component
         module={GroupsStatsComponent}
         id="groups-stats"
-        tenant={@current_tenant}
+        scope={@current_scope}
       />
 
       <Cinder.collection
         id="device-groups-table"
         query={@device_groups_query}
-        tenant={@current_tenant}
+        scope={@current_scope}
         page_size={[default: 15, options: [10, 15, 25, 50]]}
         search={false}
       >
@@ -240,7 +241,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
             module={GroupFleetCellComponent}
             id={"group-fleet-#{group.id}"}
             group={group}
-            tenant={@current_tenant}
+            scope={@current_scope}
           />
         </:col>
 
@@ -249,7 +250,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
             module={ChannelCellComponent}
             id={"group-channel-#{group.id}"}
             group={group}
-            tenant={@current_tenant}
+            scope={@current_scope}
           />
         </:col>
       </Cinder.collection>
@@ -260,7 +261,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.Index do
         id="new-device-group-drawer"
         action={:new}
         group={%DeviceGroup{name: "", handle: "", selector: "", channel_id: nil}}
-        tenant={@current_tenant}
+        scope={@current_scope}
         return_to={~p"/tenants/#{@current_tenant.slug}/device-groups"}
       />
     </div>

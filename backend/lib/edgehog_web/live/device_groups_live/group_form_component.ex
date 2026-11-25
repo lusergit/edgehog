@@ -35,10 +35,10 @@ defmodule EdgehogWeb.DeviceGroupsLive.GroupFormComponent do
   alias EdgehogWeb.DeviceGroupsLive.SelectorPreviewComponent
 
   @impl Phoenix.LiveComponent
-  def update(%{group: group, tenant: tenant, action: action} = assigns, socket) do
-    channel_options = SelectorPreviewComponent.load_channel_options(tenant)
-    available_tags = SelectorPreviewComponent.load_available_tags(tenant)
-    ash_form = build_ash_form(group, action, tenant)
+  def update(%{group: group, scope: scope, action: action} = assigns, socket) do
+    channel_options = SelectorPreviewComponent.load_channel_options(scope)
+    available_tags = SelectorPreviewComponent.load_available_tags(scope)
+    ash_form = build_ash_form(group, action, scope)
     selected_channel_id = if group.channel_id, do: to_string(group.channel_id), else: ""
     initial_selector = group.selector || ""
 
@@ -54,7 +54,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.GroupFormComponent do
       |> assign(:form, to_form(ash_form))
       |> assign(
         :preview,
-        SelectorPreviewComponent.evaluate_selector_preview(initial_selector, tenant)
+        SelectorPreviewComponent.evaluate_selector_preview(initial_selector, scope)
       )
 
     {:ok, socket}
@@ -77,7 +77,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.GroupFormComponent do
     preview =
       SelectorPreviewComponent.evaluate_selector_preview(
         group_params["selector"] || "",
-        socket.assigns.tenant
+        socket.assigns.scope
       )
 
     {:noreply,
@@ -116,7 +116,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.GroupFormComponent do
     ash_form = AshPhoenix.Form.validate(socket.assigns.ash_form, updated_params)
 
     preview =
-      SelectorPreviewComponent.evaluate_selector_preview(new_selector, socket.assigns.tenant)
+      SelectorPreviewComponent.evaluate_selector_preview(new_selector, socket.assigns.scope)
 
     {:noreply,
      socket
@@ -126,7 +126,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.GroupFormComponent do
   end
 
   def handle_event("save", %{"group" => group_params}, socket) do
-    tenant = socket.assigns.tenant
+    tenant = socket.assigns.scope.current_tenant
     selected_channel_id = Map.get(group_params, "channel_id", socket.assigns.selected_channel_id)
 
     submit_params =
@@ -243,19 +243,17 @@ defmodule EdgehogWeb.DeviceGroupsLive.GroupFormComponent do
     """
   end
 
-  defp build_ash_form(_group, :new, tenant) do
+  defp build_ash_form(_group, :new, scope) do
     AshPhoenix.Form.for_create(DeviceGroup, :create,
       as: "group",
-      tenant: tenant,
-      authorize?: false
+      scope: scope
     )
   end
 
-  defp build_ash_form(group, :edit, tenant) do
+  defp build_ash_form(group, :edit, scope) do
     AshPhoenix.Form.for_update(group, :update,
       as: "group",
-      tenant: tenant,
-      authorize?: false
+      scope: scope
     )
   end
 

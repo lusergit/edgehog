@@ -196,7 +196,7 @@ defmodule EdgehogWeb.SystemModelsLive.Show do
         <.devices_cinder_table
           id="system-model-devices-table"
           query={@devices_query}
-          tenant={@current_tenant}
+          scope={@current_scope}
           show_hardware_columns
         />
       </div>

@@ -29,8 +29,8 @@ defmodule EdgehogWeb.DeviceGroupsLive.GroupFleetCellComponent do
   use EdgehogWeb, :live_component
 
   @impl Phoenix.LiveComponent
-  def update(%{group: group, tenant: tenant} = assigns, socket) do
-    counts = compute_fleet_counts(group, tenant, Map.get(assigns, :reload?, false))
+  def update(%{group: group, scope: scope} = assigns, socket) do
+    counts = compute_fleet_counts(group, scope, Map.get(assigns, :reload?, false))
 
     socket =
       socket
@@ -59,14 +59,13 @@ defmodule EdgehogWeb.DeviceGroupsLive.GroupFleetCellComponent do
     end
   end
 
-  defp compute_fleet_counts(group, tenant, reload?) do
+  defp compute_fleet_counts(group, scope, reload?) do
     loaded =
       if not reload? and is_integer(group.device_count) and is_integer(group.online_device_count) do
         group
       else
         Ash.load!(group, [:device_count, :online_device_count],
-          tenant: tenant,
-          authorize?: false,
+          scope: scope,
           reuse_values?: false
         )
       end

@@ -29,8 +29,8 @@ defmodule EdgehogWeb.DeviceGroupsLive.ChannelCellComponent do
   use EdgehogWeb, :live_component
 
   @impl Phoenix.LiveComponent
-  def update(%{group: group, tenant: tenant} = assigns, socket) do
-    channel = resolve_channel(group, tenant)
+  def update(%{group: group, scope: scope} = assigns, socket) do
+    channel = resolve_channel(group, scope)
 
     socket =
       socket
@@ -47,7 +47,7 @@ defmodule EdgehogWeb.DeviceGroupsLive.ChannelCellComponent do
     <div id={@id} class="inline-flex items-center">
       <.link
         :if={@channel}
-        navigate={~p"/tenants/#{@tenant.slug}/channels/#{@channel.id}"}
+        navigate={~p"/tenants/#{@scope.current_tenant.slug}/channels/#{@channel.id}"}
         data-channel={@channel.handle}
         class="badge badge-soft badge-info gap-1.5 font-medium transition-opacity hover:opacity-80"
       >
@@ -76,15 +76,15 @@ defmodule EdgehogWeb.DeviceGroupsLive.ChannelCellComponent do
     end
   end
 
-  defp resolve_channel(%{channel_id: nil}, _tenant), do: nil
+  defp resolve_channel(%{channel_id: nil}, _scope), do: nil
 
-  defp resolve_channel(%{channel_id: channel_id, channel: %{id: channel_id} = channel}, _tenant) do
+  defp resolve_channel(%{channel_id: channel_id, channel: %{id: channel_id} = channel}, _scope) do
     channel
   end
 
-  defp resolve_channel(group, tenant) do
+  defp resolve_channel(group, scope) do
     group
-    |> Ash.load!(:channel, tenant: tenant, authorize?: false, reuse_values?: false)
+    |> Ash.load!(:channel, scope: scope, reuse_values?: false)
     |> Map.get(:channel)
   end
 end

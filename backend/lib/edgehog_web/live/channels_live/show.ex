@@ -228,7 +228,7 @@ defmodule EdgehogWeb.ChannelsLive.Show do
         <.devices_cinder_table
           id="channel-devices-table"
           query={@devices_query}
-          tenant={@current_tenant}
+          scope={@current_scope}
         />
       </div>
 
