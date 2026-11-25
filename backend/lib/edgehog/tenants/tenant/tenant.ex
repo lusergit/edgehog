@@ -32,6 +32,7 @@ defmodule Edgehog.Tenants.Tenant do
     notifiers: [Ash.Notifier.PubSub]
 
   alias Ash.Error.Invalid.TenantRequired
+  alias Edgehog.Campaigns.Status, as: CampaignStatus
   alias Edgehog.Tenants.AstarteConfig
   alias Edgehog.Tenants.Tenant
   alias Edgehog.Tenants.Tenant.Calculations
@@ -175,6 +176,16 @@ defmodule Edgehog.Tenants.Tenant do
       source_attribute :tenant_id
       destination_attribute :tenant_id
     end
+
+    has_many :channels, Edgehog.Campaigns.Channel do
+      source_attribute :tenant_id
+      destination_attribute :tenant_id
+    end
+
+    has_many :campaigns, Edgehog.Campaigns.Campaign do
+      source_attribute :tenant_id
+      destination_attribute :tenant_id
+    end
   end
 
   calculations do
@@ -206,6 +217,23 @@ defmodule Edgehog.Tenants.Tenant do
       public? true
       filter expr(not is_nil(channel_id))
       description "The number of device groups currently assigned to a rollout channel."
+    end
+
+    count :channel_count, :channels do
+      public? true
+      description "The total number of rollout channels in the tenant."
+    end
+
+    count :empty_channel_count, :channels do
+      public? true
+      filter expr(not exists(target_groups, true))
+      description "The number of rollout channels with zero assigned target groups."
+    end
+
+    count :active_campaign_count, :campaigns do
+      public? true
+      filter expr(status in ^CampaignStatus.active_statuses())
+      description "The number of active or scheduled campaigns in the tenant."
     end
   end
 

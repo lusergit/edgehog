@@ -30,5 +30,14 @@ defmodule Edgehog.Campaigns.Status do
       finished: "The campaign has finished."
     ]
 
+  @active_statuses [:idle, :scheduled, :in_progress, :pausing, :paused]
+  @running_statuses [:idle, :in_progress, :pausing, :paused]
+
+  def active_statuses, do: @active_statuses
+  def running_statuses, do: @running_statuses
+
+  def active?(status), do: status in @active_statuses
+  def running?(status), do: status in @running_statuses
+
   def graphql_type(_), do: :campaign_status
 end

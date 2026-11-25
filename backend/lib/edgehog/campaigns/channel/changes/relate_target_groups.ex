@@ -25,9 +25,12 @@ defmodule Edgehog.Campaigns.Channel.Changes.RelateTargetGroups do
   @impl Ash.Resource.Change
   def change(changeset, _opts, _context) do
     {:ok, target_group_ids} = Ash.Changeset.fetch_argument(changeset, :target_group_ids)
+    reassign? = Ash.Changeset.get_argument(changeset, :reassign_target_groups) == true
+    relate_action = if reassign?, do: :reassign_channel, else: :assign_channel
 
     Ash.Changeset.manage_relationship(changeset, :target_groups, target_group_ids,
-      on_lookup: {:relate, :assign_channel},
+      on_lookup: {:relate, relate_action},
+      on_match: :ignore,
       on_no_match: :error
     )
   end

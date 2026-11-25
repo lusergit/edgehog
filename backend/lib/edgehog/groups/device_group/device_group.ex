@@ -92,6 +92,7 @@ defmodule Edgehog.Groups.DeviceGroup do
       end
 
       change Changes.ReconcileChannel
+      validate Validations.ChannelNotLocked, before_action?: true
     end
 
     update :unassign_channel do
@@ -99,6 +100,7 @@ defmodule Edgehog.Groups.DeviceGroup do
       require_atomic? false
 
       change set_attribute(:channel_id, nil)
+      validate Validations.ChannelNotLocked, before_action?: true
     end
 
     update :assign_channel do
@@ -107,6 +109,14 @@ defmodule Edgehog.Groups.DeviceGroup do
       require_atomic? false
 
       validate Validations.ChannelAbsent
+    end
+
+    update :reassign_channel do
+      accept [:channel_id]
+
+      require_atomic? false
+
+      validate Validations.ChannelNotLocked, before_action?: true
     end
 
     destroy :destroy do
@@ -215,11 +225,13 @@ defmodule Edgehog.Groups.DeviceGroup do
     publish "selector_update", :update, ["selector", :id]
     publish "channel_update", :update, ["channel", :id]
     publish "channel_assigned", :assign_channel, ["channel", :id]
+    publish "channel_reassigned", :reassign_channel, ["channel", :id]
     publish "channel_unassigned", :unassign_channel, ["channel", :id]
 
     publish :create, ["tenant", :tenant_id]
     publish :update, ["tenant", :tenant_id]
     publish :assign_channel, ["tenant", :tenant_id]
+    publish :reassign_channel, ["tenant", :tenant_id]
     publish :unassign_channel, ["tenant", :tenant_id]
     publish_all :destroy, ["tenant", :tenant_id]
   end

@@ -120,5 +120,50 @@ defmodule EdgehogWeb.Schema.Query.TenantInfoTest do
                }
              } = Absinthe.run!(doc, EdgehogWeb.Schema, context: %{tenant: tenant, actor: %{}})
     end
+
+    test "returns tenant-scoped channel and active campaign aggregates" do
+      tenant = tenant_fixture()
+      group = device_group_fixture(tenant: tenant)
+      channel = channel_fixture(tenant: tenant, target_group_ids: [group.id])
+      _empty_channel = channel_fixture(tenant: tenant, target_group_ids: [])
+
+      active_campaign = campaign_fixture(tenant: tenant, channel_id: channel.id)
+
+      _active =
+        Ash.update!(active_campaign, %{},
+          action: :mark_as_in_progress,
+          tenant: tenant,
+          authorize?: false
+        )
+
+      finished_campaign = campaign_fixture(tenant: tenant, channel_id: channel.id)
+
+      _finished =
+        Ash.update!(finished_campaign, %{},
+          action: :mark_as_successful,
+          tenant: tenant,
+          authorize?: false
+        )
+
+      doc = """
+      query {
+        tenantInfo {
+          channelCount
+          emptyChannelCount
+          activeCampaignCount
+        }
+      }
+      """
+
+      assert %{
+               data: %{
+                 "tenantInfo" => %{
+                   "channelCount" => 2,
+                   "emptyChannelCount" => 1,
+                   "activeCampaignCount" => 1
+                 }
+               }
+             } = Absinthe.run!(doc, EdgehogWeb.Schema, context: %{tenant: tenant, actor: %{}})
+    end
   end
 end

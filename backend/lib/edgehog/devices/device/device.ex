@@ -187,6 +187,102 @@ defmodule Edgehog.Devices.Device do
       end
     end
 
+    read :for_channel do
+      description "Returns deduplicated devices reachable by the specified rollout channel."
+
+      argument :channel_id, :id do
+        allow_nil? false
+        description "The ID of the rollout channel."
+      end
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      prepare fn query, _context ->
+        channel_id = Ash.Query.get_argument(query, :channel_id)
+
+        selectors =
+          DeviceGroup
+          |> Ash.Query.for_read(:read, %{}, tenant: query.tenant, authorize?: false)
+          |> Ash.Query.filter(channel_id == ^channel_id)
+          |> Ash.Query.select([:selector])
+          |> Ash.read!(tenant: query.tenant, authorize?: false)
+          |> Enum.map(& &1.selector)
+
+        case Selector.union_ash_expr(selectors) do
+          {:ok, filter_expr} -> Ash.Query.filter(query, ^filter_expr)
+          :empty -> Ash.Query.filter(query, false)
+        end
+      end
+    end
+
+    read :for_device_groups do
+      description "Returns deduplicated devices matched by any of the specified device groups."
+
+      argument :device_group_ids, {:array, :id} do
+        allow_nil? false
+        description "The IDs of the device groups."
+      end
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      prepare fn query, _context ->
+        group_ids = Ash.Query.get_argument(query, :device_group_ids)
+
+        if group_ids == [] do
+          Ash.Query.filter(query, false)
+        else
+          selectors =
+            DeviceGroup
+            |> Ash.Query.for_read(:read, %{}, tenant: query.tenant, authorize?: false)
+            |> Ash.Query.filter(id in ^group_ids)
+            |> Ash.Query.select([:selector])
+            |> Ash.read!(tenant: query.tenant, authorize?: false)
+            |> Enum.map(& &1.selector)
+
+          case Selector.union_ash_expr(selectors) do
+            {:ok, filter_expr} -> Ash.Query.filter(query, ^filter_expr)
+            :empty -> Ash.Query.filter(query, false)
+          end
+        end
+      end
+    end
+
+    read :in_any_channel do
+      description "Returns deduplicated devices reachable by at least one rollout channel."
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      prepare fn query, _context ->
+        selectors =
+          DeviceGroup
+          |> Ash.Query.for_read(:read, %{}, tenant: query.tenant, authorize?: false)
+          |> Ash.Query.filter(not is_nil(channel_id))
+          |> Ash.Query.select([:selector])
+          |> Ash.read!(tenant: query.tenant, authorize?: false)
+          |> Enum.map(& &1.selector)
+
+        case Selector.union_ash_expr(selectors) do
+          {:ok, filter_expr} -> Ash.Query.filter(query, ^filter_expr)
+          :empty -> Ash.Query.filter(query, false)
+        end
+      end
+    end
+
     create :create do
       primary? true
 

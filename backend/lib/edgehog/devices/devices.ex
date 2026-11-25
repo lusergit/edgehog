@@ -68,6 +68,26 @@ defmodule Edgehog.Devices do
         relay? true
       end
 
+      list Device, :devices_for_channel, :for_channel do
+        description "Returns deduplicated devices reachable by the specified rollout channel."
+        paginate_with :keyset
+        relay? true
+        relay_id_translations channel_id: :channel
+      end
+
+      list Device, :devices_for_device_groups, :for_device_groups do
+        description "Returns deduplicated devices matched by any of the specified device groups."
+        paginate_with :keyset
+        relay? true
+        relay_id_translations device_group_ids: :device_group
+      end
+
+      list Device, :devices_in_any_channel, :in_any_channel do
+        description "Returns deduplicated devices reachable by at least one rollout channel."
+        paginate_with :keyset
+        relay? true
+      end
+
       get HardwareType, :hardware_type, :read do
         description "Returns a single hardware type."
       end

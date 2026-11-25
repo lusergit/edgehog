@@ -178,6 +178,101 @@ defmodule EdgehogWeb.Schema.Mutation.UpdateChannelTest do
 
       assert name == ~s["#{target_group.name}"]
     end
+
+    test "reassigns unlocked target group when reassignTargetGroups is true", %{
+      tenant: tenant,
+      id: id
+    } do
+      target_group = device_group_fixture(tenant: tenant)
+      _old_channel = channel_fixture(tenant: tenant, target_group_ids: [target_group.id])
+      target_group_id = AshGraphql.Resource.encode_relay_id(target_group)
+
+      doc = """
+      mutation UpdateChannel($id: ID!, $input: UpdateChannelInput!) {
+        updateChannel(id: $id, input: $input) {
+          result {
+            id
+            targetGroupCount
+            targetGroups {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
+          }
+        }
+      }
+      """
+
+      assert %{
+               data: %{
+                 "updateChannel" => %{
+                   "result" => %{
+                     "id" => ^id,
+                     "targetGroupCount" => 1,
+                     "targetGroups" => %{
+                       "edges" => [%{"node" => %{"id" => ^target_group_id}}]
+                     }
+                   }
+                 }
+               }
+             } =
+               Absinthe.run!(doc, EdgehogWeb.Schema,
+                 variables: %{
+                   "id" => id,
+                   "input" => %{
+                     "targetGroupIds" => [target_group_id],
+                     "reassignTargetGroups" => true
+                   }
+                 },
+                 context: %{tenant: tenant, actor: %{}}
+               )
+    end
+
+    test "rejects reassigning target group from a channel with a running campaign", %{
+      tenant: tenant,
+      id: id
+    } do
+      locked_group = device_group_fixture(tenant: tenant)
+      locked_channel = channel_fixture(tenant: tenant, target_group_ids: [locked_group.id])
+
+      running_campaign = campaign_fixture(tenant: tenant, channel_id: locked_channel.id)
+
+      _running =
+        Ash.update!(running_campaign, %{},
+          action: :mark_as_in_progress,
+          tenant: tenant,
+          authorize?: false
+        )
+
+      locked_group_id = AshGraphql.Resource.encode_relay_id(locked_group)
+
+      doc = """
+      mutation UpdateChannel($id: ID!, $input: UpdateChannelInput!) {
+        updateChannel(id: $id, input: $input) {
+          result {
+            id
+          }
+        }
+      }
+      """
+
+      result =
+        Absinthe.run!(doc, EdgehogWeb.Schema,
+          variables: %{
+            "id" => id,
+            "input" => %{
+              "targetGroupIds" => [locked_group_id],
+              "reassignTargetGroups" => true
+            }
+          },
+          context: %{tenant: tenant, actor: %{}}
+        )
+
+      assert %{errors: [%{message: message} | _]} = result
+      assert message =~ "running campaign"
+    end
   end
 
   defp update_channel_mutation(opts) do

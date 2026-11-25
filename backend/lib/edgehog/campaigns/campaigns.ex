@@ -69,11 +69,17 @@ defmodule Edgehog.Campaigns do
         relay? true
       end
 
+      list Campaign, :active_campaigns, :active do
+        description "Returns all active or scheduled campaigns."
+        paginate_with :keyset
+        relay? true
+      end
+
       get Channel, :channel, :read do
         description "Returns a single channel."
       end
 
-      list Channel, :channels, :read do
+      list Channel, :channels, :list do
         description "Returns a list of channels."
         paginate_with :keyset
         relay? true

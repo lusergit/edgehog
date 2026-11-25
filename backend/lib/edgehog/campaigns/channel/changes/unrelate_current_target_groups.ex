@@ -38,12 +38,43 @@ defmodule Edgehog.Campaigns.Channel.Changes.UnrelateCurrentTargetGroups do
   defp unrelate_target_groups(tenant, changeset) do
     channel_id = changeset.data.id
 
-    %Ash.BulkResult{status: :success} =
-      DeviceGroup
-      |> Ash.Query.filter(channel_id == ^channel_id)
-      |> Ash.Query.set_tenant(tenant)
-      |> Ash.bulk_update!(:unassign_channel, %{})
+    keep_ids =
+      if changeset.action.type == :update do
+        Ash.Changeset.get_argument(changeset, :target_group_ids) || []
+      else
+        []
+      end
 
-    changeset
+    query =
+      DeviceGroup
+      |> Ash.Query.for_read(:read, %{}, tenant: tenant, authorize?: false)
+      |> Ash.Query.filter(channel_id == ^channel_id)
+
+    query =
+      if keep_ids == [] do
+        query
+      else
+        Ash.Query.filter(query, id not in ^keep_ids)
+      end
+
+    groups_to_unrelate = Ash.read!(query, tenant: tenant, authorize?: false)
+
+    Enum.reduce_while(groups_to_unrelate, changeset, fn group, acc ->
+      case Ash.update(group, %{}, action: :unassign_channel, tenant: tenant, authorize?: false) do
+        {:ok, _updated} ->
+          {:cont, acc}
+
+        {:error, error} ->
+          message =
+            "Cannot remove group #{group.name} while this channel has a running campaign."
+
+          {:halt,
+           Ash.Changeset.add_error(acc,
+             field: :target_group_ids,
+             message: message,
+             vars: [cause: Exception.message(error)]
+           )}
+      end
+    end)
   end
 end

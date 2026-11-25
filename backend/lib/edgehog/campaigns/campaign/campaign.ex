@@ -113,6 +113,19 @@ defmodule Edgehog.Campaigns.Campaign do
       filter expr(campaign_mechanism[:type] in [:file_download])
     end
 
+    read :active do
+      description "Returns campaigns with an active or scheduled status."
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      filter expr(status in ^Status.active_statuses())
+    end
+
     create :create do
       description "Creates a new campaign."
       primary? true
@@ -290,6 +303,20 @@ defmodule Edgehog.Campaigns.Campaign do
       description "The campaign targets belonging to the campaign."
       public? true
       writable? false
+    end
+  end
+
+  calculations do
+    calculate :is_active, :boolean, expr(status in ^Status.active_statuses()) do
+      public? true
+      allow_nil? false
+      description "Whether the campaign is active or scheduled."
+    end
+
+    calculate :is_running, :boolean, expr(status in ^Status.running_statuses()) do
+      public? true
+      allow_nil? false
+      description "Whether the campaign is actively executing or paused."
     end
   end
 

@@ -32,7 +32,11 @@ defmodule Edgehog.Campaigns.Channel do
   alias Edgehog.Campaigns.Channel.Calculations
   alias Edgehog.Campaigns.Channel.Changes
   alias Edgehog.Campaigns.Channel.ErrorHandler
+  alias Edgehog.Campaigns.Channel.FleetReach
+  alias Edgehog.Campaigns.Status
   alias Edgehog.Devices.Device
+
+  require Ash.Query
 
   resource do
     description """
@@ -62,6 +66,49 @@ defmodule Edgehog.Campaigns.Channel do
   actions do
     defaults [:read]
 
+    read :list do
+      description "Returns channels with optional case-insensitive search across channels and target groups."
+
+      pagination do
+        required? false
+        offset? true
+        keyset? true
+        countable true
+      end
+
+      argument :search, :string do
+        description "Optional case-insensitive substring filter matching channel or target group names/handles."
+      end
+
+      prepare fn query, _context ->
+        case Ash.Query.get_argument(query, :search) do
+          search when is_binary(search) ->
+            trimmed = String.trim(search)
+
+            if trimmed == "" do
+              query
+            else
+              escaped = String.replace(trimmed, ~r/([%_\\])/, "\\\\\\1")
+              pattern = "%#{escaped}%"
+
+              Ash.Query.filter(
+                query,
+                fragment("? ILIKE ?", name, ^pattern) or
+                  fragment("? ILIKE ?", handle, ^pattern) or
+                  exists(
+                    target_groups,
+                    fragment("? ILIKE ?", name, ^pattern) or
+                      fragment("? ILIKE ?", handle, ^pattern)
+                  )
+              )
+            end
+
+          _ ->
+            query
+        end
+      end
+    end
+
     create :create do
       description "Creates a new channel."
       primary? true
@@ -72,6 +119,12 @@ defmodule Edgehog.Campaigns.Channel do
         description """
         The IDs of the target groups that are targeted by this channel.
         """
+      end
+
+      argument :reassign_target_groups, :boolean do
+        default false
+
+        description "When true, target groups assigned to another unlocked channel are moved to this channel."
       end
 
       change Changes.RelateTargetGroups do
@@ -89,6 +142,12 @@ defmodule Edgehog.Campaigns.Channel do
         description """
         The IDs of the target groups that are targeted by this channel.
         """
+      end
+
+      argument :reassign_target_groups, :boolean do
+        default false
+
+        description "When true, target groups assigned to another unlocked channel are moved to this channel."
       end
 
       # Needed because manage_relationship is not atomic
@@ -169,9 +228,24 @@ defmodule Edgehog.Campaigns.Channel do
     has_many :campaigns, Edgehog.Campaigns.Campaign do
       public? true
     end
+
+    has_one :featured_campaign, Edgehog.Campaigns.Campaign do
+      public? true
+      from_many? true
+      sort is_active: :desc, inserted_at: :desc, id: :desc
+
+      description "The active rollout campaign for this channel, or the most recently created campaign if none is active."
+    end
   end
 
   calculations do
+    calculate :fleet_reach, FleetReach, Calculations.FleetReach do
+      public? true
+      allow_nil? false
+
+      description "Deduplicated device reach, online count, and system model breakdown for this channel."
+    end
+
     calculate :updatable_devices, {:array, :struct} do
       description """
       The devices targeted by the channel that can be updated with the \
@@ -222,6 +296,31 @@ defmodule Edgehog.Campaigns.Channel do
       allow_nil? false
 
       calculation Calculations.DownloadCapableDevices
+    end
+  end
+
+  aggregates do
+    count :target_group_count, :target_groups do
+      public? true
+      description "The number of target device groups assigned to this channel."
+    end
+
+    count :campaign_count, :campaigns do
+      public? true
+      description "The total number of campaigns referencing this channel."
+    end
+
+    exists :has_active_rollout, :campaigns do
+      public? true
+      filter expr(status in ^Status.active_statuses())
+      description "Whether this channel has an active or scheduled campaign."
+    end
+
+    exists :has_running_campaign, :campaigns do
+      public? true
+      filter expr(status in ^Status.running_statuses())
+
+      description "Whether this channel has a running or paused campaign locking target group changes."
     end
   end
 
