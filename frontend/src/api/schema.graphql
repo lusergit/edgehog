@@ -10180,6 +10180,9 @@ input UpdateDeviceGroupInput {
   This must be a valid selector expression, consult the Selector section of the Edgehog documentation for more information about Selectors.
   """
   selector: String
+
+  "Optional ID of the rollout channel to assign (or null to unassign)."
+  channelId: ID
 }
 
 "The result of the :create_device_group mutation"
@@ -10208,6 +10211,9 @@ input CreateDeviceGroupInput {
   This must be a valid selector expression, consult the Selector section of the Edgehog documentation for more information about Selectors.
   """
   selector: String!
+
+  "Optional ID of the rollout channel to assign this group to."
+  channelId: ID
 }
 
 enum DeviceGroupSortField {
@@ -10215,6 +10221,7 @@ enum DeviceGroupSortField {
   NAME
   HANDLE
   SELECTOR
+  IS_ASSIGNED
 }
 
 ":device_group connection"
@@ -10236,6 +10243,19 @@ type DeviceGroupEdge {
 
   ":device_group node"
   node: DeviceGroup!
+}
+
+input DeviceGroupFilterIsAssigned {
+  isNil: Boolean
+  eq: Boolean
+  notEq: Boolean
+  in: [Boolean!]
+  lessThan: Boolean
+  greaterThan: Boolean
+  lessThanOrEqual: Boolean
+  greaterThanOrEqual: Boolean
+  isDistinctFrom: Boolean
+  isNotDistinctFrom: Boolean
 }
 
 input DeviceGroupFilterSelector {
@@ -10336,6 +10356,9 @@ input DeviceGroupFilterInput {
 
   "The channel associated with the group, if present."
   channel: ChannelFilterInput
+
+  "Whether the device group is currently assigned to a rollout channel."
+  isAssigned: DeviceGroupFilterIsAssigned
 }
 
 input DeviceGroupSortInput {
@@ -10374,6 +10397,15 @@ type DeviceGroup implements Node {
 
   "The channel associated with the group, if present."
   channel: Channel
+
+  "Whether the device group is currently assigned to a rollout channel."
+  isAssigned: Boolean!
+
+  "The total number of devices matching this group's selector."
+  deviceCount: Int!
+
+  "The number of online devices matching this group's selector."
+  onlineDeviceCount: Int!
 }
 
 enum TagSortField {
@@ -10730,6 +10762,15 @@ type TenantInfo {
 
   "The number of online devices in the tenant."
   onlineDeviceCount: Int!
+
+  "The total number of device groups in the tenant."
+  deviceGroupCount: Int!
+
+  "The number of device groups currently assigned to a rollout channel."
+  assignedDeviceGroupCount: Int!
+
+  "The number of device groups currently matching zero devices."
+  emptyDeviceGroupCount: Int!
 }
 
 type channels_result {
@@ -11698,6 +11739,27 @@ type RootQueryType {
     last: Int
   ): DeviceGroupConnection
 
+  "Returns device groups not currently assigned to any rollout channel."
+  unassignedDeviceGroups(
+    "How to sort the records in the response"
+    sort: [DeviceGroupSortInput]
+
+    "A filter to limit the results"
+    filter: DeviceGroupFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): DeviceGroupConnection
+
   """
   Fetches the forwarder config, if available.
   Without a configuration, forwarding functionalities are not available.
@@ -11746,6 +11808,75 @@ type RootQueryType {
 
   "Returns a list of devices."
   devices(
+    "How to sort the records in the response"
+    sort: [DeviceSortInput]
+
+    "A filter to limit the results"
+    filter: DeviceFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): DeviceConnection
+
+  "Returns devices matching the provided selector expression."
+  devicesMatchingSelector(
+    "How to sort the records in the response"
+    sort: [DeviceSortInput]
+
+    "A filter to limit the results"
+    filter: DeviceFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+
+    "A valid Edgehog selector expression."
+    selector: String!
+  ): DeviceConnection
+
+  "Returns devices matching the specified device group's selector."
+  devicesForDeviceGroup(
+    "How to sort the records in the response"
+    sort: [DeviceSortInput]
+
+    "A filter to limit the results"
+    filter: DeviceFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+
+    "The ID of the device group."
+    deviceGroupId: ID!
+  ): DeviceConnection
+
+  "Returns devices matched by at least one device group in the tenant."
+  devicesInAnyDeviceGroup(
     "How to sort the records in the response"
     sort: [DeviceSortInput]
 
