@@ -4,6 +4,28 @@ schema {
   query: RootQueryType
 }
 
+type ChannelFleetReach {
+  "The deduplicated total number of devices reachable by the channel."
+  totalCount: Int!
+
+  "The number of reachable devices currently online."
+  onlineCount: Int!
+
+  "Breakdown of reachable devices by system model."
+  systemModelCounts: [ChannelSystemModelCount!]!
+}
+
+type ChannelSystemModelCount {
+  "The display name of the system model."
+  name: String!
+
+  "The handle of the system model."
+  handle: String!
+
+  "The number of reachable devices with this system model."
+  deviceCount: Int!
+}
+
 input CampaignCampaignMechanismFileDownloadInput {
   """
   Optional compression type for the file (e.g., "tar.gz").
@@ -10769,6 +10791,15 @@ type TenantInfo {
   "The number of device groups currently assigned to a rollout channel."
   assignedDeviceGroupCount: Int!
 
+  "The total number of rollout channels in the tenant."
+  channelCount: Int!
+
+  "The number of rollout channels with zero assigned target groups."
+  emptyChannelCount: Int!
+
+  "The number of active or scheduled campaigns in the tenant."
+  activeCampaignCount: Int!
+
   "The number of device groups currently matching zero devices."
   emptyDeviceGroupCount: Int!
 }
@@ -10810,6 +10841,9 @@ input UpdateChannelInput {
 
   "The IDs of the target groups that are targeted by this channel."
   targetGroupIds: [ID!]
+
+  "When true, target groups assigned to another unlocked channel are moved to this channel."
+  reassignTargetGroups: Boolean
 }
 
 "The result of the :create_channel mutation"
@@ -10834,12 +10868,19 @@ input CreateChannelInput {
 
   "The IDs of the target groups that are targeted by this channel."
   targetGroupIds: [ID!]
+
+  "When true, target groups assigned to another unlocked channel are moved to this channel."
+  reassignTargetGroups: Boolean
 }
 
 enum ChannelSortField {
   ID
   HANDLE
   NAME
+  TARGET_GROUP_COUNT
+  CAMPAIGN_COUNT
+  HAS_ACTIVE_ROLLOUT
+  HAS_RUNNING_CAMPAIGN
 }
 
 ":channel connection"
@@ -10861,6 +10902,58 @@ type ChannelEdge {
 
   ":channel node"
   node: Channel!
+}
+
+input ChannelFilterHasRunningCampaign {
+  isNil: Boolean
+  eq: Boolean
+  notEq: Boolean
+  in: [Boolean]
+  lessThan: Boolean
+  greaterThan: Boolean
+  lessThanOrEqual: Boolean
+  greaterThanOrEqual: Boolean
+  isDistinctFrom: Boolean
+  isNotDistinctFrom: Boolean
+}
+
+input ChannelFilterHasActiveRollout {
+  isNil: Boolean
+  eq: Boolean
+  notEq: Boolean
+  in: [Boolean]
+  lessThan: Boolean
+  greaterThan: Boolean
+  lessThanOrEqual: Boolean
+  greaterThanOrEqual: Boolean
+  isDistinctFrom: Boolean
+  isNotDistinctFrom: Boolean
+}
+
+input ChannelFilterCampaignCount {
+  isNil: Boolean
+  eq: Int
+  notEq: Int
+  in: [Int]
+  lessThan: Int
+  greaterThan: Int
+  lessThanOrEqual: Int
+  greaterThanOrEqual: Int
+  isDistinctFrom: Int
+  isNotDistinctFrom: Int
+}
+
+input ChannelFilterTargetGroupCount {
+  isNil: Boolean
+  eq: Int
+  notEq: Int
+  in: [Int]
+  lessThan: Int
+  greaterThan: Int
+  lessThanOrEqual: Int
+  greaterThanOrEqual: Int
+  isDistinctFrom: Int
+  isNotDistinctFrom: Int
 }
 
 input ChannelFilterName {
@@ -10935,6 +11028,21 @@ input ChannelFilterInput {
   targetGroups: DeviceGroupFilterInput
 
   campaigns: CampaignFilterInput
+
+  "The active rollout campaign for this channel, or the most recently created campaign if none is active."
+  featuredCampaign: CampaignFilterInput
+
+  "The number of target device groups assigned to this channel."
+  targetGroupCount: ChannelFilterTargetGroupCount
+
+  "The total number of campaigns referencing this channel."
+  campaignCount: ChannelFilterCampaignCount
+
+  "Whether this channel has an active or scheduled campaign."
+  hasActiveRollout: ChannelFilterHasActiveRollout
+
+  "Whether this channel has a running or paused campaign locking target group changes."
+  hasRunningCampaign: ChannelFilterHasRunningCampaign
 }
 
 input ChannelSortInput {
@@ -11000,6 +11108,24 @@ type Channel implements Node {
     "The number of records to return to the end. Maximum 250"
     last: Int
   ): CampaignConnection!
+
+  "The active rollout campaign for this channel, or the most recently created campaign if none is active."
+  featuredCampaign: Campaign
+
+  "The number of target device groups assigned to this channel."
+  targetGroupCount: Int!
+
+  "The total number of campaigns referencing this channel."
+  campaignCount: Int!
+
+  "Whether this channel has an active or scheduled campaign."
+  hasActiveRollout: Boolean
+
+  "Whether this channel has a running or paused campaign locking target group changes."
+  hasRunningCampaign: Boolean
+
+  "Deduplicated device reach, online count, and system model breakdown for this channel."
+  fleetReach: ChannelFleetReach!
 }
 
 type campaign_targets_by_campaign_result {
@@ -11312,6 +11438,8 @@ enum CampaignSortField {
   STATUS
   OUTCOME
   SCHEDULED_AT_TIMESTAMP
+  IS_ACTIVE
+  IS_RUNNING
   TOTAL_TARGET_COUNT
   IDLE_TARGET_COUNT
   IN_PROGRESS_TARGET_COUNT
@@ -11338,6 +11466,32 @@ type CampaignEdge {
 
   ":campaign node"
   node: Campaign!
+}
+
+input CampaignFilterIsRunning {
+  isNil: Boolean
+  eq: Boolean
+  notEq: Boolean
+  in: [Boolean!]
+  lessThan: Boolean
+  greaterThan: Boolean
+  lessThanOrEqual: Boolean
+  greaterThanOrEqual: Boolean
+  isDistinctFrom: Boolean
+  isNotDistinctFrom: Boolean
+}
+
+input CampaignFilterIsActive {
+  isNil: Boolean
+  eq: Boolean
+  notEq: Boolean
+  in: [Boolean!]
+  lessThan: Boolean
+  greaterThan: Boolean
+  lessThanOrEqual: Boolean
+  greaterThanOrEqual: Boolean
+  isDistinctFrom: Boolean
+  isNotDistinctFrom: Boolean
 }
 
 input CampaignFilterSuccessfulTargetCount {
@@ -11515,6 +11669,12 @@ input CampaignFilterInput {
 
   "The number of campaign targets with a successful status."
   successfulTargetCount: CampaignFilterSuccessfulTargetCount
+
+  "Whether the campaign is active or scheduled."
+  isActive: CampaignFilterIsActive
+
+  "Whether the campaign is actively executing or paused."
+  isRunning: CampaignFilterIsRunning
 }
 
 input CampaignSortInput {
@@ -11577,6 +11737,12 @@ type Campaign implements Node {
 
   "The number of campaign targets with a successful status."
   successfulTargetCount: Int!
+
+  "Whether the campaign is active or scheduled."
+  isActive: Boolean!
+
+  "Whether the campaign is actively executing or paused."
+  isRunning: Boolean!
 }
 
 type RootQueryType {
@@ -11667,6 +11833,27 @@ type RootQueryType {
     last: Int
   ): CampaignConnection
 
+  "Returns all active or scheduled campaigns."
+  activeCampaigns(
+    "How to sort the records in the response"
+    sort: [CampaignSortInput]
+
+    "A filter to limit the results"
+    filter: CampaignFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): CampaignConnection
+
   "Returns a single channel."
   channel("The id of the record" id: ID!): Channel
 
@@ -11689,6 +11876,9 @@ type RootQueryType {
 
     "The number of records to return to the end. Maximum 250"
     last: Int
+
+    "Optional case-insensitive substring filter matching channel or target group names/handles."
+    search: String
   ): ChannelConnection
 
   "Retrieves the current tenant."
@@ -11877,6 +12067,75 @@ type RootQueryType {
 
   "Returns devices matched by at least one device group in the tenant."
   devicesInAnyDeviceGroup(
+    "How to sort the records in the response"
+    sort: [DeviceSortInput]
+
+    "A filter to limit the results"
+    filter: DeviceFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): DeviceConnection
+
+  "Returns deduplicated devices reachable by the specified rollout channel."
+  devicesForChannel(
+    "How to sort the records in the response"
+    sort: [DeviceSortInput]
+
+    "A filter to limit the results"
+    filter: DeviceFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+
+    "The ID of the rollout channel."
+    channelId: ID!
+  ): DeviceConnection
+
+  "Returns deduplicated devices matched by any of the specified device groups."
+  devicesForDeviceGroups(
+    "How to sort the records in the response"
+    sort: [DeviceSortInput]
+
+    "A filter to limit the results"
+    filter: DeviceFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+
+    "The IDs of the device groups."
+    deviceGroupIds: [ID!]!
+  ): DeviceConnection
+
+  "Returns deduplicated devices reachable by at least one rollout channel."
+  devicesInAnyChannel(
     "How to sort the records in the response"
     sort: [DeviceSortInput]
 
