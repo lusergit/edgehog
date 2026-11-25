@@ -650,6 +650,13 @@ defmodule Edgehog.Devices.Device do
   end
 
   calculations do
+    calculate :last_seen,
+              :utc_datetime,
+              expr(fragment("GREATEST(?, ?)", last_connection, last_disconnection)) do
+      public? true
+      description "The most recent connection or disconnection timestamp of the device."
+    end
+
     calculate :appengine_client, :struct, Calculations.AppEngineClient do
       constraints instance_of: Astarte.Client.AppEngine
       filterable? false

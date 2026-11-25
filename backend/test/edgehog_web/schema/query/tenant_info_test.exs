@@ -21,6 +21,7 @@
 defmodule EdgehogWeb.Schema.Query.TenantInfoTest do
   use Edgehog.DataCase, async: true
 
+  import Edgehog.DevicesFixtures
   import Edgehog.TenantsFixtures
 
   alias Edgehog.Tenants.Tenant
@@ -56,6 +57,33 @@ defmodule EdgehogWeb.Schema.Query.TenantInfoTest do
                AshGraphql.Resource.decode_relay_id(graphql_id)
 
       assert decoded_id == to_string(id)
+    end
+
+    test "returns tenant-scoped device fleet aggregates" do
+      tenant = tenant_fixture()
+      other_tenant = tenant_fixture()
+
+      _online = device_fixture(tenant: tenant, online: true)
+      _offline = device_fixture(tenant: tenant, online: false)
+      _other = device_fixture(tenant: other_tenant, online: true)
+
+      doc = """
+      query {
+        tenantInfo {
+          deviceCount
+          onlineDeviceCount
+        }
+      }
+      """
+
+      assert %{
+               data: %{
+                 "tenantInfo" => %{
+                   "deviceCount" => 2,
+                   "onlineDeviceCount" => 1
+                 }
+               }
+             } = Absinthe.run!(doc, EdgehogWeb.Schema, context: %{tenant: tenant, actor: %{}})
     end
   end
 end

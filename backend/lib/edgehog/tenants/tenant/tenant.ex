@@ -164,6 +164,24 @@ defmodule Edgehog.Tenants.Tenant do
       source_attribute :tenant_id
       allow_nil? false
     end
+
+    has_many :devices, Edgehog.Devices.Device do
+      source_attribute :tenant_id
+      destination_attribute :tenant_id
+    end
+  end
+
+  aggregates do
+    count :device_count, :devices do
+      public? true
+      description "The total number of devices in the tenant."
+    end
+
+    count :online_device_count, :devices do
+      public? true
+      filter expr(online == true)
+      description "The number of online devices in the tenant."
+    end
   end
 
   identities do

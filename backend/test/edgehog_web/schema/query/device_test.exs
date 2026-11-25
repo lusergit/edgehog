@@ -41,6 +41,45 @@ defmodule EdgehogWeb.Schema.Query.DeviceTest do
       assert device["online"] == fixture.online
     end
 
+    test "returns lastSeen as the most recent of lastConnection and lastDisconnection", %{
+      tenant: tenant
+    } do
+      earlier = ~U[2026-01-10 08:00:00Z]
+      later = ~U[2026-01-12 14:30:00Z]
+
+      disconnected_later =
+        device_fixture(tenant: tenant, last_connection: earlier, last_disconnection: later)
+
+      connected_only =
+        device_fixture(tenant: tenant, last_connection: later, last_disconnection: nil)
+
+      never_connected =
+        device_fixture(tenant: tenant, last_connection: nil, last_disconnection: nil)
+
+      document = """
+      query ($id: ID!) {
+        device(id: $id) {
+          lastSeen
+        }
+      }
+      """
+
+      for {device_record, expected} <- [
+            {disconnected_later, DateTime.to_iso8601(later)},
+            {connected_only, DateTime.to_iso8601(later)},
+            {never_connected, nil}
+          ] do
+        id = AshGraphql.Resource.encode_relay_id(device_record)
+
+        result =
+          [document: document, tenant: tenant, id: id]
+          |> device_query()
+          |> extract_result!()
+
+        assert result["lastSeen"] == expected
+      end
+    end
+
     test "queries associated system model", %{tenant: tenant} do
       part_number = "foo123"
       system_model = system_model_fixture(tenant: tenant, part_numbers: [part_number])
