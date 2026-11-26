@@ -25,7 +25,9 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerController.DeploymentEventsTest d
   import Edgehog.ContainersFixtures
   import Edgehog.DevicesFixtures
 
+  alias Edgehog.Audit.Event
   alias Edgehog.Containers.Release.Deployment
+  alias Edgehog.Repo
 
   describe "deployment events" do
     setup %{tenant: tenant} do
@@ -172,6 +174,129 @@ defmodule EdgehogWeb.Controllers.AstarteTriggerController.DeploymentEventsTest d
       |> post(path, deployment_event)
       |> response(422)
     end
+
+    for {context_value, event_name} <- [
+          {:start_message_sent, "start_fail"},
+          {:stop_message_sent, "stop_fail"},
+          {:delete_message_sent, "undeployment_fail"},
+          {:upgrade_message_sent, "upgrade_fail"}
+        ] do
+      test "audits #{event_name} once and clears context on Error event when context is #{context_value}",
+           %{
+             conn: conn,
+             realm: realm,
+             device: device,
+             tenant: tenant
+           } do
+        application = application_fixture(name: "edge-app", tenant: tenant)
+        container = container_fixture(name: "web", tenant: tenant)
+
+        release =
+          release_fixture(
+            application_id: application.id,
+            version: "1.0.0",
+            container_ids: [container.id],
+            tenant: tenant
+          )
+
+        deployment =
+          deployment_fixture(
+            tenant: tenant,
+            device_id: device.id,
+            release_id: release.id
+          )
+
+        deployment =
+          deployment
+          |> Ecto.Changeset.change(context: unquote(context_value))
+          |> Repo.update!()
+
+        deployment_event = %{
+          device_id: device.device_id,
+          event: %{
+            type: "incoming_data",
+            interface: "io.edgehog.devicemanager.apps.DeploymentEvent",
+            path: "/" <> deployment.id,
+            value: %{
+              "status" => "Error",
+              "message" => "command failed on device",
+              "addInfo" => ["exit code 137"]
+            }
+          },
+          timestamp: DateTime.to_iso8601(DateTime.utc_now())
+        }
+
+        path = Routes.astarte_trigger_path(conn, :process_event, tenant.slug)
+
+        conn
+        |> put_req_header("astarte-realm", realm.name)
+        |> post(path, deployment_event)
+        |> response(200)
+
+        assert [audit_event] = lifecycle_events(tenant, unquote(event_name))
+        assert audit_event.log_level == :error
+        assert audit_event.metadata["resource_id"] == deployment.id
+        assert audit_event.metadata["device_id"] == device.device_id
+        assert audit_event.metadata["application_name"] == "edge-app"
+        assert audit_event.metadata["release_version"] == "1.0.0"
+        assert audit_event.metadata["container_names"] == ["web"]
+        assert audit_event.metadata["error"] == "command failed on device"
+        assert audit_event.metadata["add_info"] == ["exit code 137"]
+
+        updated_deployment = Ash.get!(Deployment, deployment.id, tenant: tenant)
+        assert is_nil(updated_deployment.context)
+
+        # A duplicate Error event does not re-emit the failure audit event
+        conn
+        |> put_req_header("astarte-realm", realm.name)
+        |> post(path, deployment_event)
+        |> response(200)
+
+        assert length(lifecycle_events(tenant, unquote(event_name))) == 1
+      end
+    end
+
+    test "does not emit a failure audit event when deployment context is nil", %{
+      conn: conn,
+      realm: realm,
+      device: device,
+      tenant: tenant,
+      deployment: deployment
+    } do
+      deployment_event = %{
+        device_id: device.device_id,
+        event: %{
+          type: "incoming_data",
+          interface: "io.edgehog.devicemanager.apps.DeploymentEvent",
+          path: "/" <> deployment.id,
+          value: %{
+            "status" => "Error",
+            "message" => "spontaneous error"
+          }
+        },
+        timestamp: DateTime.to_iso8601(DateTime.utc_now())
+      }
+
+      path = Routes.astarte_trigger_path(conn, :process_event, tenant.slug)
+
+      conn
+      |> put_req_header("astarte-realm", realm.name)
+      |> post(path, deployment_event)
+      |> response(200)
+
+      assert lifecycle_events(tenant, "start_fail") == []
+      assert lifecycle_events(tenant, "stop_fail") == []
+      assert lifecycle_events(tenant, "undeployment_fail") == []
+      assert lifecycle_events(tenant, "upgrade_fail") == []
+    end
+  end
+
+  defp lifecycle_events(tenant, event_name) do
+    Event
+    |> Ash.read!(tenant: tenant)
+    |> Enum.filter(fn event ->
+      is_nil(event.ash_action_info) and event.metadata["event"] == event_name
+    end)
   end
 
   defp event_value(event, message),

@@ -34,6 +34,7 @@ defmodule Edgehog.Containers.Release.Deployment.OrchestratorTest do
   import Edgehog.TenantsFixtures
 
   alias Ecto.Adapters.SQL.Sandbox
+  alias Edgehog.Audit.Event
   alias Edgehog.Containers.Container.Deployment.Orchestrator, as: ContainerOrchestrator
   alias Edgehog.Containers.Release.Deployment.Orchestrator
   alias Edgehog.Containers.Release.Deployment.Provisioner, as: DeploymentProvisioner
@@ -77,6 +78,23 @@ defmodule Edgehog.Containers.Release.Deployment.OrchestratorTest do
       # The provisioners are already satisfied, so the orchestrator terminates
       # normally as soon as they all report readiness
       assert_receive {:DOWN, ^ref, :process, ^orchestrator, :normal}, 5000
+
+      loaded_deployment =
+        Ash.load!(deployment, [:device, release: [:application, :containers]], tenant: tenant)
+
+      assert [audit_event] = lifecycle_events(tenant, "deployment_ok")
+      assert audit_event.log_level == :info
+      assert audit_event.message == "Deployment #{deployment.id} successfully provisioned."
+      assert audit_event.metadata["resource_id"] == deployment.id
+      assert audit_event.metadata["device_id"] == loaded_deployment.device.device_id
+
+      assert audit_event.metadata["application_name"] ==
+               loaded_deployment.release.application.name
+
+      assert audit_event.metadata["release_version"] == loaded_deployment.release.version
+
+      assert audit_event.metadata["container_names"] ==
+               loaded_deployment.release.containers |> Enum.map(& &1.name) |> Enum.sort()
     end
 
     test "fails the deployment when a container reports a failure", %{tenant: _setup_tenant} do
@@ -148,11 +166,36 @@ defmodule Edgehog.Containers.Release.Deployment.OrchestratorTest do
       assert failed_deployment.id == deployment.id
 
       # The deployment is marked as timed out
-      deployment = Ash.get!(Edgehog.Containers.Release.Deployment, deployment.id, tenant: tenant)
+      deployment =
+        Edgehog.Containers.Release.Deployment
+        |> Ash.get!(deployment.id, tenant: tenant)
+        |> Ash.load!([:device, release: [:application, :containers]], tenant: tenant)
+
       assert deployment.timed_out
+
+      assert [audit_event] = lifecycle_events(tenant, "deployment_fail")
+      assert audit_event.log_level == :error
+      assert audit_event.message == "Deployment #{deployment.id} provisioning failed."
+      assert audit_event.metadata["resource_id"] == deployment.id
+      assert audit_event.metadata["device_id"] == deployment.device.device_id
+      assert audit_event.metadata["application_name"] == deployment.release.application.name
+      assert audit_event.metadata["release_version"] == deployment.release.version
+
+      assert audit_event.metadata["container_names"] ==
+               deployment.release.containers |> Enum.map(& &1.name) |> Enum.sort()
+
+      assert audit_event.metadata["error"] =~ "container_provisioner_failed"
 
       Phoenix.PubSub.unsubscribe(Edgehog.PubSub, topic)
     end
+  end
+
+  defp lifecycle_events(tenant, event_name) do
+    Event
+    |> Ash.read!(tenant: tenant)
+    |> Enum.filter(fn event ->
+      is_nil(event.ash_action_info) and event.metadata["event"] == event_name
+    end)
   end
 
   defp mark_device_online!(deployment, tenant) do

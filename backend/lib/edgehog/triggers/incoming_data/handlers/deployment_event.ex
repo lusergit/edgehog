@@ -26,6 +26,7 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.DeploymentEvent do
 
   alias Edgehog.Containers
   alias Edgehog.Containers.Calculations.ResourceEvents
+  alias Edgehog.Containers.Release.Deployment.Audit
   alias Edgehog.Containers.Release.Deployment.Types.Event
   alias EdgehogWeb.Endpoint
 
@@ -48,6 +49,8 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.DeploymentEvent do
         timestamp: timestamp
       }
 
+      maybe_audit_error(status, deployment, raw_event, tenant)
+
       payload =
         deployment
         |> ResourceEvents.cast_event!(raw_event, Event)
@@ -60,4 +63,17 @@ defmodule Edgehog.Triggers.IncomingData.Handlers.DeploymentEvent do
       :ok
     end
   end
+
+  defp maybe_audit_error("Error", deployment, raw_event, tenant) do
+    case Audit.audit_error_event(deployment, raw_event, tenant) do
+      :ok ->
+        _ = Containers.clear_deployment_context(deployment, tenant: tenant)
+        :ok
+
+      :noop ->
+        :ok
+    end
+  end
+
+  defp maybe_audit_error(_status, _deployment, _raw_event, _tenant), do: :ok
 end

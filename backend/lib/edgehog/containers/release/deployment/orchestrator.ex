@@ -182,7 +182,7 @@ defmodule Edgehog.Containers.Release.Deployment.Orchestrator do
       {:error, reason} ->
         Core.log_load_resources_failed(state.deployment.id, reason)
 
-        fail_deployment(state)
+        fail_deployment(state, {:load_resources_failed, reason})
     end
   end
 
@@ -192,7 +192,7 @@ defmodule Edgehog.Containers.Release.Deployment.Orchestrator do
     new_state = Core.provision(state)
 
     if Map.get(new_state, :provisioning_failed, false) do
-      fail_deployment(new_state)
+      fail_deployment(new_state, :provisioning_start_failed)
     else
       Core.log_provisioning_started(state.deployment.id)
 
@@ -238,7 +238,7 @@ defmodule Edgehog.Containers.Release.Deployment.Orchestrator do
   def handle_info({:failure, %Deployment{}}, state) do
     Core.log_deployment_failure(state.deployment.id)
 
-    fail_deployment(state)
+    fail_deployment(state, :deployment_provisioner_failed)
   end
 
   @impl GenServer
@@ -248,7 +248,7 @@ defmodule Edgehog.Containers.Release.Deployment.Orchestrator do
       ) do
     Core.log_container_failure(state.deployment.id, id)
 
-    fail_deployment(state)
+    fail_deployment(state, {:container_provisioner_failed, id})
   end
 
   @impl GenServer
@@ -264,6 +264,7 @@ defmodule Edgehog.Containers.Release.Deployment.Orchestrator do
     Core.log_orchestrator_completed(id)
 
     Telemetry.deployment_completed(deployment, [tenant: tenant], started_at)
+    Deployment.Audit.deployment_succeeded(deployment, tenant)
 
     readiness_topic = topic(deployment)
 
@@ -305,7 +306,7 @@ defmodule Edgehog.Containers.Release.Deployment.Orchestrator do
 
   ## Failure handling
 
-  defp fail_deployment(state) do
+  defp fail_deployment(state, reason) do
     %{
       deployment: deployment,
       tenant: tenant,
@@ -317,6 +318,7 @@ defmodule Edgehog.Containers.Release.Deployment.Orchestrator do
     Core.log_provisioning_failed(id)
 
     Telemetry.deployment_failed(deployment, [tenant: tenant], started_at)
+    Deployment.Audit.deployment_failed(deployment, tenant, reason)
 
     # Mark the deployment as timed out. This also publishes on the
     # deployments:timeout:id topic through the Ash notifier.
