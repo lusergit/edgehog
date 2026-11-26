@@ -136,8 +136,16 @@ defmodule Edgehog.Audit.Changes.RegisterEvent do
     if Keyword.fetch!(opts, :actor?), do: maybe_actor(context.actor), else: nil
   end
 
-  defp maybe_actor(actor) when is_struct(actor), do: Map.from_struct(actor)
-  defp maybe_actor(actor) when is_map(actor), do: actor
+  defp maybe_actor(actor) when is_struct(actor) do
+    actor
+    |> Map.from_struct()
+    |> maybe_actor()
+  end
+
+  defp maybe_actor(actor) when is_map(actor) do
+    Map.filter(actor, fn {_key, value} -> json_encodable?(value) end)
+  end
+
   defp maybe_actor(_actor), do: nil
 
   # the original input given to the action, filtered to resource attributes and
@@ -150,10 +158,12 @@ defmodule Edgehog.Audit.Changes.RegisterEvent do
     |> Map.new()
   end
 
-  # values that cannot be Jason-encoded (e.g. Plug.Upload for file arguments)
+  # values that cannot be Jason-encoded (e.g. Plug.Upload or Ecto.Schema.Metadata)
   # make the audit event fail to store: skip them instead.
   defp json_encodable?(value) do
     match?({:ok, _}, Jason.encode(value))
+  rescue
+    _ -> false
   end
 
   defp input_names(subject) do

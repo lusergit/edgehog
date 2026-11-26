@@ -129,14 +129,20 @@ defmodule Edgehog.Audit.Preparations.RegisterEvent do
   end
 
   defp maybe_actor(opts, context) do
-    if Keyword.fetch!(opts, :actor?) do
-      case context.actor do
-        actor when is_struct(actor) -> Map.from_struct(actor)
-        actor when is_map(actor) -> actor
-        _ -> nil
-      end
-    end
+    if Keyword.fetch!(opts, :actor?), do: maybe_actor(context.actor), else: nil
   end
+
+  defp maybe_actor(actor) when is_struct(actor) do
+    actor
+    |> Map.from_struct()
+    |> maybe_actor()
+  end
+
+  defp maybe_actor(actor) when is_map(actor) do
+    Map.filter(actor, fn {_key, value} -> json_encodable?(value) end)
+  end
+
+  defp maybe_actor(_actor), do: nil
 
   defp action_inputs(subject) do
     subject.arguments
@@ -144,10 +150,12 @@ defmodule Edgehog.Audit.Preparations.RegisterEvent do
     |> Map.new()
   end
 
-  # values that cannot be Jason-encoded (e.g. Plug.Upload for file arguments)
+  # values that cannot be Jason-encoded (e.g. Plug.Upload or Ecto.Schema.Metadata)
   # make the audit event fail to store: skip them instead.
   defp json_encodable?(value) do
     match?({:ok, _}, Jason.encode(value))
+  rescue
+    _ -> false
   end
 
   # Ash error structs

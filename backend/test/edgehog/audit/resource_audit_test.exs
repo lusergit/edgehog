@@ -33,6 +33,7 @@ defmodule Edgehog.Audit.ResourceAuditTest do
   import Edgehog.GroupsFixtures
   import Edgehog.TenantsFixtures
 
+  alias Edgehog.Actors.Actor
   alias Edgehog.Audit.Event
   alias Edgehog.Config
   alias Edgehog.Containers.Network
@@ -99,6 +100,30 @@ defmodule Edgehog.Audit.ResourceAuditTest do
       assert event.ash_action_info.action_type == :update
       assert %Ash.Union{type: :integer, value: id} = event.ash_action_info.record_id
       assert id == group.id
+    end
+
+    test "serializes embedded Ash actor structs without failing on :__meta__", %{
+      tenant: tenant
+    } do
+      actor = %Actor{sub: "user-123", preferred_username: "alice"}
+
+      Ash.create!(
+        Network,
+        %{
+          label: "audit-network-with-actor",
+          driver: "bridge",
+          internal: false,
+          enable_ipv6: false,
+          options: %{}
+        },
+        tenant: tenant,
+        actor: actor
+      )
+
+      assert event = event_for(tenant, Network, :create)
+      assert event.ash_action_info.actor["sub"] == "user-123"
+      assert event.ash_action_info.actor["preferred_username"] == "alice"
+      refute Map.has_key?(event.ash_action_info.actor, "__meta__")
     end
   end
 
