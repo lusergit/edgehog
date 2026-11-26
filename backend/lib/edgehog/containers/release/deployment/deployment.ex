@@ -100,11 +100,16 @@ defmodule Edgehog.Containers.Release.Deployment do
 
       change manage_relationship(:device_id, :device, type: :append)
       change Changes.Relate
+      change {Changes.AuditLifecycle, event: :deployment_initiated}
       change Changes.SendDeploymentToDevice
     end
 
     update :set_state do
       accept [:state]
+    end
+
+    update :clear_context do
+      change set_attribute(:context, nil)
     end
 
     update :start do
@@ -116,7 +121,7 @@ defmodule Edgehog.Containers.Release.Deployment do
       validate {Validations.NoConflictingCampaign, action_type: :deployment_start}
 
       change set_attribute(:context, :start_message_sent)
-      change {Edgehog.Changes.Log, message: "Deployment start message sent."}
+      change {Changes.AuditLifecycle, event: :start_initiated}
 
       change {Changes.SendCommand, command: :start}
       require_atomic? false
@@ -131,7 +136,7 @@ defmodule Edgehog.Containers.Release.Deployment do
       validate {Validations.NoConflictingCampaign, action_type: :deployment_stop}
 
       change set_attribute(:context, :stop_message_sent)
-      change {Edgehog.Changes.Log, message: "Deployment stop message sent."}
+      change {Changes.AuditLifecycle, event: :stop_initiated}
 
       change {Changes.SendCommand, command: :stop}
       require_atomic? false
@@ -145,7 +150,7 @@ defmodule Edgehog.Containers.Release.Deployment do
       validate {Validations.NoConflictingCampaign, action_type: :deployment_delete}
 
       change set_attribute(:context, :delete_message_sent)
-      change {Edgehog.Changes.Log, message: "Deployment delete message sent."}
+      change {Changes.AuditLifecycle, event: :undeployment_initiated}
 
       change {Changes.SendCommand, command: :delete}
       require_atomic? false
@@ -192,7 +197,7 @@ defmodule Edgehog.Containers.Release.Deployment do
       validate SameApplication
       validate IsUpgrade
 
-      change {Edgehog.Changes.Log, message: "Deployment upgrade message sent."}
+      change {Changes.AuditLifecycle, event: :upgrade_initiated}
 
       change set_attribute(:context, :upgrade_message_sent)
 
@@ -208,7 +213,7 @@ defmodule Edgehog.Containers.Release.Deployment do
       change set_attribute(:state, :started)
       change set_attribute(:context, nil)
 
-      change {Edgehog.Changes.Log, message: "Deployment successfully started."} do
+      change {Changes.AuditLifecycle, event: :start_succeeded} do
         where [
           data_one_of(:context, [:start_message_sent])
         ]
@@ -221,7 +226,7 @@ defmodule Edgehog.Containers.Release.Deployment do
       change set_attribute(:state, :stopped)
       change set_attribute(:context, nil)
 
-      change {Edgehog.Changes.Log, message: "Deployment successfully stopped."} do
+      change {Changes.AuditLifecycle, event: :stop_succeeded} do
         where [
           data_one_of(:context, [:stop_message_sent])
         ]
@@ -270,6 +275,12 @@ defmodule Edgehog.Containers.Release.Deployment do
 
     destroy :destroy_and_gc do
       require_atomic? false
+
+      change {Changes.AuditLifecycle, event: :undeployment_succeeded} do
+        where [
+          data_one_of(:context, [:delete_message_sent])
+        ]
+      end
 
       change {Edgehog.Containers.Changes.MaybeDestroyChildren,
               children: [:container_deployments, :release]}
@@ -356,14 +367,6 @@ defmodule Edgehog.Containers.Release.Deployment do
 
   identities do
     identity :release_instance, [:device_id, :release_id]
-  end
-
-  changes do
-    change {Edgehog.Changes.Log, message: "Deployment provision started."},
-      on: :create
-
-    change {Edgehog.Changes.Log, message: "Deployment deleted successfully."},
-      on: :destroy
   end
 
   pub_sub do

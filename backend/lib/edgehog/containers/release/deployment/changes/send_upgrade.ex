@@ -30,13 +30,15 @@ defmodule Edgehog.Containers.Release.Deployment.Changes.SendUpgrade do
   alias Edgehog.Containers.Release.Deployment.ReadyAction
 
   @impl Ash.Resource.Change
-  def change(changeset, _opts, %{tenant: tenant}) do
+  def change(changeset, _opts, %{tenant: tenant} = context) do
+    actor = Map.get(context, :actor)
+
     changeset
-    |> Ash.Changeset.after_action(&register_ready_action(&1, &2, tenant))
+    |> Ash.Changeset.after_action(&register_ready_action(&1, &2, tenant, actor))
     |> Ash.Changeset.after_transaction(&start_supervisor(&1, &2, tenant))
   end
 
-  defp register_ready_action(changeset, deployment, tenant) do
+  defp register_ready_action(changeset, deployment, tenant, actor) do
     device_id = deployment.device_id
     # SAFETY: we have validated the parameter in the validations, so it must exist.
     target_id = Ash.Changeset.get_argument(changeset, :target)
@@ -52,7 +54,7 @@ defmodule Edgehog.Containers.Release.Deployment.Changes.SendUpgrade do
                action_arguments: %{upgrade_target_id: deployment.id}
              }
            )
-           |> Ash.create(tenant: tenant) do
+           |> Ash.create(tenant: tenant, actor: actor) do
       {:ok, action.deployment}
     end
   end

@@ -375,6 +375,7 @@ defmodule Edgehog.Containers do
 
       define :run_ready_actions, action: :run_ready_actions
       define :set_deployment_state, action: :set_state
+      define :clear_deployment_context, action: :clear_context
       define :send_deployment, action: :send_deployment
 
       define :mark_deployment_as_sent, action: :mark_as_sent
