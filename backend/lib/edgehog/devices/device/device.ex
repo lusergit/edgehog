@@ -72,7 +72,9 @@ defmodule Edgehog.Devices.Device do
                                file_upload_requests: :relay,
                                file_delete_requests: :relay,
                                device_files: :relay,
-                               volume_deployments: :relay
+                               volume_deployments: :relay,
+                               public_key_deployments: :relay,
+                               image_policy_deployments: :relay
 
     subscriptions do
       pubsub EdgehogWeb.Endpoint

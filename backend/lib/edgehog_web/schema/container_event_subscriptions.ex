@@ -30,7 +30,9 @@ defmodule EdgehogWeb.Schema.ContainerEventSubscriptions do
   alias Edgehog.Containers.EnvFile
   alias Edgehog.Containers.FileBind
   alias Edgehog.Containers.Image
+  alias Edgehog.Containers.ImagePolicy
   alias Edgehog.Containers.Network
+  alias Edgehog.Containers.PublicKey
   alias Edgehog.Containers.Release
   alias Edgehog.Containers.Volume
 
@@ -138,6 +140,28 @@ defmodule EdgehogWeb.Schema.ContainerEventSubscriptions do
 
       config fn args, resolution ->
         subscribe_to_resource(FileBind, :file_bind, args, resolution)
+      end
+
+      resolve &resolve_event/3
+    end
+
+    @desc "Subscribes to events for a public key deployment."
+    field :public_key_deployment_events, :public_key_deployment_event do
+      arg :id, non_null(:id)
+
+      config fn args, resolution ->
+        subscribe_to_resource(PublicKey.Deployment, :public_key, args, resolution)
+      end
+
+      resolve &resolve_event/3
+    end
+
+    @desc "Subscribes to events for an image policy deployment."
+    field :image_policy_deployment_events, :image_policy_deployment_event do
+      arg :id, non_null(:id)
+
+      config fn args, resolution ->
+        subscribe_to_resource(ImagePolicy.Deployment, :image_policy, args, resolution)
       end
 
       resolve &resolve_event/3

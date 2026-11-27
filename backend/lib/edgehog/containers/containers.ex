@@ -28,7 +28,9 @@ defmodule Edgehog.Containers do
   alias Edgehog.Containers.Container
   alias Edgehog.Containers.DeploymentContainerDeployment
   alias Edgehog.Containers.ImageCredentials
+  alias Edgehog.Containers.ImagePolicy
   alias Edgehog.Containers.Network
+  alias Edgehog.Containers.PublicKey
   alias Edgehog.Containers.Release
   alias Edgehog.Containers.Release.Deployment
   alias Edgehog.Containers.Release.Deployment.ReadyAction
@@ -124,6 +126,34 @@ defmodule Edgehog.Containers do
         description "Returns all available allowed registries."
         paginate_with :keyset
         relay? true
+      end
+
+      get PublicKey, :public_key, :read do
+        description "Returns the desired public key."
+      end
+
+      list PublicKey, :public_keys, :read do
+        description "Returns all available public keys."
+        paginate_with :keyset
+        relay? true
+      end
+
+      get PublicKey.Deployment, :public_key_deployment, :read do
+        description "Returns the desired public key deployment."
+      end
+
+      get ImagePolicy, :image_policy, :read do
+        description "Returns the desired image policy."
+      end
+
+      list ImagePolicy, :image_policies, :read do
+        description "Returns all available image policies."
+        paginate_with :keyset
+        relay? true
+      end
+
+      get ImagePolicy.Deployment, :image_policy_deployment, :read do
+        description "Returns the desired image policy deployment."
       end
     end
 
@@ -330,6 +360,24 @@ defmodule Edgehog.Containers do
 
       destroy Edgehog.Containers.AllowedRegistry, :delete_allowed_registry, :destroy do
         description "Deletes an allowed registry."
+      end
+
+      create PublicKey, :create_public_key, :create do
+        description "Creates a new public key for container image signature verification."
+      end
+
+      destroy PublicKey, :delete_public_key, :destroy do
+        description "Deletes a public key."
+      end
+
+      create ImagePolicy, :create_image_policy, :create do
+        description "Creates a new container image verification policy."
+
+        relay_id_translations input: [public_key_id: :public_key]
+      end
+
+      destroy ImagePolicy, :delete_image_policy, :destroy do
+        description "Deletes an image policy."
       end
     end
   end
