@@ -28,8 +28,10 @@ defmodule Edgehog.Triggers.IncomingData do
   alias Edgehog.Triggers.IncomingData.Handlers.AvailableDeviceRequests
   alias Edgehog.Triggers.IncomingData.Handlers.AvailableEnvFiles
   alias Edgehog.Triggers.IncomingData.Handlers.AvailableFileBinds
+  alias Edgehog.Triggers.IncomingData.Handlers.AvailableImagePolicies
   alias Edgehog.Triggers.IncomingData.Handlers.AvailableImages
   alias Edgehog.Triggers.IncomingData.Handlers.AvailableNetworks
+  alias Edgehog.Triggers.IncomingData.Handlers.AvailablePublicKeys
   alias Edgehog.Triggers.IncomingData.Handlers.AvailableVolumes
   alias Edgehog.Triggers.IncomingData.Handlers.ContainerEvent
   alias Edgehog.Triggers.IncomingData.Handlers.DeploymentEvent
@@ -40,9 +42,11 @@ defmodule Edgehog.Triggers.IncomingData do
   alias Edgehog.Triggers.IncomingData.Handlers.FileTransfer
   alias Edgehog.Triggers.IncomingData.Handlers.ForwarderSessionState
   alias Edgehog.Triggers.IncomingData.Handlers.ImageEvent
+  alias Edgehog.Triggers.IncomingData.Handlers.ImagePolicyEvent
   alias Edgehog.Triggers.IncomingData.Handlers.NetworkEvent
   alias Edgehog.Triggers.IncomingData.Handlers.OTAEvent
   alias Edgehog.Triggers.IncomingData.Handlers.OTAResponse
+  alias Edgehog.Triggers.IncomingData.Handlers.PublicKeyEvent
   alias Edgehog.Triggers.IncomingData.Handlers.SystemInfo
   alias Edgehog.Triggers.IncomingData.Handlers.VolumeEvent
 
@@ -83,6 +87,14 @@ defmodule Edgehog.Triggers.IncomingData do
       filter interface: "io.edgehog.devicemanager.apps.AvailableDeployments"
     end
 
+    handler AvailablePublicKeys do
+      filter interface: "io.edgehog.devicemanager.apps.AvailablePublicKeys"
+    end
+
+    handler AvailableImagePolicies do
+      filter interface: "io.edgehog.devicemanager.apps.AvailableImagePolicies"
+    end
+
     handler DeploymentEvent do
       filter interface: "io.edgehog.devicemanager.apps.DeploymentEvent"
     end
@@ -109,6 +121,14 @@ defmodule Edgehog.Triggers.IncomingData do
 
     handler FileBindEvent do
       filter interface: "io.edgehog.devicemanager.apps.FileBindEvent"
+    end
+
+    handler PublicKeyEvent do
+      filter interface: "io.edgehog.devicemanager.apps.PublicKeyEvent"
+    end
+
+    handler ImagePolicyEvent do
+      filter interface: "io.edgehog.devicemanager.apps.ImagePolicyEvent"
     end
 
     handler OTAEvent do
