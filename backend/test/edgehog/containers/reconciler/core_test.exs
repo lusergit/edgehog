@@ -33,12 +33,17 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
   alias Edgehog.Astarte.Device.AvailableDeployments.DeploymentStatus
   alias Edgehog.Astarte.Device.AvailableDeviceMappings
   alias Edgehog.Astarte.Device.AvailableDeviceMappings.DeviceMappingStatus
+  alias Edgehog.Astarte.Device.AvailableImagePolicies
+  alias Edgehog.Astarte.Device.AvailableImagePolicies.ImagePolicyStatus
   alias Edgehog.Astarte.Device.AvailableImages
   alias Edgehog.Astarte.Device.AvailableImages.ImageStatus
   alias Edgehog.Astarte.Device.AvailableNetworks
   alias Edgehog.Astarte.Device.AvailableNetworks.NetworkStatus
+  alias Edgehog.Astarte.Device.AvailablePublicKeys
+  alias Edgehog.Astarte.Device.AvailablePublicKeys.PublicKeyStatus
   alias Edgehog.Astarte.Device.AvailableVolumes
   alias Edgehog.Astarte.Device.AvailableVolumes.VolumeStatus
+  alias Edgehog.Containers
   alias Edgehog.Containers.Reconciler
 
   describe "reconcile_images/2" do
@@ -639,6 +644,211 @@ defmodule Edgehog.Containers.Reconciler.CoreTest do
 
       assert device.id == read_device.id
       assert device.device_id == read_device.device_id
+    end
+  end
+
+  describe "reconcile_public_keys/2" do
+    setup do
+      tenant = tenant_fixture()
+      device = device_fixture(tenant: tenant)
+      public_key = public_key_fixture(tenant: tenant)
+
+      deployment =
+        public_key_deployment_fixture(
+          tenant: tenant,
+          device_id: device.id,
+          public_key_fingerprint: public_key.fingerprint,
+          state: :sent
+        )
+
+      %{tenant: tenant, device: device, public_key: public_key, deployment: deployment}
+    end
+
+    test "updates drifted public key deployment states across :present, :missing, and :error", %{
+      tenant: tenant,
+      device: device,
+      public_key: public_key,
+      deployment: deployment
+    } do
+      device_id = device.device_id
+
+      for status <- [:present, :missing, :error] do
+        expect(AvailablePublicKeys, :get, fn _client, ^device_id ->
+          {:ok, [%PublicKeyStatus{id: public_key.fingerprint, status: status}]}
+        end)
+
+        assert :ok = Reconciler.Core.reconcile_public_keys(device, tenant)
+
+        reloaded = Ash.reload!(deployment, tenant: tenant)
+        assert reloaded.state == status
+      end
+    end
+
+    test "leaves in-sync public key deployment untouched", %{
+      tenant: tenant,
+      device: device,
+      public_key: public_key,
+      deployment: deployment
+    } do
+      {:ok, present} =
+        Containers.mark_public_key_deployment_as_present(deployment, tenant: tenant)
+
+      device_id = device.device_id
+
+      expect(AvailablePublicKeys, :get, fn _client, ^device_id ->
+        {:ok, [%PublicKeyStatus{id: public_key.fingerprint, status: :present}]}
+      end)
+
+      assert :ok = Reconciler.Core.reconcile_public_keys(device, tenant)
+
+      reloaded = Ash.reload!(present, tenant: tenant)
+      assert reloaded.state == :present
+      assert reloaded.updated_at == present.updated_at
+    end
+
+    test "creates a deployment for a device-reported untracked public key", %{
+      tenant: tenant,
+      device: device
+    } do
+      device_id = device.device_id
+      unknown_fp = String.duplicate("a", 64)
+
+      expect(AvailablePublicKeys, :get, fn _client, ^device_id ->
+        {:ok, [%PublicKeyStatus{id: unknown_fp, status: :present}]}
+      end)
+
+      assert :ok = Reconciler.Core.reconcile_public_keys(device, tenant)
+
+      assert {:ok, created} =
+               Containers.fetch_public_key_deployment(unknown_fp, device.id, tenant: tenant)
+
+      assert created.state == :present
+    end
+
+    test "ignores nil status entries and Astarte errors gracefully", %{
+      tenant: tenant,
+      device: device
+    } do
+      device_id = device.device_id
+      ignored_fp = String.duplicate("b", 64)
+
+      expect(AvailablePublicKeys, :get, fn _client, ^device_id ->
+        {:ok, [%PublicKeyStatus{id: ignored_fp, status: nil}]}
+      end)
+
+      assert :ok = Reconciler.Core.reconcile_public_keys(device, tenant)
+
+      assert {:error, _} =
+               Containers.fetch_public_key_deployment(ignored_fp, device.id, tenant: tenant)
+
+      expect(AvailablePublicKeys, :get, fn _client, ^device_id ->
+        {:error, :timeout}
+      end)
+
+      assert :ok = Reconciler.Core.reconcile_public_keys(device, tenant)
+    end
+  end
+
+  describe "reconcile_image_policies/2" do
+    setup do
+      tenant = tenant_fixture()
+      device = device_fixture(tenant: tenant)
+      policy = image_policy_fixture(tenant: tenant)
+
+      deployment =
+        image_policy_deployment_fixture(
+          tenant: tenant,
+          device_id: device.id,
+          registry_id: policy.registry_id,
+          state: :sent
+        )
+
+      %{tenant: tenant, device: device, policy: policy, deployment: deployment}
+    end
+
+    test "updates drifted image policy deployment states across :present, :missing, and :error",
+         %{
+           tenant: tenant,
+           device: device,
+           policy: policy,
+           deployment: deployment
+         } do
+      device_id = device.device_id
+
+      for status <- [:present, :missing, :error] do
+        expect(AvailableImagePolicies, :get, fn _client, ^device_id ->
+          {:ok, [%ImagePolicyStatus{id: policy.registry_id, status: status}]}
+        end)
+
+        assert :ok = Reconciler.Core.reconcile_image_policies(device, tenant)
+
+        reloaded = Ash.reload!(deployment, tenant: tenant)
+        assert reloaded.state == status
+      end
+    end
+
+    test "leaves in-sync image policy deployment untouched", %{
+      tenant: tenant,
+      device: device,
+      policy: policy,
+      deployment: deployment
+    } do
+      {:ok, present} =
+        Containers.mark_image_policy_deployment_as_present(deployment, tenant: tenant)
+
+      device_id = device.device_id
+
+      expect(AvailableImagePolicies, :get, fn _client, ^device_id ->
+        {:ok, [%ImagePolicyStatus{id: policy.registry_id, status: :present}]}
+      end)
+
+      assert :ok = Reconciler.Core.reconcile_image_policies(device, tenant)
+
+      reloaded = Ash.reload!(present, tenant: tenant)
+      assert reloaded.state == :present
+      assert reloaded.updated_at == present.updated_at
+    end
+
+    test "creates a deployment for a device-reported untracked image policy", %{
+      tenant: tenant,
+      device: device
+    } do
+      device_id = device.device_id
+      unknown_reg = String.duplicate("c", 64)
+
+      expect(AvailableImagePolicies, :get, fn _client, ^device_id ->
+        {:ok, [%ImagePolicyStatus{id: unknown_reg, status: :present}]}
+      end)
+
+      assert :ok = Reconciler.Core.reconcile_image_policies(device, tenant)
+
+      assert {:ok, created} =
+               Containers.fetch_image_policy_deployment(unknown_reg, device.id, tenant: tenant)
+
+      assert created.state == :present
+    end
+
+    test "ignores nil status entries and Astarte errors gracefully", %{
+      tenant: tenant,
+      device: device
+    } do
+      device_id = device.device_id
+      ignored_reg = String.duplicate("d", 64)
+
+      expect(AvailableImagePolicies, :get, fn _client, ^device_id ->
+        {:ok, [%ImagePolicyStatus{id: ignored_reg, status: nil}]}
+      end)
+
+      assert :ok = Reconciler.Core.reconcile_image_policies(device, tenant)
+
+      assert {:error, _} =
+               Containers.fetch_image_policy_deployment(ignored_reg, device.id, tenant: tenant)
+
+      expect(AvailableImagePolicies, :get, fn _client, ^device_id ->
+        {:error, :timeout}
+      end)
+
+      assert :ok = Reconciler.Core.reconcile_image_policies(device, tenant)
     end
   end
 end

@@ -61,6 +61,8 @@ defmodule Edgehog.Containers.Reconciler.Core do
       Task.start(fn -> reconcile_networks(device, tenant) end)
       Task.start(fn -> reconcile_containers(device, tenant) end)
       Task.start(fn -> reconcile_deployments(device, tenant) end)
+      Task.start(fn -> reconcile_public_keys(device, tenant) end)
+      Task.start(fn -> reconcile_image_policies(device, tenant) end)
 
       :ok
     end
@@ -144,6 +146,32 @@ defmodule Edgehog.Containers.Reconciler.Core do
     |> Enum.map(&reconcile_deployment(&1, device, tenant))
     |> Enum.reject(&(&1 == :ok))
     |> Enum.each(&Logger.warning("Error while fetching container deployment: #{inspect(&1)}"))
+  end
+
+  def reconcile_public_keys(device, tenant) do
+    available_public_keys =
+      device
+      |> Ash.load!(:available_public_keys, tenant: tenant)
+      |> Map.get(:available_public_keys) || []
+
+    available_public_keys
+    |> Enum.map(&reconcile_public_key(&1, device, tenant))
+    |> Enum.reject(&(&1 == :ok))
+    |> Enum.each(&Logger.warning("Error while reconciling public key deployment: #{inspect(&1)}"))
+  end
+
+  def reconcile_image_policies(device, tenant) do
+    available_image_policies =
+      device
+      |> Ash.load!(:available_image_policies, tenant: tenant)
+      |> Map.get(:available_image_policies) || []
+
+    available_image_policies
+    |> Enum.map(&reconcile_image_policy(&1, device, tenant))
+    |> Enum.reject(&(&1 == :ok))
+    |> Enum.each(
+      &Logger.warning("Error while reconciling image policy deployment: #{inspect(&1)}")
+    )
   end
 
   # This seems to be spawning _Hawkes processes_ I wont investigate more, this
@@ -320,5 +348,93 @@ defmodule Edgehog.Containers.Reconciler.Core do
     if state == status,
       do: :ok,
       else: :reconcile
+  end
+
+  defp reconcile_public_key(%{id: key_id, status: status}, device, tenant)
+       when status in [:present, :missing, :error] do
+    case Containers.fetch_public_key_deployment(key_id, device.id, tenant: tenant, load: :state) do
+      {:ok, %{state: ^status}} ->
+        :ok
+
+      {:ok, %{state: current_state}} ->
+        Logger.warning(
+          "Reconciling public key #{key_id} on device #{device.device_id}. " <>
+            "state #{inspect(current_state)} inconsistent with property in astarte: #{inspect(status)}"
+        )
+
+        upsert_public_key_deployment(key_id, device.id, status, tenant)
+
+      {:error, %Ash.Error.Invalid{} = error} ->
+        if not_found_error?(error) do
+          Logger.warning(
+            "Reconciling untracked public key #{key_id} on device #{device.device_id} with status #{inspect(status)}"
+          )
+
+          upsert_public_key_deployment(key_id, device.id, status, tenant)
+        else
+          {:error, error}
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp reconcile_public_key(_status, _device, _tenant), do: :ok
+
+  defp reconcile_image_policy(%{id: registry_id, status: status}, device, tenant)
+       when status in [:present, :missing, :error] do
+    case Containers.fetch_image_policy_deployment(registry_id, device.id,
+           tenant: tenant,
+           load: :state
+         ) do
+      {:ok, %{state: ^status}} ->
+        :ok
+
+      {:ok, %{state: current_state}} ->
+        Logger.warning(
+          "Reconciling image policy #{registry_id} on device #{device.device_id}. " <>
+            "state #{inspect(current_state)} inconsistent with property in astarte: #{inspect(status)}"
+        )
+
+        upsert_image_policy_deployment(registry_id, device.id, status, tenant)
+
+      {:error, %Ash.Error.Invalid{} = error} ->
+        if not_found_error?(error) do
+          Logger.warning(
+            "Reconciling untracked image policy #{registry_id} on device #{device.device_id} with status #{inspect(status)}"
+          )
+
+          upsert_image_policy_deployment(registry_id, device.id, status, tenant)
+        else
+          {:error, error}
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp reconcile_image_policy(_status, _device, _tenant), do: :ok
+
+  defp upsert_public_key_deployment(key_id, device_id, state, tenant) do
+    params = %{public_key_fingerprint: key_id, device_id: device_id, state: state}
+
+    with {:ok, _} <- Containers.upsert_public_key_deployment_from_device(params, tenant: tenant) do
+      :ok
+    end
+  end
+
+  defp upsert_image_policy_deployment(registry_id, device_id, state, tenant) do
+    params = %{registry_id: registry_id, device_id: device_id, state: state}
+
+    with {:ok, _} <-
+           Containers.upsert_image_policy_deployment_from_device(params, tenant: tenant) do
+      :ok
+    end
+  end
+
+  defp not_found_error?(%Ash.Error.Invalid{errors: errors}) do
+    Enum.any?(errors, &match?(%Ash.Error.Query.NotFound{}, &1))
   end
 end
