@@ -9266,6 +9266,10 @@ type Device implements Node {
 
   availableEnvFiles: [EnvFileStatus!]
 
+  availablePublicKeys: [PublicKeyStatus!]
+
+  availableImagePolicies: [ImagePolicyStatus!]
+
   batteryStatus: [BatterySlot!]
 
   hardwareInfo: HardwareInfo
@@ -13802,4 +13806,22 @@ type FileBindStatus {
 type EnvFileStatus {
   "The env file id."
   id: String
+}
+
+"Describe the available public keys on the device."
+type PublicKeyStatus {
+  "The public key fingerprint (key id)."
+  id: String
+
+  "The status of the public key on the device."
+  status: String
+}
+
+"Describe the available image policies on the device."
+type ImagePolicyStatus {
+  "The image policy registry id."
+  id: String
+
+  "The status of the image policy on the device."
+  status: String
 }
