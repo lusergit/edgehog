@@ -1110,6 +1110,25 @@ enum DeviceLedBehavior {
   SLOW_BLINK
 }
 
+enum ImagePolicyDeploymentEventStatus {
+  CREATED
+  ERROR
+  REMOVED
+}
+
+enum ImagePolicyType {
+  "Reject images matching the repository scope."
+  REJECT
+
+  "Require images matching the repository scope to be signed by the specified public key."
+  SIGNED_BY
+}
+
+enum PublicKeyDeploymentEventStatus {
+  CREATED
+  ERROR
+}
+
 enum VolumeCommand {
   "Delete the volume."
   DELETE
@@ -1231,6 +1250,40 @@ input FileDataInput {
 type FileData {
   url: String!
   digest: String!
+}
+
+type ImagePolicyDeploymentEvent {
+  "The timestamp when the event was recorded by Astarte."
+  timestamp: DateTime
+
+  "The status value reported by the device for this image policy event."
+  status: ImagePolicyDeploymentEventStatus
+
+  "The GraphQL Relay ID of the image policy deployment that emitted this event."
+  resourceId: ID
+
+  "Additional human-readable context or error details reported with the event."
+  message: String
+
+  "Additional information or diagnostic details for the event."
+  addInfo: [String!]
+}
+
+type PublicKeyDeploymentEvent {
+  "The timestamp when the event was recorded by Astarte."
+  timestamp: DateTime
+
+  "The status value reported by the device for this public key event."
+  status: PublicKeyDeploymentEventStatus
+
+  "The GraphQL Relay ID of the public key deployment that emitted this event."
+  resourceId: ID
+
+  "Additional human-readable context or error details reported with the event."
+  message: String
+
+  "Additional information or diagnostic details for the event."
+  addInfo: [String!]
 }
 
 type DeploymentEvent {
@@ -1976,6 +2029,775 @@ input ReleaseUpdateContainerDependenciesInput {
 
 input ReleaseUpdateRequiredSystemModelsInput {
   id: ID
+}
+
+enum ImagePolicyDeploymentSortField {
+  ID
+  REGISTRY_ID
+  STATE
+  LAST_MESSAGE
+  IS_READY
+}
+
+":image_policy_deployment connection"
+type ImagePolicyDeploymentConnection {
+  "Total count on all pages"
+  count: Int
+
+  "Page information"
+  pageInfo: PageInfo!
+
+  ":image_policy_deployment edges"
+  edges: [ImagePolicyDeploymentEdge!]
+}
+
+":image_policy_deployment edge"
+type ImagePolicyDeploymentEdge {
+  "Cursor"
+  cursor: String!
+
+  ":image_policy_deployment node"
+  node: ImagePolicyDeployment!
+}
+
+input ImagePolicyDeploymentFilterIsReady {
+  isNil: Boolean
+  eq: Boolean
+  notEq: Boolean
+  in: [Boolean!]
+  lessThan: Boolean
+  greaterThan: Boolean
+  lessThanOrEqual: Boolean
+  greaterThanOrEqual: Boolean
+  isDistinctFrom: Boolean
+  isNotDistinctFrom: Boolean
+}
+
+input ImagePolicyDeploymentFilterLastMessage {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  contains: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+  stringEndsWith: String
+  stringStartsWith: String
+  like: String
+  ilike: String
+}
+
+input ImagePolicyDeploymentFilterState {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String!]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+}
+
+input ImagePolicyDeploymentFilterRegistryId {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String!]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  contains: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+  stringEndsWith: String
+  stringStartsWith: String
+  like: String
+  ilike: String
+}
+
+input ImagePolicyDeploymentFilterId {
+  isNil: Boolean
+  eq: ID
+  notEq: ID
+  in: [ID!]
+  lessThan: ID
+  greaterThan: ID
+  lessThanOrEqual: ID
+  greaterThanOrEqual: ID
+  isDistinctFrom: ID
+  isNotDistinctFrom: ID
+}
+
+input ImagePolicyDeploymentFilterInput {
+  and: [ImagePolicyDeploymentFilterInput!]
+
+  or: [ImagePolicyDeploymentFilterInput!]
+
+  not: [ImagePolicyDeploymentFilterInput!]
+
+  id: ImagePolicyDeploymentFilterId
+
+  "The deterministic `registry_id` thumbprint identifying the policy on the device."
+  registryId: ImagePolicyDeploymentFilterRegistryId
+
+  "The availability or provisioning state of the image policy on the device."
+  state: ImagePolicyDeploymentFilterState
+
+  lastMessage: ImagePolicyDeploymentFilterLastMessage
+
+  device: DeviceFilterInput
+
+  imagePolicy: ImagePolicyFilterInput
+
+  isReady: ImagePolicyDeploymentFilterIsReady
+}
+
+input ImagePolicyDeploymentSortInput {
+  order: SortOrder
+  field: ImagePolicyDeploymentSortField!
+}
+
+"""
+Tracks the availability and deployment state of an image verification
+policy on a device.
+
+A deployment may reference a `registry_id` reported by the device that
+does not yet have a corresponding cloud-defined `ImagePolicy`.
+"""
+type ImagePolicyDeployment implements Node {
+  id: ID!
+
+  "The deterministic `registry_id` thumbprint identifying the policy on the device."
+  registryId: String!
+
+  "The availability or provisioning state of the image policy on the device."
+  state: String!
+
+  lastMessage: String
+
+  device: Device!
+
+  imagePolicy: ImagePolicy
+
+  isReady: Boolean
+
+  "Lifecycle events reported by the device for this image policy deployment."
+  events: [ImagePolicyDeploymentEvent!]
+}
+
+type image_policy_result {
+  created: ImagePolicy
+  destroyed: ID
+}
+
+"The result of the :delete_image_policy mutation"
+type DeleteImagePolicyResult {
+  "The record that was successfully deleted"
+  result: ImagePolicy
+
+  "Any errors generated, if the mutation failed"
+  errors: [MutationError!]!
+}
+
+"The result of the :create_image_policy mutation"
+type CreateImagePolicyResult {
+  "The successful result of the mutation"
+  result: ImagePolicy
+
+  "Any errors generated, if the mutation failed"
+  errors: [MutationError!]!
+}
+
+input CreateImagePolicyInput {
+  "The container registry or repository scope to which this policy applies."
+  repository: String!
+
+  "The verification policy requirement applied to images matching this repository."
+  type: ImagePolicyType!
+
+  publicKeyId: ID
+}
+
+enum ImagePolicySortField {
+  ID
+  REPOSITORY
+  REGISTRY_ID
+  TYPE
+}
+
+":image_policy connection"
+type ImagePolicyConnection {
+  "Total count on all pages"
+  count: Int
+
+  "Page information"
+  pageInfo: PageInfo!
+
+  ":image_policy edges"
+  edges: [ImagePolicyEdge!]
+}
+
+":image_policy edge"
+type ImagePolicyEdge {
+  "Cursor"
+  cursor: String!
+
+  ":image_policy node"
+  node: ImagePolicy!
+}
+
+input ImagePolicyFilterType {
+  isNil: Boolean
+  eq: ImagePolicyType
+  notEq: ImagePolicyType
+  in: [ImagePolicyType!]
+  lessThan: ImagePolicyType
+  greaterThan: ImagePolicyType
+  lessThanOrEqual: ImagePolicyType
+  greaterThanOrEqual: ImagePolicyType
+  isDistinctFrom: ImagePolicyType
+  isNotDistinctFrom: ImagePolicyType
+}
+
+input ImagePolicyFilterRegistryId {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String!]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  contains: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+  stringEndsWith: String
+  stringStartsWith: String
+  like: String
+  ilike: String
+}
+
+input ImagePolicyFilterRepository {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String!]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  contains: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+  stringEndsWith: String
+  stringStartsWith: String
+  like: String
+  ilike: String
+}
+
+input ImagePolicyFilterId {
+  isNil: Boolean
+  eq: ID
+  notEq: ID
+  in: [ID!]
+  lessThan: ID
+  greaterThan: ID
+  lessThanOrEqual: ID
+  greaterThanOrEqual: ID
+  isDistinctFrom: ID
+  isNotDistinctFrom: ID
+}
+
+input ImagePolicyFilterInput {
+  and: [ImagePolicyFilterInput!]
+
+  or: [ImagePolicyFilterInput!]
+
+  not: [ImagePolicyFilterInput!]
+
+  id: ImagePolicyFilterId
+
+  "The container registry or repository scope to which this policy applies."
+  repository: ImagePolicyFilterRepository
+
+  "The deterministic thumbprint derived from the repository scope used on devices."
+  registryId: ImagePolicyFilterRegistryId
+
+  "The verification policy requirement applied to images matching this repository."
+  type: ImagePolicyFilterType
+
+  "The trusted public key used when policy type is signed_by."
+  publicKey: PublicKeyFilterInput
+
+  imagePolicyDeployments: ImagePolicyDeploymentFilterInput
+
+  devices: DeviceFilterInput
+}
+
+input ImagePolicySortInput {
+  order: SortOrder
+  field: ImagePolicySortField!
+}
+
+"""
+Defines a container image verification policy for a target registry or
+repository scope (either rejecting matching images or requiring them to be
+signed by a specific public key).
+"""
+type ImagePolicy implements Node {
+  id: ID!
+
+  "The container registry or repository scope to which this policy applies."
+  repository: String!
+
+  "The deterministic thumbprint derived from the repository scope used on devices."
+  registryId: String!
+
+  "The verification policy requirement applied to images matching this repository."
+  type: ImagePolicyType!
+
+  "The trusted public key used when policy type is signed_by."
+  publicKey: PublicKey
+
+  imagePolicyDeployments(
+    "How to sort the records in the response"
+    sort: [ImagePolicyDeploymentSortInput]
+
+    "A filter to limit the results"
+    filter: ImagePolicyDeploymentFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): ImagePolicyDeploymentConnection!
+
+  devices(
+    "How to sort the records in the response"
+    sort: [DeviceSortInput]
+
+    "A filter to limit the results"
+    filter: DeviceFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): DeviceConnection!
+}
+
+enum PublicKeyDeploymentSortField {
+  ID
+  PUBLIC_KEY_FINGERPRINT
+  STATE
+  LAST_MESSAGE
+  IS_READY
+}
+
+":public_key_deployment connection"
+type PublicKeyDeploymentConnection {
+  "Total count on all pages"
+  count: Int
+
+  "Page information"
+  pageInfo: PageInfo!
+
+  ":public_key_deployment edges"
+  edges: [PublicKeyDeploymentEdge!]
+}
+
+":public_key_deployment edge"
+type PublicKeyDeploymentEdge {
+  "Cursor"
+  cursor: String!
+
+  ":public_key_deployment node"
+  node: PublicKeyDeployment!
+}
+
+input PublicKeyDeploymentFilterIsReady {
+  isNil: Boolean
+  eq: Boolean
+  notEq: Boolean
+  in: [Boolean!]
+  lessThan: Boolean
+  greaterThan: Boolean
+  lessThanOrEqual: Boolean
+  greaterThanOrEqual: Boolean
+  isDistinctFrom: Boolean
+  isNotDistinctFrom: Boolean
+}
+
+input PublicKeyDeploymentFilterLastMessage {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  contains: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+  stringEndsWith: String
+  stringStartsWith: String
+  like: String
+  ilike: String
+}
+
+input PublicKeyDeploymentFilterState {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String!]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+}
+
+input PublicKeyDeploymentFilterPublicKeyFingerprint {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String!]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  contains: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+  stringEndsWith: String
+  stringStartsWith: String
+  like: String
+  ilike: String
+}
+
+input PublicKeyDeploymentFilterId {
+  isNil: Boolean
+  eq: ID
+  notEq: ID
+  in: [ID!]
+  lessThan: ID
+  greaterThan: ID
+  lessThanOrEqual: ID
+  greaterThanOrEqual: ID
+  isDistinctFrom: ID
+  isNotDistinctFrom: ID
+}
+
+input PublicKeyDeploymentFilterInput {
+  and: [PublicKeyDeploymentFilterInput!]
+
+  or: [PublicKeyDeploymentFilterInput!]
+
+  not: [PublicKeyDeploymentFilterInput!]
+
+  id: PublicKeyDeploymentFilterId
+
+  "The fingerprint (`key_id`) of the public key on the device."
+  publicKeyFingerprint: PublicKeyDeploymentFilterPublicKeyFingerprint
+
+  "The availability or provisioning state of the public key on the device."
+  state: PublicKeyDeploymentFilterState
+
+  lastMessage: PublicKeyDeploymentFilterLastMessage
+
+  device: DeviceFilterInput
+
+  publicKey: PublicKeyFilterInput
+
+  isReady: PublicKeyDeploymentFilterIsReady
+}
+
+input PublicKeyDeploymentSortInput {
+  order: SortOrder
+  field: PublicKeyDeploymentSortField!
+}
+
+"""
+Tracks the availability and deployment state of a public key on a device.
+
+A deployment may reference a key fingerprint reported by the device that
+does not yet have a corresponding cloud-defined `PublicKey`.
+"""
+type PublicKeyDeployment implements Node {
+  id: ID!
+
+  "The fingerprint (`key_id`) of the public key on the device."
+  publicKeyFingerprint: String!
+
+  "The availability or provisioning state of the public key on the device."
+  state: String!
+
+  lastMessage: String
+
+  device: Device!
+
+  publicKey: PublicKey
+
+  isReady: Boolean
+
+  "Lifecycle events reported by the device for this public key deployment."
+  events: [PublicKeyDeploymentEvent!]
+}
+
+type public_key_result {
+  created: PublicKey
+  destroyed: ID
+}
+
+"The result of the :delete_public_key mutation"
+type DeletePublicKeyResult {
+  "The record that was successfully deleted"
+  result: PublicKey
+
+  "Any errors generated, if the mutation failed"
+  errors: [MutationError!]!
+}
+
+"The result of the :create_public_key mutation"
+type CreatePublicKeyResult {
+  "The successful result of the mutation"
+  result: PublicKey
+
+  "Any errors generated, if the mutation failed"
+  errors: [MutationError!]!
+}
+
+input CreatePublicKeyInput {
+  "A human-readable label identifying this public key."
+  label: String!
+
+  "The PEM-encoded X.509 certificate."
+  pem: String!
+}
+
+enum PublicKeySortField {
+  ID
+  LABEL
+  PEM
+  FINGERPRINT
+}
+
+":public_key connection"
+type PublicKeyConnection {
+  "Total count on all pages"
+  count: Int
+
+  "Page information"
+  pageInfo: PageInfo!
+
+  ":public_key edges"
+  edges: [PublicKeyEdge!]
+}
+
+":public_key edge"
+type PublicKeyEdge {
+  "Cursor"
+  cursor: String!
+
+  ":public_key node"
+  node: PublicKey!
+}
+
+input PublicKeyFilterFingerprint {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String!]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  contains: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+  stringEndsWith: String
+  stringStartsWith: String
+  like: String
+  ilike: String
+}
+
+input PublicKeyFilterPem {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String!]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  contains: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+  stringEndsWith: String
+  stringStartsWith: String
+  like: String
+  ilike: String
+}
+
+input PublicKeyFilterLabel {
+  isNil: Boolean
+  eq: String
+  notEq: String
+  in: [String!]
+  lessThan: String
+  greaterThan: String
+  lessThanOrEqual: String
+  greaterThanOrEqual: String
+  contains: String
+  isDistinctFrom: String
+  isNotDistinctFrom: String
+  stringEndsWith: String
+  stringStartsWith: String
+  like: String
+  ilike: String
+}
+
+input PublicKeyFilterId {
+  isNil: Boolean
+  eq: ID
+  notEq: ID
+  in: [ID!]
+  lessThan: ID
+  greaterThan: ID
+  lessThanOrEqual: ID
+  greaterThanOrEqual: ID
+  isDistinctFrom: ID
+  isNotDistinctFrom: ID
+}
+
+input PublicKeyFilterInput {
+  and: [PublicKeyFilterInput!]
+
+  or: [PublicKeyFilterInput!]
+
+  not: [PublicKeyFilterInput!]
+
+  id: PublicKeyFilterId
+
+  "A human-readable label identifying this public key."
+  label: PublicKeyFilterLabel
+
+  "The PEM-encoded X.509 certificate."
+  pem: PublicKeyFilterPem
+
+  "The certificate fingerprint used to identify this key on devices."
+  fingerprint: PublicKeyFilterFingerprint
+
+  imagePolicies: ImagePolicyFilterInput
+
+  publicKeyDeployments: PublicKeyDeploymentFilterInput
+
+  devices: DeviceFilterInput
+}
+
+input PublicKeySortInput {
+  order: SortOrder
+  field: PublicKeySortField!
+}
+
+"""
+A trusted X.509 certificate used by devices to verify container image
+signatures, uniquely identified on devices by its derived fingerprint.
+"""
+type PublicKey implements Node {
+  id: ID!
+
+  "A human-readable label identifying this public key."
+  label: String!
+
+  "The PEM-encoded X.509 certificate."
+  pem: String!
+
+  "The certificate fingerprint used to identify this key on devices."
+  fingerprint: String!
+
+  imagePolicies(
+    "How to sort the records in the response"
+    sort: [ImagePolicySortInput]
+
+    "A filter to limit the results"
+    filter: ImagePolicyFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): ImagePolicyConnection!
+
+  publicKeyDeployments(
+    "How to sort the records in the response"
+    sort: [PublicKeyDeploymentSortInput]
+
+    "A filter to limit the results"
+    filter: PublicKeyDeploymentFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): PublicKeyDeploymentConnection!
+
+  devices(
+    "How to sort the records in the response"
+    sort: [DeviceSortInput]
+
+    "A filter to limit the results"
+    filter: DeviceFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): DeviceConnection!
 }
 
 "The result of the :delete_allowed_registry mutation"
@@ -8157,6 +8979,10 @@ input DeviceFilterInput {
   applicationDeployments: DeploymentFilterInput
 
   volumeDeployments: VolumeDeploymentFilterInput
+
+  publicKeyDeployments: PublicKeyDeploymentFilterInput
+
+  imagePolicyDeployments: ImagePolicyDeploymentFilterInput
 }
 
 input DeviceSortInput {
@@ -8374,6 +9200,46 @@ type Device implements Node {
     "The number of records to return to the end. Maximum 250"
     last: Int
   ): VolumeDeploymentConnection!
+
+  publicKeyDeployments(
+    "How to sort the records in the response"
+    sort: [PublicKeyDeploymentSortInput]
+
+    "A filter to limit the results"
+    filter: PublicKeyDeploymentFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): PublicKeyDeploymentConnection!
+
+  imagePolicyDeployments(
+    "How to sort the records in the response"
+    sort: [ImagePolicyDeploymentSortInput]
+
+    "A filter to limit the results"
+    filter: ImagePolicyDeploymentFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): ImagePolicyDeploymentConnection!
 
   availableImages: [ImageStatus!]
 
@@ -12053,6 +12919,60 @@ type RootQueryType {
     last: Int
   ): AllowedRegistryConnection
 
+  "Returns the desired public key."
+  publicKey("The id of the record" id: ID!): PublicKey
+
+  "Returns all available public keys."
+  publicKeys(
+    "How to sort the records in the response"
+    sort: [PublicKeySortInput]
+
+    "A filter to limit the results"
+    filter: PublicKeyFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): PublicKeyConnection
+
+  "Returns the desired public key deployment."
+  publicKeyDeployment("The id of the record" id: ID!): PublicKeyDeployment
+
+  "Returns the desired image policy."
+  imagePolicy("The id of the record" id: ID!): ImagePolicy
+
+  "Returns all available image policies."
+  imagePolicies(
+    "How to sort the records in the response"
+    sort: [ImagePolicySortInput]
+
+    "A filter to limit the results"
+    filter: ImagePolicyFilterInput
+
+    "The number of records to return from the beginning. Maximum 250"
+    first: Int
+
+    "Show records before the specified keyset."
+    before: String
+
+    "Show records after the specified keyset."
+    after: String
+
+    "The number of records to return to the end. Maximum 250"
+    last: Int
+  ): ImagePolicyConnection
+
+  "Returns the desired image policy deployment."
+  imagePolicyDeployment("The id of the record" id: ID!): ImagePolicyDeployment
+
   "Retrieves a Node from its global id"
   node("The Node unique identifier" id: ID!): Node!
 
@@ -12327,6 +13247,18 @@ type RootMutationType {
   "Deletes an allowed registry."
   deleteAllowedRegistry(id: ID!): DeleteAllowedRegistryResult
 
+  "Creates a new public key for container image signature verification."
+  createPublicKey(input: CreatePublicKeyInput!): CreatePublicKeyResult
+
+  "Deletes a public key."
+  deletePublicKey(id: ID!): DeletePublicKeyResult
+
+  "Creates a new container image verification policy."
+  createImagePolicy(input: CreateImagePolicyInput!): CreateImagePolicyResult
+
+  "Deletes an image policy."
+  deleteImagePolicy(id: ID!): DeleteImagePolicyResult
+
   "Create a new base image in a base image collection."
   createBaseImage(input: CreateBaseImageInput!): CreateBaseImageResult
 
@@ -12372,6 +13304,12 @@ type RootSubscriptionType {
 
   "Subscribes to events for a file bind deployment."
   fileBindDeploymentEvents(id: ID!): FileBindEvent
+
+  "Subscribes to events for a public key deployment."
+  publicKeyDeploymentEvents(id: ID!): PublicKeyDeploymentEvent
+
+  "Subscribes to events for an image policy deployment."
+  imagePolicyDeploymentEvents(id: ID!): ImagePolicyDeploymentEvent
 
   campaigns(
     "A filter to limit the results"
@@ -12547,6 +13485,16 @@ type RootSubscriptionType {
 
     deviceId: ID!
   ): volume_deployments_by_device_result
+
+  publicKey(
+    "A filter to limit the results"
+    filter: PublicKeyFilterInput
+  ): public_key_result
+
+  imagePolicy(
+    "A filter to limit the results"
+    filter: ImagePolicyFilterInput
+  ): image_policy_result
 
   baseImage(
     "A filter to limit the results"
