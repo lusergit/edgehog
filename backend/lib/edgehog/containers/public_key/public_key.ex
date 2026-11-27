@@ -45,6 +45,7 @@ defmodule Edgehog.Containers.PublicKey do
     end
 
     paginate_relationship_with devices: :relay,
+                               image_policies: :relay,
                                public_key_deployments: :relay
   end
 
@@ -85,6 +86,10 @@ defmodule Edgehog.Containers.PublicKey do
   end
 
   relationships do
+    has_many :image_policies, Edgehog.Containers.ImagePolicy do
+      public? true
+    end
+
     has_many :public_key_deployments, Edgehog.Containers.PublicKey.Deployment do
       source_attribute :fingerprint
       destination_attribute :public_key_fingerprint

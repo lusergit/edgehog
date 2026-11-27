@@ -27,6 +27,7 @@ defmodule Edgehog.ContainersFixtures do
   alias Edgehog.Containers.Application
   alias Edgehog.Containers.Container
   alias Edgehog.Containers.Image
+  alias Edgehog.Containers.ImagePolicy
   alias Edgehog.Containers.Network
   alias Edgehog.Containers.PublicKey
   alias Edgehog.Containers.Release
@@ -954,5 +955,76 @@ defmodule Edgehog.ContainersFixtures do
       })
 
     Ash.create!(PublicKey.Deployment, params, tenant: tenant)
+  end
+
+  @doc """
+  Generate a unique image policy repository scope.
+  """
+  def unique_image_policy_repository do
+    "registry#{System.unique_integer([:positive])}.example.com/org/app"
+  end
+
+  @doc """
+  Generate an %ImagePolicy{}.
+  """
+  def image_policy_fixture(opts \\ []) do
+    {tenant, opts} = Keyword.pop!(opts, :tenant)
+    {type, opts} = Keyword.pop(opts, :type, :reject)
+
+    {public_key_id, opts} =
+      case type do
+        :signed_by ->
+          Keyword.pop_lazy(opts, :public_key_id, fn ->
+            public_key_fixture(tenant: tenant).id
+          end)
+
+        _ ->
+          Keyword.pop(opts, :public_key_id)
+      end
+
+    params =
+      Enum.into(opts, %{
+        repository: unique_image_policy_repository(),
+        type: type,
+        public_key_id: public_key_id
+      })
+
+    Ash.create!(ImagePolicy, params, tenant: tenant)
+  end
+
+  @doc """
+  Generate an %ImagePolicy.Deployment{}.
+  """
+  def image_policy_deployment_fixture(opts \\ []) do
+    {tenant, opts} = Keyword.pop!(opts, :tenant)
+
+    {realm_id, opts} =
+      case opts[:device_id] do
+        nil ->
+          Keyword.pop_lazy(opts, :realm_id, fn ->
+            AstarteFixtures.realm_fixture(tenant: tenant).id
+          end)
+
+        _ ->
+          {nil, Keyword.delete(opts, :realm_id)}
+      end
+
+    {device_id, opts} =
+      Keyword.pop_lazy(opts, :device_id, fn ->
+        Edgehog.DevicesFixtures.device_fixture(realm_id: realm_id, tenant: tenant).id
+      end)
+
+    {registry_id, opts} =
+      Keyword.pop_lazy(opts, :registry_id, fn ->
+        image_policy_fixture(tenant: tenant).registry_id
+      end)
+
+    params =
+      Enum.into(opts, %{
+        device_id: device_id,
+        registry_id: registry_id
+      })
+
+    Ash.create!(ImagePolicy.Deployment, params, tenant: tenant)
   end
 end

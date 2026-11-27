@@ -647,6 +647,10 @@ defmodule Edgehog.Devices.Device do
       public? true
     end
 
+    has_many :image_policy_deployments, Edgehog.Containers.ImagePolicy.Deployment do
+      public? true
+    end
+
     many_to_many :application_releases, Release do
       through Deployment
       join_relationship :application_deployments

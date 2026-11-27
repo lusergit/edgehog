@@ -552,5 +552,29 @@ defmodule Edgehog.Containers do
         action: :mark_as_errored,
         args: [:message]
     end
+
+    resource Edgehog.Containers.ImagePolicy do
+      define :fetch_image_policy, action: :read, get_by: [:id]
+      define :fetch_image_policy_by_registry_id, action: :read, get_by: [:registry_id]
+      define :destroy_image_policy, action: :destroy
+    end
+
+    resource Edgehog.Containers.ImagePolicy.Deployment do
+      define :deploy_image_policy, action: :deploy, args: [:image_policy, :device]
+      define :upsert_image_policy_deployment_from_device, action: :upsert_from_device
+      define :destroy_image_policy_deployment, action: :destroy
+
+      define :fetch_image_policy_deployment,
+        action: :read,
+        get_by_identity: :image_policy_instance
+
+      define :mark_image_policy_deployment_as_sent, action: :mark_as_sent
+      define :mark_image_policy_deployment_as_present, action: :mark_as_present
+      define :mark_image_policy_deployment_as_missing, action: :mark_as_missing
+
+      define :mark_image_policy_deployment_as_errored,
+        action: :mark_as_errored,
+        args: [:message]
+    end
   end
 end
