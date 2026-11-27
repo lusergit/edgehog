@@ -48,6 +48,7 @@ defmodule Edgehog.Containers.Supervisor do
       {Registry, keys: :unique, name: Containers.DeviceRequest.Deployment.Provisioner.Registry},
       {Registry, keys: :unique, name: Containers.FileBind.Provisioner.Registry},
       {Registry, keys: :unique, name: Containers.EnvFile.Provisioner.Registry},
+      {Registry, keys: :unique, name: Containers.PublicKey.Deployment.Provisioner.Registry},
       {Registry, keys: :unique, name: Containers.Release.Deployment.Starter.Registry},
 
       # Supervisors
@@ -73,6 +74,8 @@ defmodule Edgehog.Containers.Supervisor do
        name: Containers.FileBind.Provisioner.Supervisor, strategy: :one_for_one},
       {DynamicSupervisor,
        name: Containers.EnvFile.Provisioner.Supervisor, strategy: :one_for_one},
+      {DynamicSupervisor,
+       name: Containers.PublicKey.Provisioner.Supervisor, strategy: :one_for_one},
 
       # Starter supervisor
       {DynamicSupervisor,

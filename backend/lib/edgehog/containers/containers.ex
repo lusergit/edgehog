@@ -589,6 +589,7 @@ defmodule Edgehog.Containers do
 
     resource Edgehog.Containers.PublicKey.Deployment do
       define :deploy_public_key, action: :deploy, args: [:public_key, :device]
+      define :send_public_key_deployment, action: :send_deployment
       define :upsert_public_key_deployment_from_device, action: :upsert_from_device
       define :destroy_public_key_deployment, action: :destroy
       define :fetch_public_key_deployment, action: :read, get_by_identity: :public_key_instance
