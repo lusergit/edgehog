@@ -80,6 +80,16 @@ defmodule Edgehog.Containers.ImagePolicy.Deployment do
       accept [:registry_id, :device_id, :state]
     end
 
+    update :send_deployment do
+      description """
+      Sends the image policy deployment to the device via its provisioner.
+      """
+
+      require_atomic? false
+
+      change Changes.DeployImagePolicyOnDevice
+    end
+
     update :mark_as_sent do
       change set_attribute(:state, :sent)
     end

@@ -610,6 +610,7 @@ defmodule Edgehog.Containers do
 
     resource Edgehog.Containers.ImagePolicy.Deployment do
       define :deploy_image_policy, action: :deploy, args: [:image_policy, :device]
+      define :send_image_policy_deployment, action: :send_deployment
       define :upsert_image_policy_deployment_from_device, action: :upsert_from_device
       define :destroy_image_policy_deployment, action: :destroy
 
