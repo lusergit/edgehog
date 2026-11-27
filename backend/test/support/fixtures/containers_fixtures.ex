@@ -28,6 +28,7 @@ defmodule Edgehog.ContainersFixtures do
   alias Edgehog.Containers.Container
   alias Edgehog.Containers.Image
   alias Edgehog.Containers.Network
+  alias Edgehog.Containers.PublicKey
   alias Edgehog.Containers.Release
   alias Edgehog.Containers.Release.Deployment
   alias Edgehog.Containers.Volume
@@ -885,5 +886,73 @@ defmodule Edgehog.ContainersFixtures do
       })
 
     Ash.create!(Edgehog.Containers.DeviceRequest.Deployment, params, tenant: tenant)
+  end
+
+  @doc """
+  Generate a unique public key label.
+  """
+  def unique_public_key_label, do: "public-key-#{System.unique_integer([:positive])}"
+
+  @doc """
+  Generate a valid self-signed PEM-encoded X.509 certificate.
+  """
+  def x509_certificate_pem_fixture do
+    key = X509.PrivateKey.new_ec(:secp256r1)
+    subject = "/CN=edgehog-test-#{System.unique_integer([:positive])}"
+
+    key
+    |> X509.Certificate.self_signed(subject)
+    |> X509.Certificate.to_pem()
+  end
+
+  @doc """
+  Generate a %PublicKey{}.
+  """
+  def public_key_fixture(opts \\ []) do
+    {tenant, opts} = Keyword.pop!(opts, :tenant)
+
+    params =
+      Enum.into(opts, %{
+        label: unique_public_key_label(),
+        pem: x509_certificate_pem_fixture()
+      })
+
+    Ash.create!(PublicKey, params, tenant: tenant)
+  end
+
+  @doc """
+  Generate a %PublicKey.Deployment{}.
+  """
+  def public_key_deployment_fixture(opts \\ []) do
+    {tenant, opts} = Keyword.pop!(opts, :tenant)
+
+    {realm_id, opts} =
+      case opts[:device_id] do
+        nil ->
+          Keyword.pop_lazy(opts, :realm_id, fn ->
+            AstarteFixtures.realm_fixture(tenant: tenant).id
+          end)
+
+        _ ->
+          {nil, Keyword.delete(opts, :realm_id)}
+      end
+
+    {device_id, opts} =
+      Keyword.pop_lazy(opts, :device_id, fn ->
+        Edgehog.DevicesFixtures.device_fixture(realm_id: realm_id, tenant: tenant).id
+      end)
+
+    {public_key_fingerprint, opts} =
+      Keyword.pop_lazy(opts, :public_key_fingerprint, fn ->
+        public_key_fixture(tenant: tenant).fingerprint
+      end)
+
+    params =
+      Enum.into(opts, %{
+        device_id: device_id,
+        public_key_fingerprint: public_key_fingerprint
+      })
+
+    Ash.create!(PublicKey.Deployment, params, tenant: tenant)
   end
 end

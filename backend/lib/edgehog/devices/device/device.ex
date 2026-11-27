@@ -643,6 +643,10 @@ defmodule Edgehog.Devices.Device do
     has_many :image_deployments, Edgehog.Containers.Image.Deployment
     has_many :device_mapping_deployments, Edgehog.Containers.DeviceMapping.Deployment
 
+    has_many :public_key_deployments, Edgehog.Containers.PublicKey.Deployment do
+      public? true
+    end
+
     many_to_many :application_releases, Release do
       through Deployment
       join_relationship :application_deployments

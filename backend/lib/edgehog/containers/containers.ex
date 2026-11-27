@@ -532,5 +532,25 @@ defmodule Edgehog.Containers do
     end
 
     resource Edgehog.Containers.AllowedRegistry
+
+    resource Edgehog.Containers.PublicKey do
+      define :fetch_public_key, action: :read, get_by: [:id]
+      define :fetch_public_key_by_fingerprint, action: :read, get_by: [:fingerprint]
+      define :destroy_public_key, action: :destroy
+    end
+
+    resource Edgehog.Containers.PublicKey.Deployment do
+      define :deploy_public_key, action: :deploy, args: [:public_key, :device]
+      define :upsert_public_key_deployment_from_device, action: :upsert_from_device
+      define :destroy_public_key_deployment, action: :destroy
+      define :fetch_public_key_deployment, action: :read, get_by_identity: :public_key_instance
+      define :mark_public_key_deployment_as_sent, action: :mark_as_sent
+      define :mark_public_key_deployment_as_present, action: :mark_as_present
+      define :mark_public_key_deployment_as_missing, action: :mark_as_missing
+
+      define :mark_public_key_deployment_as_errored,
+        action: :mark_as_errored,
+        args: [:message]
+    end
   end
 end
