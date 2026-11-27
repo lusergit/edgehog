@@ -94,7 +94,7 @@ defmodule Edgehog.Audit.AuditService do
     if Config.audit_log_events?() do
       log_metadata =
         metadata
-        |> Keyword.new()
+        |> format_log_metadata()
         |> maybe_put_ash_action_info(ash_action_info)
         |> maybe_put_tenant(tenant)
 
@@ -103,6 +103,19 @@ defmodule Edgehog.Audit.AuditService do
 
     :ok
   end
+
+  defp format_log_metadata(metadata) do
+    Enum.map(metadata, fn
+      {key, value} when is_list(value) ->
+        {key, Enum.map_join(value, ",", &format_log_list_item/1)}
+
+      pair ->
+        pair
+    end)
+  end
+
+  defp format_log_list_item(item) when is_binary(item), do: item
+  defp format_log_list_item(item), do: inspect(item)
 
   defp maybe_put_ash_action_info(keyword, nil), do: keyword
 

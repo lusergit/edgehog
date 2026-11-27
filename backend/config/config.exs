@@ -141,7 +141,19 @@ config :logger, :console,
     :tenant_id,
     :tenant,
     :action,
-    :resource
+    :resource,
+    :event,
+    :resource_type,
+    :resource_id,
+    :device_id,
+    :application_name,
+    :release_version,
+    :container_names,
+    :username,
+    :error,
+    :add_info,
+    :retries,
+    :reason
   ]
 
 config :mime, :extensions, %{

@@ -143,6 +143,52 @@ defmodule Edgehog.Audit.AuditServiceTest do
       assert Ash.read!(Event, tenant: tenant) == []
     end
 
+    test "formats list metadata values as comma-separated strings for prod logfmt while preserving arrays in DB",
+         %{tenant: tenant} do
+      stub(Config, :audit_log_events?, fn -> true end)
+      stub(Config, :audit_store_events?, fn -> true end)
+
+      metadata = %{
+        event: "deployment_init",
+        container_names: ["api", "worker"],
+        add_info: ["exit code 137", "oom killed"],
+        username: "alice"
+      }
+
+      logger_metadata = Application.fetch_env!(:logger, :console)[:metadata]
+
+      formatter =
+        Logger.Formatter.new(
+          format: {PrettyLog.LogfmtFormatter, :format},
+          metadata: logger_metadata,
+          colors: [enabled: false]
+        )
+
+      log =
+        [level: :info, formatter: formatter]
+        |> capture_log(fn ->
+          assert :ok =
+                   AuditService.info("deployment event",
+                     tenant: tenant,
+                     metadata: metadata
+                   )
+        end)
+        |> String.trim()
+
+      decoded = Logfmt.decode(log)
+      assert decoded["level"] == "info"
+      assert decoded["msg"] == "deployment event"
+      assert decoded["event"] == "deployment_init"
+      assert decoded["container_names"] == "api,worker"
+      assert decoded["add_info"] == "exit code 137,oom killed"
+      assert decoded["username"] == "alice"
+      assert decoded["tenant"] == tenant.slug
+
+      assert [event] = Ash.read!(Event, tenant: tenant)
+      assert event.metadata["container_names"] == ["api", "worker"]
+      assert event.metadata["add_info"] == ["exit code 137", "oom killed"]
+    end
+
     test "returns {:error, reason} when event creation fails", %{tenant: tenant} do
       stub(Config, :audit_log_events?, fn -> false end)
       stub(Config, :audit_store_events?, fn -> true end)
