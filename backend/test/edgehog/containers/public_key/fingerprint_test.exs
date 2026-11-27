@@ -25,6 +25,25 @@ defmodule Edgehog.Containers.PublicKey.FingerprintTest do
 
   alias Edgehog.Containers.PublicKey.Fingerprint
 
+  describe "der_from_pem/1" do
+    test "returns DER bytes for a valid single X.509 certificate PEM" do
+      pem = x509_certificate_pem_fixture()
+      {:ok, cert} = X509.Certificate.from_pem(pem)
+      expected_der = X509.Certificate.to_der(cert)
+
+      assert {:ok, ^expected_der} = Fingerprint.der_from_pem(pem)
+    end
+
+    test "returns error for multi-entry or invalid PEM inputs" do
+      pem1 = x509_certificate_pem_fixture()
+      pem2 = x509_certificate_pem_fixture()
+
+      assert {:error, :invalid_pem} = Fingerprint.der_from_pem(pem1 <> "\n" <> pem2)
+      assert {:error, :invalid_pem} = Fingerprint.der_from_pem("invalid")
+      assert {:error, :invalid_pem} = Fingerprint.der_from_pem(nil)
+    end
+  end
+
   describe "from_pem/1" do
     test "returns lowercase hex SHA-256 of the X.509 certificate DER bytes" do
       pem = x509_certificate_pem_fixture()

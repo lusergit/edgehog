@@ -138,6 +138,12 @@ defmodule Edgehog.Devices do
         args: [:release, :command]
 
       define :update_application, action: :update_application, args: [:from, :to]
+
+      define :send_public_key, action: :send_public_key, args: [:public_key]
+      define :unset_public_key, action: :unset_public_key, args: [:key_id]
+      define :send_image_policy, action: :send_image_policy, args: [:image_policy]
+
+      define :unset_image_policy, action: :unset_image_policy, args: [:registry_id]
     end
 
     resource HardwareType

@@ -26,21 +26,28 @@ defmodule Edgehog.Containers.PublicKey.Fingerprint do
   can be adjusted in one place without requiring database migrations.
   """
 
-  @spec from_pem(term()) :: {:ok, String.t()} | {:error, term()}
-  def from_pem(pem) when is_binary(pem) do
+  @spec der_from_pem(term()) :: {:ok, binary()} | {:error, term()}
+  def der_from_pem(pem) when is_binary(pem) do
     with [{:Certificate, der, :not_encrypted}] <- :public_key.pem_decode(pem),
          {:ok, _cert} <- X509.Certificate.from_der(der) do
-      fingerprint =
-        :sha256
-        |> :crypto.hash(der)
-        |> Base.encode16(case: :lower)
-
-      {:ok, fingerprint}
+      {:ok, der}
     else
       {:error, _} = error -> error
       _ -> {:error, :invalid_pem}
     end
   end
 
-  def from_pem(_), do: {:error, :invalid_pem}
+  def der_from_pem(_), do: {:error, :invalid_pem}
+
+  @spec from_pem(term()) :: {:ok, String.t()} | {:error, term()}
+  def from_pem(pem) do
+    with {:ok, der} <- der_from_pem(pem) do
+      fingerprint =
+        :sha256
+        |> :crypto.hash(der)
+        |> Base.encode16(case: :lower)
+
+      {:ok, fingerprint}
+    end
+  end
 end

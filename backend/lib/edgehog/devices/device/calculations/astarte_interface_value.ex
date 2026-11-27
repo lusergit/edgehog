@@ -97,6 +97,18 @@ defmodule Edgehog.Devices.Device.Calculations.AstarteInterfaceValue do
                          Edgehog.Astarte.Device.AvailableEnvFiles
                        )
 
+  @available_public_keys Application.compile_env(
+                           :edgehog,
+                           :astarte_available_public_keys_module,
+                           Edgehog.Astarte.Device.AvailablePublicKeys
+                         )
+
+  @available_image_policies Application.compile_env(
+                              :edgehog,
+                              :astarte_available_image_policies_module,
+                              Edgehog.Astarte.Device.AvailableImagePolicies
+                            )
+
   @base_image Application.compile_env(
                 :edgehog,
                 :astarte_base_image_module,
@@ -160,6 +172,8 @@ defmodule Edgehog.Devices.Device.Calculations.AstarteInterfaceValue do
   defp value_id_to_fetch_fun(:available_device_requests), do: &@available_device_requests.get/2
   defp value_id_to_fetch_fun(:available_file_binds), do: &@available_file_binds.get/2
   defp value_id_to_fetch_fun(:available_env_files), do: &@available_env_files.get/2
+  defp value_id_to_fetch_fun(:available_public_keys), do: &@available_public_keys.get/2
+  defp value_id_to_fetch_fun(:available_image_policies), do: &@available_image_policies.get/2
   defp value_id_to_fetch_fun(:base_image_info), do: &@base_image.get/2
   defp value_id_to_fetch_fun(:hardware_info), do: &@hardware_info.get/2
   defp value_id_to_fetch_fun(:file_transfer_capabilities), do: &@file_transfer_capabilities.get/2

@@ -298,4 +298,33 @@ defmodule EdgehogWeb.Schema.AstarteTypes do
     @desc "The env file id."
     field :id, :string
   end
+
+  @desc "Describe the available public keys on the device."
+  object :public_key_status do
+    @desc "The public key fingerprint (key id)."
+    field :id, :string
+
+    @desc "The status of the public key on the device."
+    field :status, :string do
+      resolve fn public_key_status, _, _ ->
+        {:ok, format_status(public_key_status.status)}
+      end
+    end
+  end
+
+  @desc "Describe the available image policies on the device."
+  object :image_policy_status do
+    @desc "The image policy registry id."
+    field :id, :string
+
+    @desc "The status of the image policy on the device."
+    field :status, :string do
+      resolve fn image_policy_status, _, _ ->
+        {:ok, format_status(image_policy_status.status)}
+      end
+    end
+  end
+
+  defp format_status(nil), do: nil
+  defp format_status(value) when is_atom(value), do: value |> Atom.to_string() |> Macro.camelize()
 end

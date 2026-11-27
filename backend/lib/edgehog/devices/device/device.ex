@@ -35,6 +35,8 @@ defmodule Edgehog.Devices.Device do
   alias Edgehog.Containers.DeviceMapping
   alias Edgehog.Containers.DeviceRequest
   alias Edgehog.Containers.Image
+  alias Edgehog.Containers.ImagePolicy
+  alias Edgehog.Containers.PublicKey
   alias Edgehog.Containers.Release
   alias Edgehog.Containers.Release.Deployment
   alias Edgehog.Containers.Volume
@@ -522,6 +524,58 @@ defmodule Edgehog.Devices.Device do
 
       manual Edgehog.Devices.Device.ManualActions.UpdateApplication
     end
+
+    update :send_public_key do
+      description "Sends a container image verification public key to the device."
+
+      argument :public_key, :struct do
+        constraints instance_of: PublicKey
+        description "The public key to store on the device."
+        allow_nil? false
+      end
+
+      manual ManualActions.SendPublicKey
+    end
+
+    update :unset_public_key do
+      description "Removes a container image verification public key from the device."
+
+      argument :key_id, :string do
+        description "The fingerprint (key id) of the public key to remove."
+        allow_nil? false
+      end
+
+      manual ManualActions.UnsetPublicKey
+    end
+
+    update :send_image_policy do
+      description "Sends a container image verification policy to the device."
+
+      argument :image_policy, :struct do
+        constraints instance_of: ImagePolicy
+        description "The image policy to configure on the device."
+        allow_nil? false
+      end
+
+      manual ManualActions.SendImagePolicy
+    end
+
+    update :unset_image_policy do
+      description "Removes a container image verification policy from the device."
+
+      argument :registry_id, :string do
+        description "The registry id of the image policy to remove."
+        allow_nil? false
+      end
+
+      argument :unset_key_id?, :boolean do
+        description "Whether to also unset the keyId property on the device."
+        allow_nil? false
+        default false
+      end
+
+      manual ManualActions.UnsetImagePolicy
+    end
   end
 
   attributes do
@@ -730,6 +784,16 @@ defmodule Edgehog.Devices.Device do
     calculate :available_env_files, {:array, Types.EnvFileStatus} do
       public? true
       calculation {Calculations.AstarteInterfaceValue, value_id: :available_env_files}
+    end
+
+    calculate :available_public_keys, {:array, Types.PublicKeyStatus} do
+      public? true
+      calculation {Calculations.AstarteInterfaceValue, value_id: :available_public_keys}
+    end
+
+    calculate :available_image_policies, {:array, Types.ImagePolicyStatus} do
+      public? true
+      calculation {Calculations.AstarteInterfaceValue, value_id: :available_image_policies}
     end
 
     calculate :battery_status, {:array, BatterySlot} do
